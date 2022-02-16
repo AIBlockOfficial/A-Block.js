@@ -1,5 +1,20 @@
 import { BAL_LIMIT } from '../mgmt';
 
+export function castAPIStatus(
+    status: 'Success' | 'Error' | 'InProgress' | 'Unknown',
+): 'success' | 'error' | 'pending' | 'unknown' {
+    switch (status) {
+        case 'Success':
+            return 'success';
+        case 'Error':
+            return 'error';
+        case 'InProgress':
+            return 'pending';
+        default:
+            return 'unknown';
+    }
+}
+
 /**
  * Converts a string into a byte array for handling by nacl
  *

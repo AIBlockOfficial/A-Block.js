@@ -71,7 +71,7 @@ export class mgmtClient {
 
     public getNewAddress(): string {
         const allAddresses = this.getAddresses();
-        const addresses = allAddresses === null? []: allAddresses;
+        const addresses = allAddresses === null ? [] : allAddresses;
         const [keypair, address] = generateNewKeypairAndAddress(
             this.masterKey,
             ADDRESS_VERSION,
@@ -86,7 +86,7 @@ export class mgmtClient {
     }
 
     public getSeedPhrase(): string {
-        return this._seedPhrase === null? generateSeed(): this._seedPhrase;
+        return this._seedPhrase === null ? generateSeed() : this._seedPhrase;
     }
 
     public saveMasterKey(masterKey: IMasterKey, passphrase?: Uint8Array): void {

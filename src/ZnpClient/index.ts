@@ -14,6 +14,7 @@ import {
     IFetchUtxoAddressesResponse,
 } from './apiInterfaces';
 import { IMgmtCallbacks, mgmtClient } from './mgmtClient';
+import { castAPIStatus } from '../utils';
 
 export * from './apiInterfaces';
 export interface IClientConfig {
@@ -24,6 +25,14 @@ export interface IClientConfig {
     seedPhrase?: string;
     port?: number;
     timeout?: number;
+}
+
+interface INetworkResponse {
+    id?: string;
+    status: 'Success' | 'Error' | 'InProgress' | 'Unknown';
+    reason?: string;
+    route?: string;
+    content?: IApiContentType;
 }
 
 export interface IClientResponse {
@@ -80,17 +89,16 @@ export class ZnpClient {
     public async getUtxoAddressList(): Promise<IClientResponse> {
         try {
             return (await this.axiosClient
-                .get(IAPIRoute.GetUtxoAddressList)
-                .then(
-                    (response) =>
-                        ({
-                            status: 'success',
-                            reason: 'Address list fetched successfully',
-                            apiContent: {
-                                FetchUtxoAddressesResponse: response.data,
-                            },
-                        } as IClientResponse),
-                )
+                .get<INetworkResponse>(IAPIRoute.GetUtxoAddressList)
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        apiContent: {
+                            FetchUtxoAddressesResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
                 .catch(async (error) => ({
                     status: 'error',
                     reason: `Network error: ${error.response.status}}`,
@@ -116,17 +124,16 @@ export class ZnpClient {
         };
         try {
             return (await this.axiosClient
-                .post(IAPIRoute.FetchBalance, JSON.stringify(fetchBalanceBody))
-                .then(
-                    (response) =>
-                        ({
-                            status: 'success',
-                            reason: 'Successfully fetched balance',
-                            apiContent: {
-                                FetchBalanceResponse: response.data,
-                            },
-                        } as IClientResponse),
-                )
+                .post<INetworkResponse>(IAPIRoute.FetchBalance, JSON.stringify(fetchBalanceBody))
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        apiContent: {
+                            FetchBalanceResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
                 .catch(async (error) => ({
                     status: 'error',
                     reason: `Network error: ${error.response.status}}`,
@@ -150,17 +157,16 @@ export class ZnpClient {
         };
         try {
             return (await this.axiosClient
-                .post(IAPIRoute.FetchPending, JSON.stringify(fetchPendingBody))
-                .then(
-                    (response) =>
-                        ({
-                            status: 'success',
-                            reason: 'Successfully fetched pending DRUID transactions',
-                            apiContent: {
-                                FetchPendingResponse: response.data,
-                            },
-                        } as IClientResponse),
-                )
+                .post<INetworkResponse>(IAPIRoute.FetchPending, JSON.stringify(fetchPendingBody))
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        apiContent: {
+                            FetchPendingResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
                 .catch(async (error) => ({
                     status: 'error',
                     reason: `Network error: ${error.response.status}}`,
@@ -194,20 +200,19 @@ export class ZnpClient {
             );
             try {
                 return (await this.axiosClient
-                    .post(
+                    .post<INetworkResponse>(
                         `${this.axiosClient.defaults.baseURL}${IAPIRoute.CreateReceiptAsset}`,
                         JSON.stringify(createReceiptBody),
                     )
-                    .then(
-                        (response) =>
-                            ({
-                                status: 'success',
-                                reason: 'Successfully created receipt asset(s)',
-                                apiContent: {
-                                    CreateReceiptResponse: response.data,
-                                },
-                            } as IClientResponse),
-                    )
+                    .then((response) => {
+                        return {
+                            status: castAPIStatus(response.data.status),
+                            reason: response.data.reason,
+                            apiContent: {
+                                CreateReceiptResponse: response.data.content,
+                            },
+                        } as IClientResponse;
+                    })
                     .catch(async (error) => {
                         return {
                             status: 'error',
@@ -272,17 +277,23 @@ export class ZnpClient {
                             `${this.axiosClient.defaults.baseURL}${IAPIRoute.CreateTransactions}`,
                             JSON.stringify([paymentBody.createTx]),
                         )
-                        .then(() => {
-                            // Payment now getting processed
-                            // TODO: Should we do something with the used addresses?
-                            if (paymentBody?.excessAddressUsed) {
-                                // Save excess keypair to wallet
-                                this.keyMgmt.saveKeypair(excessKeypair, excessAddress);
+                        .then((response) => {
+                            const responseData = response.data as INetworkResponse;
+                            if (castAPIStatus(responseData.status) === 'success') {
+                                // Payment now getting processed
+                                // TODO: Should we do something with the used addresses?
+                                if (paymentBody?.excessAddressUsed) {
+                                    // Save excess keypair to wallet
+                                    this.keyMgmt.saveKeypair(excessKeypair, excessAddress);
+                                }
                             }
                             return {
-                                status: 'success',
-                                reason: 'Successfully created payment transaction',
-                            };
+                                status: castAPIStatus(responseData.status),
+                                reason: responseData.reason,
+                                apiContent: {
+                                    MakePaymentResponse: responseData.content,
+                                },
+                            } as IClientResponse;
                         })
                         .catch(async (error) => {
                             return {
@@ -333,13 +344,13 @@ export class ZnpClient {
 
     getNewAddress(): IClientResponse {
         const result = this.keyMgmt.getNewAddress();
-            return {
-                status: 'success',
-                reason: 'Successfully generated new address',
-                clientContent: {
-                    newAddressResponse: result,
-                },
-            } as IClientResponse;
+        return {
+            status: 'success',
+            reason: 'Successfully generated new address',
+            clientContent: {
+                newAddressResponse: result,
+            },
+        } as IClientResponse;
     }
 
     getNewDRUID(save = true): IClientResponse {
@@ -358,8 +369,8 @@ export class ZnpClient {
             reason: 'Successfully generated new seed phrase',
             clientContent: {
                 newSeedPhraseResponse: this.keyMgmt.getNewSeedPhrase(),
-            }
-        }
+            },
+        };
     }
 
     getSeedPhrase(): IClientResponse {
@@ -368,7 +379,7 @@ export class ZnpClient {
             reason: 'Successfully obtained seed phrase',
             clientContent: {
                 getSeedPhraseResponse: this.keyMgmt.getSeedPhrase(),
-            }
-        }
+            },
+        };
     }
 }
