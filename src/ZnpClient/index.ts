@@ -6,67 +6,82 @@ import {
     SEED_REGEN_THRES,
 } from '../mgmt';
 import axios, { AxiosInstance } from 'axios';
-import {
-    IAPIRoute,
-    ICreateReceiptResponse,
-    IFetchBalanceResponse,
-    IFetchPendingResponse,
-    IFetchUtxoAddressesResponse,
-} from './apiInterfaces';
 import { IMgmtCallbacks, mgmtClient } from './mgmtClient';
 import { castAPIStatus } from '../utils';
+import { IErrorInternal } from '../interfaces';
+import {
+    IFetchUtxoAddressesResponse,
+    IFetchBalanceResponse,
+    IFetchPendingResponse,
+    ICreateReceiptResponse,
+    IAPIRoute,
+} from '../interfaces';
 
-export * from './apiInterfaces';
-export interface IClientConfig {
+/* -------------------------------------------------------------------------- */
+/*                                 Interfaces                                 */
+/* -------------------------------------------------------------------------- */
+export type IClientConfig = {
     callbacks: IMgmtCallbacks;
-    passphraseKey: string;
+    passPhrase: string;
+    seedPhrase?: string;
     host: string;
     tls?: boolean;
-    seedPhrase?: string;
     port?: number;
     timeout?: number;
-}
+};
 
-interface INetworkResponse {
+type INetworkResponse = {
     id?: string;
     status: 'Success' | 'Error' | 'InProgress' | 'Unknown';
     reason?: string;
     route?: string;
     content?: IApiContentType;
-}
+};
 
-export interface IClientResponse {
+export type IClientResponse = {
     id?: string;
     status: 'success' | 'error' | 'pending' | 'unknown';
     reason?: string;
     clientContent?: IContentType;
     apiContent?: IApiContentType;
-}
+};
 
-export interface IContentType {
+export type IContentType = {
     newAddressResponse?: string | null;
     newDRUIDResponse?: string;
     newSeedPhraseResponse?: string;
     getSeedPhraseResponse?: string;
-}
-export interface IApiContentType {
+};
+export type IApiContentType = {
     FetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
     FetchBalanceResponse?: IFetchBalanceResponse;
     FetchPendingResponse?: IFetchPendingResponse;
     CreateReceiptResponse?: ICreateReceiptResponse;
-}
+};
 
 export class ZnpClient {
     /* -------------------------------------------------------------------------- */
     /*                              Member Variables                              */
     /* -------------------------------------------------------------------------- */
-    private axiosClient: AxiosInstance;
-    private keyMgmt: mgmtClient;
+    private axiosClient: AxiosInstance | undefined;
+    private keyMgmt: mgmtClient | undefined;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Constructor                                */
     /* -------------------------------------------------------------------------- */
-    constructor(config: IClientConfig) {
+    constructor() {
+        this.axiosClient = undefined;
+        this.keyMgmt = undefined;
+    }
+
+    /**
+     * Initialize the client with the given config
+     *
+     * @param {IClientConfig} config
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
+    public init(config: IClientConfig): IClientResponse {
         this.axiosClient = axios.create({
             baseURL: config.port
                 ? `${config.tls ? 'https' : 'http'}://${config.host}:${config.port}`
@@ -76,7 +91,20 @@ export class ZnpClient {
                 'Content-Type': 'application/json',
             },
         });
-        this.keyMgmt = new mgmtClient(config.callbacks, config.passphraseKey, config.seedPhrase);
+        this.keyMgmt = new mgmtClient(config.callbacks);
+
+        const initResult = this.keyMgmt.init(config.passPhrase, config.seedPhrase);
+        if (initResult.isErr()) {
+            return {
+                status: 'error',
+                reason: initResult.error,
+            } as IClientResponse;
+        } else {
+            return {
+                status: 'success',
+                reason: 'Successfully initialized',
+            } as IClientResponse;
+        }
     }
 
     /* -------------------------------------------------------------------------- */
@@ -85,8 +113,17 @@ export class ZnpClient {
 
     /**
      * Get all the addresses present on the ZNP UTXO set
+     *
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
      */
     public async getUtxoAddressList(): Promise<IClientResponse> {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
         try {
             return (await this.axiosClient
                 .get<INetworkResponse>(IAPIRoute.GetUtxoAddressList)
@@ -112,15 +149,28 @@ export class ZnpClient {
     }
 
     /**
-     * Fetches the balance for the passed addresses from ZNP UTXO set
+     * Fetch the balance for all existing addresses
      *
-     * @param addresses {string[]}
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
      */
     async fetchBalance(): Promise<IClientResponse> {
-        const addresses = this.keyMgmt.getAddresses();
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
 
+        const addresses = this.keyMgmt.getAddresses();
+        if (addresses.isErr()) {
+            return {
+                status: 'error',
+                reason: addresses.error,
+            } as IClientResponse;
+        }
         const fetchBalanceBody = {
-            address_list: addresses,
+            address_list: addresses.value,
         };
         try {
             return (await this.axiosClient
@@ -149,9 +199,19 @@ export class ZnpClient {
     /**
      * Fetches the list of pending transactions based on passed DRUIDs
      *
-     * @param druids {string[]}
+     * @param {string[]} druids
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
      */
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
+
+        // const druids = this.keyMgmt.get
         const fetchPendingBody = {
             druid_list: druids,
         };
@@ -180,29 +240,51 @@ export class ZnpClient {
     }
 
     /**
-     * Sends a request to create new receipts
+     * Create receipt assets and assign them to a new address
+     *
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
      */
     public async createReceipts(): Promise<IClientResponse> {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
+
         const addresses = this.keyMgmt.getAddresses();
-        if (addresses === null) {
+        if (addresses.isErr()) {
             return {
                 status: 'error',
                 reason: 'No saved addresses found',
             } as IClientResponse;
         }
-        const mostRecent = addresses[addresses.length - 1];
+        const mostRecent = addresses.value[addresses.value.length - 1];
         const mostRecentKeypair = this.keyMgmt.getKeypair(mostRecent);
+        if (mostRecentKeypair.isErr()) {
+            return {
+                status: 'error',
+                reason: mostRecentKeypair.error,
+            } as IClientResponse;
+        }
         if (mostRecentKeypair != null) {
             const createReceiptBody = createReceiptPayload(
-                mostRecentKeypair.secretKey,
-                mostRecentKeypair.publicKey,
-                mostRecentKeypair.version,
+                mostRecentKeypair.value.secretKey,
+                mostRecentKeypair.value.publicKey,
+                mostRecentKeypair.value.version,
             );
+            if (createReceiptBody.isErr()) {
+                return {
+                    status: 'error',
+                    reason: createReceiptBody.error,
+                } as IClientResponse;
+            }
             try {
                 return (await this.axiosClient
                     .post<INetworkResponse>(
                         `${this.axiosClient.defaults.baseURL}${IAPIRoute.CreateReceiptAsset}`,
-                        JSON.stringify(createReceiptBody),
+                        JSON.stringify(createReceiptBody.value),
                     )
                     .then((response) => {
                         return {
@@ -228,38 +310,55 @@ export class ZnpClient {
         } else {
             return {
                 status: 'error',
-                reason: 'Error fetching key-pair to assign receipt asset to',
+                reason: IErrorInternal.UnableToRetrieveKeypair,
             } as IClientResponse;
         }
     }
 
     /**
-     * Make a payment of a specified token amount
+     * Make a payment of a specified token amount to a specified address
      *
      * @param {string} paymentAddress
      * @param {number} paymentAmount
-     *
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
      */
     async makeTokenPayment(
         paymentAddress: string,
         paymentAmount: number,
     ): Promise<IClientResponse> {
-        // First update balance
-        const balance = await this.fetchBalance();
-        const addresses = this.keyMgmt.getAddresses();
-        if (addresses === null) {
+        if (!this.axiosClient || !this.keyMgmt) {
             return {
                 status: 'error',
-                reason: 'No saved addresses found',
+                reason: 'Client has not been initialized',
             } as IClientResponse;
         }
+
+        // First update balance
+        const balance = await this.fetchBalance();
         if (balance.status == 'success' && balance.apiContent?.FetchBalanceResponse) {
+            const addresses = this.keyMgmt.getAddresses();
+            if (addresses.isErr()) {
+                return {
+                    status: 'error',
+                    reason: 'No saved addresses found',
+                } as IClientResponse;
+            }
             // Generate excess address and accompanying keypair
-            const [excessKeypair, excessAddress] = generateNewKeypairAndAddress(
+            const newKeypairResult = generateNewKeypairAndAddress(
                 this.keyMgmt.masterKey,
                 ADDRESS_VERSION,
-                addresses,
+                addresses.value,
             );
+
+            if (newKeypairResult.isErr()) {
+                return {
+                    status: 'error',
+                    reason: newKeypairResult.error,
+                } as IClientResponse;
+            }
+
+            const [excessKeypair, excessAddress] = newKeypairResult.value;
 
             const paymentBody = CreateTokenPaymentTx(
                 paymentAmount,
@@ -269,50 +368,72 @@ export class ZnpClient {
                 this.keyMgmt.getKeypair,
             );
 
+            if (paymentBody.isErr()) {
+                return {
+                    status: 'error',
+                    reason: paymentBody.error,
+                } as IClientResponse;
+            }
+
             // Create transaction struct has successfully been created
-            if (paymentBody) {
-                try {
-                    return (await this.axiosClient
-                        .post(
-                            `${this.axiosClient.defaults.baseURL}${IAPIRoute.CreateTransactions}`,
-                            JSON.stringify([paymentBody.createTx]),
-                        )
-                        .then((response) => {
-                            const responseData = response.data as INetworkResponse;
-                            if (castAPIStatus(responseData.status) === 'success') {
-                                // Payment now getting processed
-                                // TODO: Should we do something with the used addresses?
-                                if (paymentBody?.excessAddressUsed) {
-                                    // Save excess keypair to wallet
-                                    this.keyMgmt.saveKeypair(excessKeypair, excessAddress);
+            try {
+                return (await this.axiosClient
+                    .post(
+                        `${this.axiosClient.defaults.baseURL}${IAPIRoute.CreateTransactions}`,
+                        JSON.stringify([paymentBody.value.createTx]),
+                    )
+                    .then((response) => {
+                        const responseData = response.data as INetworkResponse;
+                        if (castAPIStatus(responseData.status) === 'success') {
+                            // Payment now getting processed
+                            // TODO: Should we do something with the used addresses?
+                            if (paymentBody?.value.excessAddressUsed) {
+                                // Save excess keypair to wallet
+                                if (!this.keyMgmt) {
+                                    return {
+                                        status: 'error',
+                                        reason: 'Client has not been initialized',
+                                    } as IClientResponse;
+                                }
+
+                                const saveResult = this.keyMgmt.saveKeypair(
+                                    excessKeypair,
+                                    excessAddress,
+                                );
+                                if (saveResult.isErr()) {
+                                    return {
+                                        status: 'error',
+                                        reason: saveResult.error,
+                                    } as IClientResponse;
                                 }
                             }
-                            return {
-                                status: castAPIStatus(responseData.status),
-                                reason: responseData.reason,
-                                apiContent: {
-                                    MakePaymentResponse: responseData.content,
-                                },
-                            } as IClientResponse;
-                        })
-                        .catch(async (error) => {
-                            return {
-                                status: 'error',
-                                reason: `Network error: ${error.response.status}`,
-                            };
-                        })) as IClientResponse;
-                } catch {
-                    return {
-                        status: 'error',
-                        reason: 'Unable to connect',
-                    } as IClientResponse;
-                }
+                        }
+                        return {
+                            status: castAPIStatus(responseData.status),
+                            reason: responseData.reason,
+                            apiContent: {
+                                MakePaymentResponse: responseData.content,
+                            },
+                        } as IClientResponse;
+                    })
+                    .catch(async (error) => {
+                        return {
+                            status: 'error',
+                            reason: `Network error: ${error.response.status}`,
+                        };
+                    })) as IClientResponse;
+            } catch {
+                return {
+                    status: 'error',
+                    reason: 'Unable to connect',
+                } as IClientResponse;
             }
+        } else {
+            return {
+                status: 'error',
+                reason: 'Unable to fetch balance',
+            } as IClientResponse;
         }
-        return {
-            status: 'error',
-            reason: 'Error creating payment transaction: balance not found',
-        } as IClientResponse;
     }
 
     /* -------------------------------------------------------------------------- */
@@ -322,12 +443,21 @@ export class ZnpClient {
     /**
      * Regenerates the addresses for a newly imported wallet (from seed phrase)
      *
+     * @param {string[]} addressList
      * @param {number} [seedRegenThreshold=SEED_REGEN_THRES]
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
      */
     async regenAddresses(
         addressList: string[],
         seedRegenThreshold: number = SEED_REGEN_THRES,
     ): Promise<IClientResponse> {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
         const foundAddr = this.keyMgmt.regenAddresses(addressList, seedRegenThreshold);
         if (foundAddr) {
             return {
@@ -342,44 +472,149 @@ export class ZnpClient {
         }
     }
 
+    /**
+     * Generates a new key-pair and address
+     * , then saves it to the wallet
+     *
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
     getNewAddress(): IClientResponse {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
         const result = this.keyMgmt.getNewAddress();
+        if (result.isErr()) {
+            return {
+                status: 'error',
+                reason: result.error,
+            } as IClientResponse;
+        }
         return {
             status: 'success',
             reason: 'Successfully generated new address',
             clientContent: {
-                newAddressResponse: result,
+                newAddressResponse: result.value,
             },
         } as IClientResponse;
     }
 
+    /**
+     * Generates a new DRUID value
+     * and stores it to the wallet
+     *
+     * @param {boolean} [save=true]
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
     getNewDRUID(save = true): IClientResponse {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
+        const newDruid = this.keyMgmt.getNewDRUID(save);
+        if (newDruid.isErr()) {
+            return {
+                status: 'error',
+                reason: newDruid.error,
+            } as IClientResponse;
+        }
         return {
             status: 'success',
             reason: 'Successfully generated new DRUID',
             clientContent: {
-                newDRUIDResponse: this.keyMgmt.getNewDRUID(save),
+                newDRUIDResponse: newDruid.value,
             },
         } as IClientResponse;
     }
 
+    /**
+     * Generates a new seed phrase
+     *
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
     getNewSeedPhrase(): IClientResponse {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
+        const newSeedPhrase = this.keyMgmt.getNewSeedPhrase();
+        if (newSeedPhrase.isErr()) {
+            return {
+                status: 'error',
+                reason: newSeedPhrase.error,
+            } as IClientResponse;
+        }
         return {
             status: 'success',
             reason: 'Successfully generated new seed phrase',
             clientContent: {
-                newSeedPhraseResponse: this.keyMgmt.getNewSeedPhrase(),
+                newSeedPhraseResponse: newSeedPhrase.value,
             },
         };
     }
 
+    /**
+     * Get the existing seed phrase, or generate a new one
+     *
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
     getSeedPhrase(): IClientResponse {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
+        const seedPhrase = this.keyMgmt.getSeedPhrase();
+        if (seedPhrase.isErr()) {
+            return {
+                status: 'error',
+                reason: seedPhrase.error,
+            } as IClientResponse;
+        }
         return {
             status: 'success',
             reason: 'Successfully obtained seed phrase',
             clientContent: {
-                getSeedPhraseResponse: this.keyMgmt.getSeedPhrase(),
+                getSeedPhraseResponse: seedPhrase.value,
             },
+        };
+    }
+
+    /**
+     * Test a seed phrase to see if it is valid
+     *
+     * @param {string} seedPhrase
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
+    testSeedPhrase(seedPhrase: string): IClientResponse {
+        if (!this.axiosClient || !this.keyMgmt) {
+            return {
+                status: 'error',
+                reason: 'Client has not been initialized',
+            } as IClientResponse;
+        }
+        const result = this.keyMgmt.testSeedPhrase(seedPhrase);
+        if (result.isErr()) {
+            return {
+                status: 'error',
+                reason: result.error,
+            } as IClientResponse;
+        }
+        return {
+            status: 'success',
+            reason: 'Seed phrase is valid',
         };
     }
 }

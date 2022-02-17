@@ -1,4 +1,5 @@
 import { BAL_LIMIT } from '../mgmt';
+import { generateMasterKey, generateSeed } from '../mgmt/keyMgmt';
 
 export function castAPIStatus(
     status: 'Success' | 'Error' | 'InProgress' | 'Unknown',
@@ -13,6 +14,32 @@ export function castAPIStatus(
         default:
             return 'unknown';
     }
+}
+
+/**
+ * Test a seed phrase
+ *
+ * @export
+ * @param {string} seed
+ * @return {*}  {boolean}
+ */
+export function testSeedPhrase(seed: string): boolean {
+    try {
+        generateMasterKey(seed);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Generate a seed phrase
+ *
+ * @export
+ * @return {*}  {string}
+ */
+export function generateSeedPhrase(): string {
+    return generateSeed().unwrapOr('');
 }
 
 /**
@@ -146,6 +173,7 @@ export function typedArrayToBuffer(array: Uint8Array): ArrayBuffer {
  * @param b {Uint8Array}
  * @returns
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function concatTypedArrays(a: any, b: any) {
     const c = new a.constructor(a.length + b.length);
     c.set(a, 0);
