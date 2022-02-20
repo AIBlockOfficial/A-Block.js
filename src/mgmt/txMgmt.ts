@@ -116,7 +116,8 @@ export function getInputsForTx(
             return ok([usedAddresses, totalAmountGathered, filteredInputs]);
         } else {
             //TODO: Change this to return an array of the errors that occured
-            return err(IErrorInternal.UnknownError);
+            console.log(inputs);
+            return err(IErrorInternal.InvalidInputs);
         }
     } else {
         return err(IErrorInternal.InsufficientFunds);

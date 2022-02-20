@@ -24,12 +24,8 @@ export function castAPIStatus(
  * @return {*}  {boolean}
  */
 export function testSeedPhrase(seed: string): boolean {
-    try {
-        generateMasterKey(seed);
-        return true;
-    } catch {
-        return false;
-    }
+    if (generateMasterKey(seed).isErr()) return false;
+    return true;
 }
 
 /**

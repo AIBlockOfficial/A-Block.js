@@ -211,7 +211,6 @@ export class ZnpClient {
             } as IClientResponse;
         }
 
-        // const druids = this.keyMgmt.get
         const fetchPendingBody = {
             druid_list: druids,
         };
@@ -240,7 +239,7 @@ export class ZnpClient {
     }
 
     /**
-     * Create receipt assets and assign them to a new address
+     * Create receipt assets and assign them to the most recent address
      *
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ZnpClient
@@ -365,7 +364,7 @@ export class ZnpClient {
                 paymentAddress,
                 excessAddress,
                 balance.apiContent.FetchBalanceResponse,
-                this.keyMgmt.getKeypair,
+                this.keyMgmt.getKeypair.bind(this.keyMgmt),
             );
 
             if (paymentBody.isErr()) {

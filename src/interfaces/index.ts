@@ -57,6 +57,7 @@ import { Result } from 'neverthrow';
 export enum IErrorInternal {
     InsufficientFunds = 'Insufficient funds',
     NoInputs = 'No inputs for transaction',
+    InvalidInputs = 'Some inputs are invalid',
     UnableToGenerateDruid = 'Unable to generate DRUID',
     UnableToConstructTxIns = 'Unable to construct tx ins',
     UnableToConstructSignature = 'Unable to construct signature',
@@ -114,8 +115,8 @@ export type IKeypair = {
 
 export type IKeypairEncrypted = {
     nonce: string;
-    save: string;
     version: number | null;
+    save: string;
 };
 
 export type ITransaction = {

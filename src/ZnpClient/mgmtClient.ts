@@ -21,6 +21,7 @@ import {
     SyncResult,
 } from '../interfaces';
 import { err, ok } from 'neverthrow';
+import { getAddressVersion } from '../mgmt/keyMgmt';
 
 export type IMgmtCallbacks = {
     saveMasterKey: (saveInfo: string) => void;
@@ -245,18 +246,9 @@ export class mgmtClient {
      */
     public getKeypair(address: string): SyncResult<IKeypair> {
         const ret = this.callBacks.getKeypair(address);
-        if (ret) {
+        if (ret !== null) {
             try {
                 const result = JSON.parse(ret) as IKeypairEncrypted;
-                // Handle the case where the version doesn't exist (pre v1.0.4)
-                if (!result.version) {
-                    const saveInfo = JSON.stringify({
-                        nonce: result.nonce,
-                        version: TEMP_ADDRESS_VERSION,
-                        save: result.save,
-                    });
-                    this.callBacks.saveKeypair(saveInfo, address);
-                }
                 const savedDetails = base64ToBytes(result.save);
                 const save = nacl.secretbox.open(
                     savedDetails,
@@ -272,6 +264,20 @@ export class mgmtClient {
                 } else {
                     return err(IErrorInternal.UnableToRetrieveKeypair);
                 }
+
+                // Handle the case where the version doesn't exist in DB (TEMP ADDRESS STRUCTURE) (pre v1.0.4)
+                // TODO: Depreciate this code once the temporary addresses have retired
+                const version = getAddressVersion(publicKey, address);
+                if (version.isErr()) return err(version.error);
+                if (result.version === null && version.value === TEMP_ADDRESS_VERSION) {
+                    const saveInfo = JSON.stringify({
+                        nonce: result.nonce,
+                        version: TEMP_ADDRESS_VERSION,
+                        save: result.save,
+                    });
+                    this.callBacks.saveKeypair(address, saveInfo);
+                }
+
                 return ok({ publicKey, secretKey, version: result.version });
             } catch {
                 return err(IErrorInternal.UnableToRetrieveKeypair);

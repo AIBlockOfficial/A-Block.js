@@ -24,10 +24,14 @@ export function getAddressVersion(
     version?: number | null,
 ): SyncResult<number | null> {
     if (publicKey && address) {
+        const tempAddress = constructAddress(publicKey, TEMP_ADDRESS_VERSION);
+        if (tempAddress.isErr()) return err(tempAddress.error);
+        const defaultAddress = constructAddress(publicKey, ADDRESS_VERSION);
+        if (defaultAddress.isErr()) return err(defaultAddress.error);
         switch (address) {
-            case constructAddress(publicKey, TEMP_ADDRESS_VERSION).unwrapOr(null):
+            case tempAddress.value:
                 return ok(TEMP_ADDRESS_VERSION); /* Temporary address structure */
-            case constructAddress(publicKey, ADDRESS_VERSION).unwrapOr(null):
+            case defaultAddress.value:
                 return ok(null); /* New address structure */
             default:
                 return err(IErrorInternal.InvalidAddressVersion);
@@ -155,9 +159,7 @@ export function constructAddress(
         case TEMP_ADDRESS_VERSION:
             return constructVersionTempAddress(publicKey);
         case ADDRESS_VERSION:
-            return constructVersionDefaultAddress(
-                publicKey,
-            ); /* `version` can be either 1 or null */
+            return constructVersionDefaultAddress(publicKey);
         default:
             return err(IErrorInternal.InvalidAddressVersion);
     }
@@ -234,7 +236,7 @@ export function generateNewKeypairAndAddress(
         secretKey: currentKey.value.secretKey,
         publicKey: currentKey.value.publicKey,
         version: addressVersion,
-    };
+    } as IKeypair;
 
     return ok([keypair, currentAddr.value]);
 }

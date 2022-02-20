@@ -58,15 +58,5 @@
     "neverthrow": "^4.3.1",
     "tweetnacl": "^1.0.3",
     "uuid": "^8.3.2"
-  },
-  "bundledDependencies": [
-    "axios",
-    "bitcore-lib",
-    "bitcore-mnemonic",
-    "byte-base64",
-    "js-sha3",
-    "neverthrow",
-    "tweetnacl",
-    "uuid"
-  ]
+  }
 }
