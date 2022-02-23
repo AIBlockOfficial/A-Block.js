@@ -77,7 +77,7 @@ export function getBytesHexString(bytes: Uint8Array): string {
 }
 
 /**
- * Formats a balance for display
+ * Formats a token balance for display
  *
  * @param balance {number}
  * @returns

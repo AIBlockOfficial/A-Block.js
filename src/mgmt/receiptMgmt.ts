@@ -50,7 +50,7 @@ export function createReceiptPayload(
  *  Creates one half of a receipt-based payment to send to compute
  *
  * @export
- * @param {FetchBalanceResponse} fetchBalanceResponse
+ * @param {fetchBalanceResponse} fetchBalanceResponse
  * @param {Uint8Array} passphrase
  * @param {string} paymentAddress
  * @param {string} fullDruid

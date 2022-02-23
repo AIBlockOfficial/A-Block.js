@@ -31,7 +31,7 @@ import { constructSignature, constructTxInSignableData } from './scriptMgmt';
  * @export
  * @param {number} paymentAmount
  * @param {('Token' | 'Receipt')} paymentAsset
- * @param {FetchBalanceResponse} fetchBalanceResponse
+ * @param {fetchBalanceResponse} fetchBalanceResponse
  * @param {(address: string, passphraseKey: Uint8Array) => Keypair} getKeypairCallback
  * @param {Uint8Array} passphrase
  * @return {*}  {[string[], number, ICreateTxIn[]]}

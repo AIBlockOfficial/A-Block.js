@@ -13,6 +13,7 @@ import {
     getPassphraseBuffer,
 } from '../mgmt/keyMgmt';
 import {
+    ICreateTransaction,
     IErrorInternal,
     IKeypair,
     IKeypairEncrypted,
@@ -29,7 +30,8 @@ export type IMgmtCallbacks = {
     saveKeypair: (address: string, saveInfo: string) => void;
     getKeypair: (address: string) => string | null;
     getAddresses: () => string[] | null;
-    saveDRUID: (druid: string) => void;
+    saveDRUID: (druid: string, saveInfo: string) => void;
+    getDRUID: (druid: string) => string | null;
     getDRUIDs: () => string[] | null;
 };
 
@@ -303,19 +305,103 @@ export class mgmtClient {
     }
 
     /**
-     * Generate and save a new DRUID value
+     * Generate a new DRUID value
      *
      * @param {boolean} [save=true]
      * @return {*}  {SyncResult<string>}
      * @memberof mgmtClient
      */
-    public getNewDRUID(save = true): SyncResult<string> {
+    public getNewDRUID(): SyncResult<string> {
         const newDRUID = generateDRUID();
+        // replace(/'/g, '"');
         if (newDRUID.isErr()) return err(newDRUID.error);
-        if (save) {
-            this.callBacks.saveDRUID(newDRUID.value);
-        }
         return newDRUID;
+    }
+
+    /**
+     * Save info with druid value
+     *
+     * @param {string} druid
+     * @param {string} saveInfo
+     * @return {*}  {SyncResult<void>}
+     * @memberof mgmtClient
+     */
+    public saveDRUIDInfo(druid: string, saveInfo: string): SyncResult<void> {
+        try {
+            this.callBacks.saveDRUID(druid, saveInfo);
+            return ok(undefined);
+        } catch {
+            return err(IErrorInternal.UnableToSaveDruid);
+        }
+    }
+
+    /**
+     * Get encrypted transaction saved along with DRUID value
+     *
+     * @param {string} druid
+     * @return {*}  {SyncResult<ICreateTransaction>}
+     * @memberof mgmtClient
+     */
+    public getDRUIDInfo(druid: string): SyncResult<ICreateTransaction> {
+        const druidInfo = this.callBacks.getDRUID(druid);
+        if (druidInfo === null) return err(IErrorInternal.UnableToDecryptTransaction);
+        return this.decryptTransaction(druidInfo);
+    }
+
+    /**
+     * Encrypt a transaction
+     *
+     * @param {ICreateTransaction} transaction
+     * @return {*}  {SyncResult<string>}
+     * @memberof mgmtClient
+     */
+    public encryptTransaction(transaction: ICreateTransaction): SyncResult<string> {
+        try {
+            const nonce = truncateByBytesUTF8(uuidv4(), 24);
+            const save = nacl.secretbox(
+                Buffer.from(JSON.stringify(transaction)),
+                getStringBytes(nonce),
+                this.passphraseKey,
+            );
+            const saveInfo = JSON.stringify({
+                nonce,
+                save: bytesToBase64(save),
+            });
+            return ok(saveInfo);
+        } catch {
+            return err(IErrorInternal.UnableToEncryptTransaction);
+        }
+    }
+
+    /**
+     * Decrypt a transaction
+     *
+     * @param {string} saveInfo
+     * @return {*}  {SyncResult<ICreateTransaction>}
+     * @memberof mgmtClient
+     */
+    public decryptTransaction(saveInfo: string): SyncResult<ICreateTransaction> {
+        try {
+            const result = JSON.parse(saveInfo) as {
+                nonce: string;
+                save: string;
+            };
+            const savedDetails = base64ToBytes(result.save);
+            const save = nacl.secretbox.open(
+                savedDetails,
+                getStringBytes(result.nonce),
+                this.passphraseKey,
+            );
+
+            if (save !== null) {
+                const transaction = JSON.parse(Buffer.from(save).toString()) as ICreateTransaction;
+                return ok(transaction);
+            } else {
+                return err(IErrorInternal.UnableToDecryptTransaction);
+            }
+        } catch {
+            return err(IErrorInternal.UnableToDecryptTransaction);
+        }
     }
 
     /**

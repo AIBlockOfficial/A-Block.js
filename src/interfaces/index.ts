@@ -10,7 +10,51 @@ export enum IAPIRoute {
     GetUtxoAddressList = '/utxo_addresses',
     CreateReceiptAsset = '/create_receipt_asset',
     FetchPending = '/fetch_pending',
+    IntercomSet = '/set_data',
+    IntercomGet = '/get_data',
+    IntercomDel = '/del_data',
 }
+
+/* -------------------------------------------------------------------------- */
+/*                         Zenotta Intercom Interfaces                        */
+/* -------------------------------------------------------------------------- */
+export type IRequestSetBody = {
+    key: string;
+    field: string;
+    value: object;
+};
+
+export type IRequestDelBody = {
+    key: string;
+    field: string;
+    publicKey: string;
+    signature: string;
+};
+
+export type IRequestGetBody = {
+    key: string;
+    publicKey: string;
+    signature: string;
+};
+
+export type IRedisFieldEntry = {
+    timestamp: number;
+    value: object;
+};
+
+export type IPendingRbTxData = {
+    // DRUID : transaction details
+    [key: string]: {
+        senderAsset: 'Token' | 'Receipt';
+        senderAmount: number;
+        senderAddress: string;
+        receiverAsset: 'Token' | 'Receipt';
+        receiverAmount: number;
+        receiverAddress: string;
+        fromAddr: string;
+        status: 'pending' | 'rejected' | 'accepted';
+    };
+};
 
 /* -------------------------------------------------------------------------- */
 /*                             API Response Types                             */
@@ -18,6 +62,11 @@ export enum IAPIRoute {
 export type IFetchUtxoAddressesResponse = string[];
 
 export type ICreateReceiptResponse = string;
+
+export type IFetchPendingRbResponse = {
+    // Address : PendingRequest
+    [key: string]: IPendingRbTxData;
+};
 
 export type IFetchBalanceResponse = {
     total: {
@@ -27,7 +76,7 @@ export type IFetchBalanceResponse = {
     address_list: GenericKeyPair<{ out_point: IOutPoint; value: GenericKeyPair<number> }[]>;
 };
 
-export type IFetchPendingResponse = {
+export type IFetchPendingDDEResponse = {
     pending_transactions: { [key: string]: IDruidDroplet[] };
 };
 
@@ -59,6 +108,7 @@ export enum IErrorInternal {
     NoInputs = 'No inputs for transaction',
     InvalidInputs = 'Some inputs are invalid',
     UnableToGenerateDruid = 'Unable to generate DRUID',
+    UnableToSaveDruid = 'Unable to save DRUID',
     UnableToConstructTxIns = 'Unable to construct tx ins',
     UnableToConstructSignature = 'Unable to construct signature',
     InvalidAddressVersion = 'Unable to determine address version',
@@ -77,6 +127,8 @@ export enum IErrorInternal {
     MasterKeyCorrupt = 'Master key is corrupt',
     UnableToRetrieveAddresses = 'Unable to retrieve addresses',
     UnableToRegenAddresses = 'Unable to regenerate addresses',
+    UnableToEncryptTransaction = 'Unable to encrypt transaction',
+    UnableToDecryptTransaction = 'Unable to decrypt transaction',
     InvalidSeedPhrase = 'Invalid seed phrase',
     UnknownError = 'Unknown Error',
 }
@@ -512,3 +564,15 @@ export enum Op {
     // Temporary address structure
     OP_HASH256_TEMP = 0xc2,
 }
+
+/* -------------------------------------------------------------------------- */
+/*                         Function Config Interfaces                         */
+/* -------------------------------------------------------------------------- */
+
+export type IMakeTokenPaymentConfig = {
+    excessAddress?: string;
+};
+
+export type IMakeRbSentTxConfig = {
+    excessAddress?: string;
+};
