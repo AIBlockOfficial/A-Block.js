@@ -1,3 +1,5 @@
+import { Result } from 'neverthrow';
+
 /* -------------------------------------------------------------------------- */
 /*                                 API Routes                                 */
 /* -------------------------------------------------------------------------- */
@@ -21,7 +23,9 @@ export enum IAPIRoute {
 export type IRequestSetBody = {
     key: string;
     field: string;
-    value: object;
+    publicKey: string;
+    signature: string;
+    value: IPendingRbTxData;
 };
 
 export type IRequestDelBody = {
@@ -37,23 +41,25 @@ export type IRequestGetBody = {
     signature: string;
 };
 
-export type IRedisFieldEntry = {
+export type IRedisFieldEntry<T> = {
     timestamp: number;
-    value: object;
+    value: T;
+};
+
+export type IPendingRbTxDetails = {
+    senderAsset: 'Token' | 'Receipt';
+    senderAmount: number;
+    senderAddress: string;
+    receiverAsset: 'Token' | 'Receipt';
+    receiverAmount: number;
+    receiverAddress: string;
+    fromAddr: string;
+    status: 'pending' | 'rejected' | 'accepted';
 };
 
 export type IPendingRbTxData = {
     // DRUID : transaction details
-    [key: string]: {
-        senderAsset: 'Token' | 'Receipt';
-        senderAmount: number;
-        senderAddress: string;
-        receiverAsset: 'Token' | 'Receipt';
-        receiverAmount: number;
-        receiverAddress: string;
-        fromAddr: string;
-        status: 'pending' | 'rejected' | 'accepted';
-    };
+    [key: string]: IPendingRbTxDetails;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -64,8 +70,8 @@ export type IFetchUtxoAddressesResponse = string[];
 export type ICreateReceiptResponse = string;
 
 export type IFetchPendingRbResponse = {
-    // Address : PendingRequest
-    [key: string]: IPendingRbTxData;
+    // Address : IRedisFieldEntry<IPendingRbTxData>;
+    [key: string]: IRedisFieldEntry<IPendingRbTxData>;
 };
 
 export type IFetchBalanceResponse = {
@@ -97,10 +103,8 @@ export type ICreateTxPayload = {
     usedAddresses: string[];
 };
 
-import { Result } from 'neverthrow';
-
 /* -------------------------------------------------------------------------- */
-/*                                 Error Types                                */
+/*                           Internal Module Errors                           */
 /* -------------------------------------------------------------------------- */
 
 export enum IErrorInternal {
@@ -130,6 +134,7 @@ export enum IErrorInternal {
     UnableToEncryptTransaction = 'Unable to encrypt transaction',
     UnableToDecryptTransaction = 'Unable to decrypt transaction',
     InvalidSeedPhrase = 'Invalid seed phrase',
+    InvalidDRUIDProvided = 'Invalid DRUID value provided',
     UnknownError = 'Unknown Error',
 }
 
@@ -564,15 +569,3 @@ export enum Op {
     // Temporary address structure
     OP_HASH256_TEMP = 0xc2,
 }
-
-/* -------------------------------------------------------------------------- */
-/*                         Function Config Interfaces                         */
-/* -------------------------------------------------------------------------- */
-
-export type IMakeTokenPaymentConfig = {
-    excessAddress?: string;
-};
-
-export type IMakeRbSentTxConfig = {
-    excessAddress?: string;
-};

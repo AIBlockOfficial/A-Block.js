@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// TODO: Refactor this file to be more readable
 import {
     ADDRESS_VERSION,
     CreateRbTxHalf,
@@ -17,9 +18,9 @@ import {
     IFetchPendingRbResponse,
     IPendingRbTxData,
     IRequestGetBody,
-    IMakeTokenPaymentConfig,
     IKeypair,
     ICreateTransaction,
+    IRequestDelBody,
 } from '../interfaces';
 import {
     IFetchUtxoAddressesResponse,
@@ -28,6 +29,7 @@ import {
     ICreateReceiptResponse,
     IAPIRoute,
 } from '../interfaces';
+import { getRbDataForDruid } from '../utils/intercomUtils';
 
 /* -------------------------------------------------------------------------- */
 /*                                 Interfaces                                 */
@@ -239,12 +241,18 @@ export class ZnpClient {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error('Client has not been initialized');
-            // Get all existing addresses
-            const addresses = this.keyMgmt.getAddresses();
-            if (addresses.isErr()) throw new Error(addresses.error);
-            if (addresses.value.length === 0) throw new Error('No saved addresses');
-            // Get most recent key-pair
-            const addr = address ? address : addresses.value[addresses.value.length - 1];
+            let addr: string;
+            // No address to assign to has been provided
+            if (!address) {
+                // Get all existing addresses
+                const addresses = this.keyMgmt.getAddresses();
+                if (addresses.isErr()) throw new Error(addresses.error);
+                if (addresses.value.length === 0) throw new Error('No saved addresses');
+                addr = addresses.value[addresses.value.length - 1];
+                // An address has been provided to assign the receipts to
+            } else {
+                addr = address;
+            }
             const keyPair = this.keyMgmt.getKeypair(addr);
             if (keyPair.isErr()) throw new Error(keyPair.error);
             // Create receipt-creation transaction
@@ -291,7 +299,7 @@ export class ZnpClient {
     async makeTokenPayment(
         paymentAddress: string,
         paymentAmount: number,
-        config?: IMakeTokenPaymentConfig,
+        excessAddress?: string,
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
@@ -308,10 +316,10 @@ export class ZnpClient {
             let excessKeypair: IKeypair;
             let excessAddr: string;
             // Configuration has provided a custom excess address
-            if (config?.excessAddress) {
-                const keyPair = this.keyMgmt.getKeypair(config.excessAddress);
+            if (excessAddress) {
+                const keyPair = this.keyMgmt.getKeypair(excessAddress);
                 if (keyPair.isErr()) throw new Error(keyPair.error);
-                [excessKeypair, excessAddr] = [keyPair.value, config.excessAddress];
+                [excessKeypair, excessAddr] = [keyPair.value, excessAddress];
             } else {
                 // Generate excess address and accompanying keypair
                 const newKeypairResult = generateNewKeypairAndAddress(
@@ -344,7 +352,7 @@ export class ZnpClient {
                                 throw new Error('Client has not been initialized');
                             // Save excess keypair to wallet if an existing excess address
                             // was not provided
-                            if (!config?.excessAddress) {
+                            if (!excessAddress) {
                                 const saveResult = this.keyMgmt.saveKeypair(
                                     excessKeypair,
                                     excessAddr,
@@ -386,22 +394,22 @@ export class ZnpClient {
             if (addresses.isErr()) throw new Error(addresses.error);
             if (addresses.value.length === 0) throw new Error('No saved addresses found');
             // Determine receive address
-            let receiveKeypair: IKeypair;
-            let receiveAddr: string;
+            let senderKeypair: IKeypair;
+            let senderAddr: string;
             // A receive address was provided
             if (receiveAddress) {
                 const keyPair = this.keyMgmt.getKeypair(receiveAddress);
                 if (keyPair.isErr()) throw new Error(keyPair.error);
-                [receiveKeypair, receiveAddr] = [keyPair.value, receiveAddress];
-                // Generate a receive address
+                [senderKeypair, senderAddr] = [keyPair.value, receiveAddress];
             } else {
+                // Generate a receive address
                 const keyPair = generateNewKeypairAndAddress(
                     this.keyMgmt.masterKey,
                     ADDRESS_VERSION,
                     addresses.value,
                 );
                 if (keyPair.isErr()) throw new Error(keyPair.error);
-                [receiveKeypair, receiveAddr] = keyPair.value;
+                [senderKeypair, senderAddr] = keyPair.value;
             }
 
             // Generate a DRUID value for this transaction
@@ -417,8 +425,8 @@ export class ZnpClient {
                 'Token',
                 1,
                 'Receipt',
-                receiveAddr,
-                receiveAddr,
+                senderAddr,
+                senderAddr,
                 this.keyMgmt.getKeypair.bind(this.keyMgmt),
             );
             if (sendRbTxHalf.isErr()) throw new Error(sendRbTxHalf.error);
@@ -438,7 +446,7 @@ export class ZnpClient {
             valuePayload[druidValue.value] = {
                 senderAsset: 'Token',
                 senderAmount: tokenAmount,
-                senderAddress: receiveAddr,
+                senderAddress: senderAddr,
                 receiverAsset: 'Receipt',
                 receiverAmount: 1,
                 receiverAddress: paymentAddress,
@@ -448,7 +456,14 @@ export class ZnpClient {
             const sendBody: IRequestSetBody[] = [
                 {
                     key: paymentAddress,
-                    field: receiveAddr,
+                    field: senderAddr,
+                    signature: Buffer.from(
+                        createSignature(
+                            senderKeypair.secretKey,
+                            Uint8Array.from(Buffer.from(senderAddr, 'hex')),
+                        ),
+                    ).toString('hex'),
+                    publicKey: Buffer.from(senderKeypair.publicKey).toString('hex'),
                     value: valuePayload,
                 },
             ];
@@ -461,7 +476,7 @@ export class ZnpClient {
                     if (!this.keyMgmt) throw new Error('Client has not been initialized');
                     // Since an existing address was not provided, we need to save the newly generated one
                     if (!receiveAddress) {
-                        const saveResult = this.keyMgmt.saveKeypair(receiveKeypair, receiveAddr);
+                        const saveResult = this.keyMgmt.saveKeypair(senderKeypair, senderAddr);
                         if (saveResult.isErr()) throw new Error(saveResult.error);
                     }
                     return {
@@ -479,9 +494,18 @@ export class ZnpClient {
         }
     }
 
-    public async acceptRbTx(
+    /**
+     * Reject a pending receipt-based payment
+     *
+     * @param {string} druid
+     * @param {IFetchPendingRbResponse} pendingResponse
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
+    private async handleRbTxResponse(
         druid: string,
         pendingResponse: IFetchPendingRbResponse,
+        status: 'accepted' | 'rejected',
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
@@ -490,63 +514,78 @@ export class ZnpClient {
             const balance = await this.fetchBalance();
             if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
                 throw new Error(balance.reason);
-            // Filter DRUID values
-            const filteredArray = Object.values(pendingResponse).filter((pending) =>
-                Object.keys(pending).includes(druid),
-            );
-            if (filteredArray.length !== 1) throw new Error('Invalid DRUID value provided');
-            const filtered = filteredArray[0]; /* There should be a single DRUID key */
+            // Filter DRUID values to find specified DRUID value and entry that is still marked as 'pending'
+            const rbDataForDruid = getRbDataForDruid(druid, pendingResponse);
+            if (rbDataForDruid.isErr()) throw new Error(rbDataForDruid.error);
+            const txInfo = rbDataForDruid.value.data;
+            // Get the key-pair assigned to this receiver address
+            const receiverKeypair = this.keyMgmt.getKeypair(txInfo.receiverAddress);
+            if (receiverKeypair.isErr()) throw new Error(receiverKeypair.error);
+            // Set the status of the pending request
+            txInfo.status = status;
+            if (status === 'accepted') {
+                const sendRbTxHalf = CreateRbTxHalf(
+                    balance.apiContent.fetchBalanceResponse,
+                    txInfo.senderAddress,
+                    druid,
+                    // 'Sender' fromAddr is their TxIns address
+                    txInfo.fromAddr /* TxIns received from sending party */,
+                    txInfo.receiverAmount,
+                    txInfo.receiverAsset,
+                    txInfo.senderAmount,
+                    txInfo.senderAsset,
+                    txInfo.receiverAddress,
+                    txInfo.receiverAddress,
+                    this.keyMgmt.getKeypair.bind(this.keyMgmt),
+                );
 
-            const sendRbTxHalf = CreateRbTxHalf(
-                balance.apiContent.fetchBalanceResponse,
-                filtered[druid].senderAddress,
-                druid,
-                // 'Sender' fromAddr is their TxIns address
-                filtered[druid].fromAddr /* TxIns received from sending party */,
-                filtered[druid].receiverAmount,
-                filtered[druid].receiverAsset,
-                filtered[druid].senderAmount,
-                filtered[druid].senderAsset,
-                filtered[druid].receiverAddress,
-                filtered[druid].receiverAddress,
-                this.keyMgmt.getKeypair.bind(this.keyMgmt),
-            );
+                if (sendRbTxHalf.isErr()) throw new Error(sendRbTxHalf.error);
+                const fromAddr = constructTxInsAddress(sendRbTxHalf.value.createTx.inputs);
+                if (fromAddr.isErr()) throw new Error(fromAddr.error);
+                txInfo.fromAddr = fromAddr.value;
+                const value: IPendingRbTxData = {};
+                value[druid] = txInfo;
+                const setBody: IRequestSetBody[] = [
+                    {
+                        key: txInfo.senderAddress,
+                        field: txInfo.receiverAddress,
+                        signature: Buffer.from(
+                            createSignature(
+                                receiverKeypair.value.secretKey,
+                                Uint8Array.from(Buffer.from(txInfo.receiverAddress, 'hex')),
+                            ),
+                        ).toString('hex'),
+                        publicKey: Buffer.from(receiverKeypair.value.publicKey).toString('hex'),
+                        value: value,
+                    },
+                ];
 
-            if (sendRbTxHalf.isErr()) throw new Error(sendRbTxHalf.error);
+                // Update 'sender' bucket value
+                await axios
+                    .post(`${this.intercomHost}${IAPIRoute.IntercomSet}`, setBody)
+                    .catch(async (error) => {
+                        throw new Error(error.message);
+                    });
 
-            // Update entries to notify "sender" of receipt-based transaction's new status
-            const fromAddr = constructTxInsAddress(sendRbTxHalf.value.createTx.inputs);
-            if (fromAddr.isErr()) throw new Error(fromAddr.error);
-            filtered[druid].fromAddr = fromAddr.value;
-            filtered[druid].status = 'accepted';
-            const sendBody: IRequestSetBody[] = [
-                {
-                    key: filtered[druid].senderAddress,
-                    field: filtered[druid].receiverAddress,
-                    value: filtered,
-                },
-            ];
+                // Send transaction to compute if accepted
+                await this.axiosClient
+                    .post<INetworkResponse>(IAPIRoute.CreateTransactions, [
+                        sendRbTxHalf.value.createTx,
+                    ])
+                    .then((response) => {
+                        const responseData = response.data as INetworkResponse;
+                        if (castAPIStatus(responseData.status) !== 'success')
+                            throw new Error(responseData.reason);
+                    })
+                    .catch(async (error) => {
+                        throw new Error(error.message);
+                    });
+            }
 
-            // Send to intercom
-            await axios
-                .post(`${this.intercomHost}${IAPIRoute.IntercomSet}`, sendBody)
-                .catch(async (error) => {
-                    throw new Error(error.message);
-                });
-
-            // Send transaction to compute
-            return await this.axiosClient
-                .post<INetworkResponse>(IAPIRoute.CreateTransactions, [sendRbTxHalf.value.createTx])
-                .then((response) => {
-                    const responseData = response.data as INetworkResponse;
-                    return {
-                        status: castAPIStatus(responseData.status),
-                        reason: responseData.reason,
-                    } as IClientResponse;
-                })
-                .catch(async (error) => {
-                    throw new Error(error.message);
-                });
+            return {
+                status: 'success',
+                reason: 'Successfully responded to receipt-based payment',
+            } as IClientResponse;
         } catch (error: any) {
             return {
                 status: 'error',
@@ -556,8 +595,38 @@ export class ZnpClient {
     }
 
     /**
+     * Accept a pending receipt-based payment
+     *
+     * @param {string} druid
+     * @param {IFetchPendingRbResponse} pendingResponse
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
+    public async acceptRbTx(
+        druid: string,
+        pendingResponse: IFetchPendingRbResponse,
+    ): Promise<IClientResponse> {
+        return this.handleRbTxResponse(druid, pendingResponse, 'accepted');
+    }
+
+    /**
+     * Reject a pending receipt-based payment
+     *
+     * @param {string} druid
+     * @param {IFetchPendingRbResponse} pendingResponse
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
+    public async rejectRbTx(
+        druid: string,
+        pendingResponse: IFetchPendingRbResponse,
+    ): Promise<IClientResponse> {
+        return this.handleRbTxResponse(druid, pendingResponse, 'rejected');
+    }
+
+    /**
      * Fetch any pending receipt-based payment data from the intercom network
-     * and process any transactions that have been approved/accepted
+     * and process any transactions that have been accepted/rejected
      *
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ZnpClient
@@ -569,11 +638,13 @@ export class ZnpClient {
 
             const addresses = this.keyMgmt.getAddresses();
             if (addresses.isErr()) throw new Error(addresses.error);
+            const allKeyPairs: { keyPair: IKeypair; address: string }[] = [];
             const pendingIntercom: IRequestGetBody[] = addresses.value
                 .map((address) => {
                     if (!this.keyMgmt) return null;
                     const keyPair = this.keyMgmt.getKeypair(address);
                     if (keyPair.isErr()) return null;
+                    allKeyPairs.push({ keyPair: keyPair.value, address: address });
                     return {
                         key: address,
                         publicKey: Buffer.from(keyPair.value.publicKey).toString('hex'),
@@ -587,6 +658,7 @@ export class ZnpClient {
                 })
                 .filter((input): input is IRequestGetBody => !!input); /* Filter array */
 
+            // Get all pending RB transactions
             const responseData = await axios
                 .post(`${this.intercomHost}${IAPIRoute.IntercomGet}`, pendingIntercom)
                 .then((response) => {
@@ -596,20 +668,28 @@ export class ZnpClient {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
-
-            const acceptedRbTxs = Object.values(responseData).filter((response) =>
-                Object.values(response).every((val) => val.status === 'accepted'),
-            ); /* 'every' can be used here because there should only be a single DRUID key */
-
+            // Get accepted and rejected receipt-based transactions
+            //TODO: Do something with rejected transactions (they will expire on the intercom server in a few days anyways)
+            // const [acceptedRbTxs, rejectedRbTxs];
+            const [acceptedRbTxs] = [
+                Object.values(responseData).filter((response) =>
+                    Object.values(response.value).every((val) => val.status === 'accepted'),
+                ),
+                Object.values(responseData).filter((response) =>
+                    Object.values(response.value).every((val) => val.status === 'rejected'),
+                ),
+            ]; /* 'every' can be used here because there should only be a single DRUID key */
+            // TODO: Delete locally stored encrypted transactions
             // We have accepted receipt-based payments to send to compute
             if (acceptedRbTxs.length > 0) {
+                const rbDataToDelete: IRequestDelBody[] = [];
                 const transactionsToSend: ICreateTransaction[] = [];
                 for (const acceptedTx of acceptedRbTxs) {
-                    const druid =
-                        Object.keys(acceptedTx)[0]; /* There should only be one DRUID key */
-                    const fromAddr =
-                        Object.values(acceptedTx)[0]
-                            .fromAddr; /* There should only be one DRUID key */
+                    const druid = Object.keys(
+                        acceptedTx.value,
+                    )[0]; /* There should only be one DRUID key */
+                    const fromAddr = Object.values(acceptedTx.value)[0]
+                        .fromAddr; /* There should only be one DRUID key */
                     // Decrypt transaction stored along with DRUID value
                     const decryptedTransaction = this.keyMgmt.getDRUIDInfo(druid);
                     if (decryptedTransaction.isErr()) throw new Error(decryptedTransaction.error);
@@ -619,7 +699,46 @@ export class ZnpClient {
                     decryptedTransaction.value.druid_info.expectations[0].from =
                         fromAddr; /* There should be only one expectation in a receipt-based payment */
                     transactionsToSend.push(decryptedTransaction.value);
+                    rbDataToDelete.push({
+                        key: Object.values(acceptedTx.value)[0].senderAddress,
+                        field: Object.values(acceptedTx.value)[0].receiverAddress,
+                        publicKey: Buffer.from(
+                            allKeyPairs.filter(
+                                (keyPair) =>
+                                    keyPair.address ===
+                                    Object.values(acceptedTx.value)[0].senderAddress,
+                            )[0].keyPair.publicKey,
+                        ).toString('hex'),
+                        signature: Buffer.from(
+                            createSignature(
+                                allKeyPairs.filter(
+                                    (keyPair) =>
+                                        keyPair.address ===
+                                        Object.values(acceptedTx.value)[0].senderAddress,
+                                )[0].keyPair.secretKey,
+                                Uint8Array.from(
+                                    Buffer.from(
+                                        allKeyPairs.filter(
+                                            (keyPair) =>
+                                                keyPair.address ===
+                                                Object.values(acceptedTx.value)[0].senderAddress,
+                                        )[0].address,
+                                        'hex',
+                                    ),
+                                ),
+                            ),
+                        ).toString('hex'),
+                    });
                 }
+
+                // Delete receipt-based data from intercom
+                // Update 'sender' bucket value
+                await axios
+                    .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
+                    .catch(async (error) => {
+                        throw new Error(error.message);
+                    });
+
                 // Send transactions to compute for processing
                 await this.axiosClient
                     .post<INetworkResponse>(IAPIRoute.CreateTransactions, transactionsToSend)

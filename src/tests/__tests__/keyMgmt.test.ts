@@ -146,26 +146,3 @@ test('can create a valid signature', () => {
         }
     }
 });
-test('can create a valid ssignature', () => {
-    const mKey = keyMgmt.generateMasterKey(SEED);
-    if (mKey.isOk()) {
-        const genKeypair = keyMgmt.getNextDerivedKeypair(mKey.value, 2);
-        if (genKeypair.isOk()) {
-            const msg = keyMgmt
-                .constructVersionDefaultAddress(genKeypair.value.publicKey)
-                .unwrapOr('');
-            // const msg = genKeypair.value.publicKey;
-            // const msg = Uint8Array.from([0, 1, 2]);
-            const sig = keyMgmt.createSignature(
-                genKeypair.value.secretKey,
-                Uint8Array.from(Buffer.from(msg, 'hex')),
-            );
-            console.log(
-                `Signature: ${Buffer.from(sig).toString('hex')}\n PublicKey: ${Buffer.from(
-                    genKeypair.value.publicKey,
-                ).toString('hex')} \n Address: ${msg}`,
-            );
-            expect(1 === 1).toEqual(true);
-        }
-    }
-});
