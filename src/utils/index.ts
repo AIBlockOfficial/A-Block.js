@@ -1,4 +1,42 @@
 import { BAL_LIMIT } from '../mgmt';
+import { generateMasterKey, generateSeed } from '../mgmt/keyMgmt';
+
+export function castAPIStatus(
+    status: 'Success' | 'Error' | 'InProgress' | 'Unknown',
+): 'success' | 'error' | 'pending' | 'unknown' {
+    switch (status) {
+        case 'Success':
+            return 'success';
+        case 'Error':
+            return 'error';
+        case 'InProgress':
+            return 'pending';
+        default:
+            return 'unknown';
+    }
+}
+
+/**
+ * Test a seed phrase
+ *
+ * @export
+ * @param {string} seed
+ * @return {*}  {boolean}
+ */
+export function testSeedPhrase(seed: string): boolean {
+    if (generateMasterKey(seed).isErr()) return false;
+    return true;
+}
+
+/**
+ * Generate a seed phrase
+ *
+ * @export
+ * @return {*}  {string}
+ */
+export function generateSeedPhrase(): string {
+    return generateSeed().unwrapOr('');
+}
 
 /**
  * Converts a string into a byte array for handling by nacl
@@ -39,7 +77,7 @@ export function getBytesHexString(bytes: Uint8Array): string {
 }
 
 /**
- * Formats a balance for display
+ * Formats a token balance for display
  *
  * @param balance {number}
  * @returns
@@ -131,6 +169,7 @@ export function typedArrayToBuffer(array: Uint8Array): ArrayBuffer {
  * @param b {Uint8Array}
  * @returns
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function concatTypedArrays(a: any, b: any) {
     const c = new a.constructor(a.length + b.length);
     c.set(a, 0);

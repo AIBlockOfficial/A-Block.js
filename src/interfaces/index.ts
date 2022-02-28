@@ -1,107 +1,252 @@
-/*====== INTERFACES =======*/
+import { Result } from 'neverthrow';
 
-export interface GenericKeyPair<T> {
-    [key: string]: T;
+/* -------------------------------------------------------------------------- */
+/*                                 API Routes                                 */
+/* -------------------------------------------------------------------------- */
+export enum IAPIRoute {
+    FetchBalance = '/fetch_balance',
+    SignableTransactions = '/signable_transactions',
+    CreateTransactions = '/create_transactions',
+    CheckUpdate = '/check_update',
+    AddressConstruction = '/address_construction',
+    GetUtxoAddressList = '/utxo_addresses',
+    CreateReceiptAsset = '/create_receipt_asset',
+    FetchPending = '/fetch_pending',
+    IntercomSet = '/set_data',
+    IntercomGet = '/get_data',
+    IntercomDel = '/del_data',
 }
 
-export interface IContactInfo {
+/* -------------------------------------------------------------------------- */
+/*                         Zenotta Intercom Interfaces                        */
+/* -------------------------------------------------------------------------- */
+export type IRequestSetBody = {
+    key: string;
+    field: string;
+    publicKey: string;
+    signature: string;
+    value: IPendingRbTxData;
+};
+
+export type IRequestDelBody = {
+    key: string;
+    field: string;
+    publicKey: string;
+    signature: string;
+};
+
+export type IRequestGetBody = {
+    key: string;
+    publicKey: string;
+    signature: string;
+};
+
+export type IRedisFieldEntry<T> = {
+    timestamp: number;
+    value: T;
+};
+
+export type IPendingRbTxDetails = {
+    senderAsset: 'Token' | 'Receipt';
+    senderAmount: number;
+    senderAddress: string;
+    receiverAsset: 'Token' | 'Receipt';
+    receiverAmount: number;
+    receiverAddress: string;
+    fromAddr: string;
+    status: 'pending' | 'rejected' | 'accepted';
+};
+
+export type IPendingRbTxData = {
+    // DRUID : transaction details
+    [key: string]: IPendingRbTxDetails;
+};
+
+/* -------------------------------------------------------------------------- */
+/*                             API Response Types                             */
+/* -------------------------------------------------------------------------- */
+export type IFetchUtxoAddressesResponse = string[];
+
+export type ICreateReceiptResponse = string;
+
+export type IFetchPendingRbResponse = {
+    // Address : IRedisFieldEntry<IPendingRbTxData>;
+    [key: string]: IRedisFieldEntry<IPendingRbTxData>;
+};
+
+export type IFetchBalanceResponse = {
+    total: {
+        tokens: number;
+        receipts: number;
+    };
+    address_list: GenericKeyPair<{ out_point: IOutPoint; value: GenericKeyPair<number> }[]>;
+};
+
+export type IFetchPendingDDEResponse = {
+    pending_transactions: { [key: string]: IDruidDroplet[] };
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                API Payloads                                */
+/* -------------------------------------------------------------------------- */
+export type IReceiptCreationAPIPayload = {
+    receipt_amount: number;
+    script_public_key: string;
+    public_key: string;
+    signature: string;
+    version: number | null;
+};
+
+export type ICreateTxPayload = {
+    createTx: ICreateTransaction;
+    excessAddressUsed: boolean;
+    usedAddresses: string[];
+};
+
+/* -------------------------------------------------------------------------- */
+/*                           Internal Module Errors                           */
+/* -------------------------------------------------------------------------- */
+
+export enum IErrorInternal {
+    InsufficientFunds = 'Insufficient funds',
+    NoInputs = 'No inputs for transaction',
+    InvalidInputs = 'Some inputs are invalid',
+    UnableToGenerateDruid = 'Unable to generate DRUID',
+    UnableToSaveDruid = 'Unable to save DRUID',
+    UnableToConstructTxIns = 'Unable to construct tx ins',
+    UnableToConstructSignature = 'Unable to construct signature',
+    InvalidAddressVersion = 'Unable to determine address version',
+    InvalidParametersProvided = 'Invalid parameters provided',
+    UnableToConstructTempAddress = 'Unable to construct temp address',
+    UnableToConstructDefaultAddress = 'Unable to construct default address',
+    UnableToGenerateSeed = 'Unable to generate seed',
+    UnableToGetPassphraseBuffer = 'Unable to get passphrase buffer',
+    UnableToGenerateMasterKey = 'Unable to generate master key',
+    UnableToGenerateKeypair = 'Unable to generate keypair',
+    UnableToDeriveNextKeypair = 'Unable to derive next keypair',
+    UnableToRetrieveKeypair = 'Unable to retrieve keypair',
+    UnableToRetrieveMasterKey = 'Unable to retrieve master key',
+    UnableToSaveMasterKey = 'Unable to save master key',
+    UnableToSaveKeyPair = 'Unable to save key-pair',
+    MasterKeyCorrupt = 'Master key is corrupt',
+    UnableToRetrieveAddresses = 'Unable to retrieve addresses',
+    UnableToRegenAddresses = 'Unable to regenerate addresses',
+    UnableToEncryptTransaction = 'Unable to encrypt transaction',
+    UnableToDecryptTransaction = 'Unable to decrypt transaction',
+    InvalidSeedPhrase = 'Invalid seed phrase',
+    InvalidDRUIDProvided = 'Invalid DRUID value provided',
+    UnknownError = 'Unknown Error',
+}
+
+export type SyncResult<T> = Result<T, IErrorInternal>;
+
+/* -------------------------------------------------------------------------- */
+/*                             Internal Interfaces                            */
+/* -------------------------------------------------------------------------- */
+export type GenericKeyPair<T> = {
+    [key: string]: T;
+};
+
+export type IContactInfo = {
     name: string;
     img: string;
     addresses: string[];
-}
+};
 
-export interface IMasterKey {
+export type IMasterKey = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     secret: any;
     seed: string;
-}
+};
 
-export interface IMasterKeyEncrypted {
+export type IMasterKeyEncrypted = {
     nonce: string;
     save: string;
-}
+};
 
-export interface IKeypair {
+export type IKeypair = {
     secretKey: Uint8Array;
     publicKey: Uint8Array;
     version: number | null;
-}
+};
 
-export interface IKeypairEncrypted {
+export type IKeypairEncrypted = {
     nonce: string;
-    save: string;
     version: number | null;
-}
+    save: string;
+};
 
-export interface ITransaction {
+export type ITransaction = {
     inputs: ITxIn[];
     outputs: ITxOut[];
     version: number;
     druid_info: IDdeValues | null;
-}
+};
 
-export interface ITxIn {
+export type ITxIn = {
     previous_out: IOutPoint | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     script_signature: any | null;
-}
+};
 
-export interface IOutPoint {
+export type IOutPoint = {
     t_hash: string;
     n: number;
-}
+};
 
-export interface ITxOut {
+export type ITxOut = {
     value: IAssetToken | IAssetReceipt;
     locktime: number;
     drs_block_hash: string | null;
     drs_tx_hash: string | null;
     script_public_key: string | null;
-}
+};
 
-export interface IDdeValues {
+export type IDdeValues = {
     druid: string;
     participants: number;
     expectations: IDruidExpectation[];
-}
+};
 
-export interface IDruidExpectation {
+export type IDruidExpectation = {
     from: string;
     to: string;
     asset: IAssetToken | IAssetReceipt;
-}
+};
 
-export interface IDruidDroplet {
+export type IDruidDroplet = {
     participants: number;
     tx: { [key: string]: ITransaction };
-}
+};
 
-export interface IAssetToken {
+export type IAssetToken = {
     Token: number;
-}
+};
 
-export interface IAssetReceipt {
+export type IAssetReceipt = {
     Receipt: number;
-}
+};
 
-export interface ICreateTxInScript {
+export type ICreateTxInScript = {
     Pay2PkH: {
         signable_data: string;
         signature: string;
         public_key: string;
         address_version: number | null;
     };
-}
+};
 
-export interface ICreateTxIn {
+export type ICreateTxIn = {
     previous_out: IOutPoint | null;
     script_signature: ICreateTxInScript | null;
-}
+};
 
-export interface ICreateTransaction {
+export type ICreateTransaction = {
     inputs: ICreateTxIn[];
     outputs: ITxOut[];
     version: number;
     druid_info: IDdeValues | null;
-}
+};
 
 /*====== ENUMS =======*/
 
@@ -119,9 +264,9 @@ export enum AddressType {
 
 /*===== SCRIPTS ======*/
 
-export interface Script {
+export type Script = {
     stack: StackEntry[];
-}
+};
 
 export type Signature = string;
 

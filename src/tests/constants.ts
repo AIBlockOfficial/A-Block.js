@@ -2,15 +2,16 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable jest/expect-expect */
 /* eslint-disable jest/no-disabled-tests */
-import { IFetchBalanceResponse } from '../ZnpClient/apiInterfaces';
 
-export interface IAddressListTest {
+import { IFetchBalanceResponse } from '../interfaces';
+
+export type IAddressListTest = {
     [key: string]: {
         public_key: string;
         secret_key: string;
         address_version: null;
     };
-}
+};
 
 export const ADDRESS_LIST_TEST: IAddressListTest = {
     cf0067d6c42463b2c1e4236e9669df546c74b16c0e2ef37114549b2944e05b7c: {
