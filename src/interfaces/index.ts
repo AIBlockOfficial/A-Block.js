@@ -20,12 +20,12 @@ export enum IAPIRoute {
 /* -------------------------------------------------------------------------- */
 /*                         Zenotta Intercom Interfaces                        */
 /* -------------------------------------------------------------------------- */
-export type IRequestSetBody = {
+export type IRequestSetBody<T> = {
     key: string;
     field: string;
     publicKey: string;
     signature: string;
-    value: IPendingRbTxData;
+    value: T;
 };
 
 export type IRequestDelBody = {
@@ -135,6 +135,8 @@ export enum IErrorInternal {
     UnableToDecryptTransaction = 'Unable to decrypt transaction',
     InvalidSeedPhrase = 'Invalid seed phrase',
     InvalidDRUIDProvided = 'Invalid DRUID value provided',
+    ClientNotInitialized = 'Client not initialized',
+    NoDRUIDValues = 'DRUID values are null',
     UnknownError = 'Unknown Error',
 }
 

@@ -2,11 +2,17 @@ import { err, ok } from 'neverthrow';
 import {
     IErrorInternal,
     IFetchPendingRbResponse,
+    IKeypair,
     IPendingRbTxData,
     IPendingRbTxDetails,
+    IRequestDelBody,
+    IRequestGetBody,
+    IRequestSetBody,
     SyncResult,
 } from '../interfaces/index';
+import { createSignature } from '../mgmt';
 
+// TODO: This function may change to accomodate more than just receipt-based payments moving forward
 export function getRbDataForDruid(
     druid: string,
     rbData: IFetchPendingRbResponse,
@@ -44,4 +50,58 @@ export function getRbDataForDruid(
     } catch (error: any) {
         return err(error.message);
     }
+}
+
+export function generateIntercomGetBody(
+    addressKey: string,
+    keyPairForKey: IKeypair,
+): IRequestGetBody {
+    return {
+        key: addressKey,
+        publicKey: Buffer.from(keyPairForKey.publicKey).toString('hex'),
+        signature: Buffer.from(
+            createSignature(
+                keyPairForKey.secretKey,
+                Uint8Array.from(Buffer.from(addressKey, 'hex')),
+            ),
+        ).toString('hex'),
+    } as IRequestGetBody;
+}
+
+export function generateIntercomSetBody<T>(
+    addressKey: string,
+    addressField: string,
+    keyPairForField: IKeypair,
+    value: T,
+): IRequestSetBody<T> {
+    return {
+        key: addressKey,
+        field: addressField,
+        signature: Buffer.from(
+            createSignature(
+                keyPairForField.secretKey,
+                Uint8Array.from(Buffer.from(addressField, 'hex')),
+            ),
+        ).toString('hex'),
+        publicKey: Buffer.from(keyPairForField.publicKey).toString('hex'),
+        value,
+    } as IRequestSetBody<T>;
+}
+
+export function generateIntercomDelBody(
+    addressKey: string,
+    addressField: string,
+    keyPairForKey: IKeypair,
+): IRequestDelBody {
+    return {
+        key: addressKey,
+        field: addressField,
+        signature: Buffer.from(
+            createSignature(
+                keyPairForKey.secretKey,
+                Uint8Array.from(Buffer.from(addressKey, 'hex')),
+            ),
+        ).toString('hex'),
+        publicKey: Buffer.from(keyPairForKey.publicKey).toString('hex'),
+    } as IRequestDelBody;
 }

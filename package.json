@@ -1,7 +1,7 @@
 {
-  "name": "zenotta-js",
-  "version": "0.0.1",
-  "description": "API module access the Zenotta network",
+  "name": "@zenotta/zenotta-js",
+  "version": "0.0.2",
+  "description": "API module to access the Zenotta network",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "module": "lib/index.es.js",
@@ -23,7 +23,7 @@
     "ZNP",
     "Zenotta",
     "API Module",
-    "typescript"
+    "TypeScript"
   ],
   "author": "Anton Troskie",
   "license": "MIT",

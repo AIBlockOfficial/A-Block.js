@@ -4,7 +4,6 @@ import {
     ADDRESS_VERSION,
     CreateRbTxHalf,
     createReceiptPayload,
-    createSignature,
     CreateTokenPaymentTx,
     generateNewKeypairAndAddress,
     SEED_REGEN_THRES,
@@ -13,14 +12,15 @@ import axios, { AxiosInstance } from 'axios';
 import { IMgmtCallbacks, mgmtClient } from './mgmtClient';
 import { castAPIStatus } from '../utils';
 import { constructTxInsAddress } from '../mgmt/scriptMgmt';
+import { generateIntercomDelBody } from '../utils/intercomUtils';
 import {
-    IRequestSetBody,
     IFetchPendingRbResponse,
     IPendingRbTxData,
     IRequestGetBody,
     IKeypair,
     ICreateTransaction,
     IRequestDelBody,
+    IErrorInternal,
 } from '../interfaces';
 import {
     IFetchUtxoAddressesResponse,
@@ -29,17 +29,21 @@ import {
     ICreateReceiptResponse,
     IAPIRoute,
 } from '../interfaces';
-import { getRbDataForDruid } from '../utils/intercomUtils';
+import {
+    generateIntercomGetBody,
+    generateIntercomSetBody,
+    getRbDataForDruid,
+} from '../utils/intercomUtils';
 
 /* -------------------------------------------------------------------------- */
 /*                                 Interfaces                                 */
 /* -------------------------------------------------------------------------- */
 export type IClientConfig = {
     callbacks: IMgmtCallbacks;
-    passPhrase: string;
-    seedPhrase?: string;
     computeHost: string;
     intercomHost: string;
+    passPhrase: string;
+    seedPhrase?: string;
     timeout?: number;
 };
 
@@ -135,7 +139,7 @@ export class ZnpClient {
     public async getUtxoAddressList(): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             return await this.axiosClient
                 .get<INetworkResponse>(IAPIRoute.GetUtxoAddressList)
                 .then((response) => {
@@ -167,7 +171,7 @@ export class ZnpClient {
     async fetchBalance(): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const addresses = this.keyMgmt.getAddresses();
             if (addresses.isErr()) throw new Error(addresses.error);
             const fetchBalanceBody = {
@@ -205,7 +209,7 @@ export class ZnpClient {
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const fetchPendingBody = {
                 druid_list: druids,
             };
@@ -240,7 +244,7 @@ export class ZnpClient {
     public async createReceipts(address?: string): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             let addr: string;
             // No address to assign to has been provided
             if (!address) {
@@ -303,7 +307,7 @@ export class ZnpClient {
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             // First update balance
             const balance = await this.fetchBalance();
             if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
@@ -349,7 +353,7 @@ export class ZnpClient {
                         // TODO: Should we do something with the used addresses?
                         if (paymentBody?.value.excessAddressUsed) {
                             if (!this.axiosClient || !this.keyMgmt)
-                                throw new Error('Client has not been initialized');
+                                throw new Error(IErrorInternal.ClientNotInitialized);
                             // Save excess keypair to wallet if an existing excess address
                             // was not provided
                             if (!excessAddress) {
@@ -384,7 +388,7 @@ export class ZnpClient {
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             // Update balance
             const balance = await this.fetchBalance();
             if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
@@ -441,7 +445,7 @@ export class ZnpClient {
             const senderFromAddr = constructTxInsAddress(sendRbTxHalf.value.createTx.inputs);
             if (senderFromAddr.isErr()) throw new Error(senderFromAddr.error);
             if (sendRbTxHalf.value.createTx.druid_info === null)
-                throw new Error('DRUID values are null');
+                throw new Error(IErrorInternal.NoDRUIDValues);
             const valuePayload: IPendingRbTxData = {};
             valuePayload[druidValue.value] = {
                 senderAsset: 'Token',
@@ -453,19 +457,13 @@ export class ZnpClient {
                 fromAddr: senderFromAddr.value,
                 status: 'pending',
             };
-            const sendBody: IRequestSetBody[] = [
-                {
-                    key: paymentAddress,
-                    field: senderAddr,
-                    signature: Buffer.from(
-                        createSignature(
-                            senderKeypair.secretKey,
-                            Uint8Array.from(Buffer.from(senderAddr, 'hex')),
-                        ),
-                    ).toString('hex'),
-                    publicKey: Buffer.from(senderKeypair.publicKey).toString('hex'),
-                    value: valuePayload,
-                },
+            const sendBody = [
+                generateIntercomSetBody<IPendingRbTxData>(
+                    paymentAddress,
+                    senderAddr,
+                    senderKeypair,
+                    valuePayload,
+                ),
             ];
             return await axios
                 .post(`${this.intercomHost}${IAPIRoute.IntercomSet}`, sendBody)
@@ -473,7 +471,7 @@ export class ZnpClient {
                     // Payment now getting processed
                     // TODO: Should we do something with the used addresses?
                     // Save excess keypair to wallet
-                    if (!this.keyMgmt) throw new Error('Client has not been initialized');
+                    if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
                     // Since an existing address was not provided, we need to save the newly generated one
                     if (!receiveAddress) {
                         const saveResult = this.keyMgmt.saveKeypair(senderKeypair, senderAddr);
@@ -509,7 +507,7 @@ export class ZnpClient {
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             // Update balance
             const balance = await this.fetchBalance();
             if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
@@ -545,19 +543,13 @@ export class ZnpClient {
                 txInfo.fromAddr = fromAddr.value;
                 const value: IPendingRbTxData = {};
                 value[druid] = txInfo;
-                const setBody: IRequestSetBody[] = [
-                    {
-                        key: txInfo.senderAddress,
-                        field: txInfo.receiverAddress,
-                        signature: Buffer.from(
-                            createSignature(
-                                receiverKeypair.value.secretKey,
-                                Uint8Array.from(Buffer.from(txInfo.receiverAddress, 'hex')),
-                            ),
-                        ).toString('hex'),
-                        publicKey: Buffer.from(receiverKeypair.value.publicKey).toString('hex'),
-                        value: value,
-                    },
+                const setBody = [
+                    generateIntercomSetBody<IPendingRbTxData>(
+                        txInfo.senderAddress,
+                        txInfo.receiverAddress,
+                        receiverKeypair.value,
+                        value,
+                    ),
                 ];
 
                 // Update 'sender' bucket value
@@ -634,7 +626,7 @@ export class ZnpClient {
     public async fetchPendingRbTransactions(): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
 
             const addresses = this.keyMgmt.getAddresses();
             if (addresses.isErr()) throw new Error(addresses.error);
@@ -645,29 +637,23 @@ export class ZnpClient {
                     const keyPair = this.keyMgmt.getKeypair(address);
                     if (keyPair.isErr()) return null;
                     allKeyPairs.push({ keyPair: keyPair.value, address: address });
-                    return {
-                        key: address,
-                        publicKey: Buffer.from(keyPair.value.publicKey).toString('hex'),
-                        signature: Buffer.from(
-                            createSignature(
-                                keyPair.value.secretKey,
-                                Uint8Array.from(Buffer.from(address, 'hex')),
-                            ),
-                        ).toString('hex'),
-                    } as IRequestGetBody;
+                    return generateIntercomGetBody(address, keyPair.value);
                 })
                 .filter((input): input is IRequestGetBody => !!input); /* Filter array */
 
             // Get all pending RB transactions
             const responseData = await axios
-                .post(`${this.intercomHost}${IAPIRoute.IntercomGet}`, pendingIntercom)
+                .post<IFetchPendingRbResponse>(
+                    `${this.intercomHost}${IAPIRoute.IntercomGet}`,
+                    pendingIntercom,
+                )
                 .then((response) => {
-                    const responseData: IFetchPendingRbResponse = response.data;
-                    return responseData;
+                    return response.data;
                 })
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
+
             // Get accepted and rejected receipt-based transactions
             //TODO: Do something with rejected transactions (they will expire on the intercom server in a few days anyways)
             // const [acceptedRbTxs, rejectedRbTxs];
@@ -687,48 +673,30 @@ export class ZnpClient {
                 for (const acceptedTx of acceptedRbTxs) {
                     const druid = Object.keys(
                         acceptedTx.value,
-                    )[0]; /* There should only be one DRUID key */
-                    const fromAddr = Object.values(acceptedTx.value)[0]
-                        .fromAddr; /* There should only be one DRUID key */
+                    )[0]; /* There should only be one unique DRUID key */
+                    const fromAddr = Object.values(acceptedTx.value)[0].fromAddr;
                     // Decrypt transaction stored along with DRUID value
                     const decryptedTransaction = this.keyMgmt.getDRUIDInfo(druid);
                     if (decryptedTransaction.isErr()) throw new Error(decryptedTransaction.error);
                     if (!decryptedTransaction.value.druid_info)
-                        throw new Error('DRUID values are null');
+                        throw new Error(IErrorInternal.NoDRUIDValues);
                     // Set `TxIns` address value from receipient
                     decryptedTransaction.value.druid_info.expectations[0].from =
                         fromAddr; /* There should be only one expectation in a receipt-based payment */
                     transactionsToSend.push(decryptedTransaction.value);
-                    rbDataToDelete.push({
-                        key: Object.values(acceptedTx.value)[0].senderAddress,
-                        field: Object.values(acceptedTx.value)[0].receiverAddress,
-                        publicKey: Buffer.from(
-                            allKeyPairs.filter(
-                                (keyPair) =>
-                                    keyPair.address ===
-                                    Object.values(acceptedTx.value)[0].senderAddress,
-                            )[0].keyPair.publicKey,
-                        ).toString('hex'),
-                        signature: Buffer.from(
-                            createSignature(
-                                allKeyPairs.filter(
-                                    (keyPair) =>
-                                        keyPair.address ===
-                                        Object.values(acceptedTx.value)[0].senderAddress,
-                                )[0].keyPair.secretKey,
-                                Uint8Array.from(
-                                    Buffer.from(
-                                        allKeyPairs.filter(
-                                            (keyPair) =>
-                                                keyPair.address ===
-                                                Object.values(acceptedTx.value)[0].senderAddress,
-                                        )[0].address,
-                                        'hex',
-                                    ),
-                                ),
-                            ),
-                        ).toString('hex'),
-                    });
+
+                    const keyPair = allKeyPairs.filter(
+                        (keyPair) =>
+                            keyPair.address === Object.values(acceptedTx.value)[0].senderAddress,
+                    )[0].keyPair;
+
+                    rbDataToDelete.push(
+                        generateIntercomDelBody(
+                            Object.values(acceptedTx.value)[0].senderAddress,
+                            Object.values(acceptedTx.value)[0].receiverAddress,
+                            keyPair,
+                        ),
+                    );
                 }
 
                 // Delete receipt-based data from intercom
@@ -783,7 +751,7 @@ export class ZnpClient {
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const foundAddr = this.keyMgmt.regenAddresses(addressList, seedRegenThreshold);
             if (foundAddr.isErr()) throw new Error(foundAddr.error);
             if (foundAddr.value.size !== 0) {
@@ -810,7 +778,7 @@ export class ZnpClient {
     getNewAddress(): IClientResponse {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const result = this.keyMgmt.getNewAddress();
             if (result.isErr()) throw new Error(result.error);
             return {
@@ -829,33 +797,6 @@ export class ZnpClient {
     }
 
     /**
-     * Generates a new seed phrase
-     *
-     * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
-     */
-    getNewSeedPhrase(): IClientResponse {
-        try {
-            if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
-            const newSeedPhrase = this.keyMgmt.getNewSeedPhrase();
-            if (newSeedPhrase.isErr()) throw new Error(newSeedPhrase.error);
-            return {
-                status: 'success',
-                reason: 'Successfully generated new seed phrase',
-                clientContent: {
-                    newSeedPhraseResponse: newSeedPhrase.value,
-                },
-            };
-        } catch (error: any) {
-            return {
-                status: 'error',
-                reason: error.message,
-            };
-        }
-    }
-
-    /**
      * Get the existing seed phrase, or generate a new one
      *
      * @return {*}  {IClientResponse}
@@ -864,7 +805,7 @@ export class ZnpClient {
     getSeedPhrase(): IClientResponse {
         try {
             if (!this.axiosClient || !this.keyMgmt)
-                throw new Error('Client has not been initialized');
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const seedPhrase = this.keyMgmt.getSeedPhrase();
             if (seedPhrase.isErr()) throw new Error(seedPhrase.error);
             return {
