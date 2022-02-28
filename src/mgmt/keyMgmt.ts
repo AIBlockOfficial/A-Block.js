@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { truncateByBytesUTF8, getStringBytes, getHexStringBytes } from '../utils';
 import { bytesToBase64 } from 'byte-base64';
 import { sha3_256 } from 'js-sha3';
 import nacl from 'tweetnacl';
-import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION, SEED_REGEN_THRES } from './constants';
-import { IMasterKey, IKeypair } from './interfaces';
+import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION } from './constants';
 import Mnemonic from 'bitcore-mnemonic';
+import { err, ok } from 'neverthrow';
+import { SyncResult, IErrorInternal, IMasterKey, IKeypair } from '../interfaces';
 
 /**
  * Get the address version for either a given public key and address
@@ -20,34 +22,44 @@ export function getAddressVersion(
     publicKey?: Uint8Array,
     address?: string,
     version?: number | null,
-): number | null {
+): SyncResult<number | null> {
     if (publicKey && address) {
+        const tempAddress = constructAddress(publicKey, TEMP_ADDRESS_VERSION);
+        if (tempAddress.isErr()) return err(tempAddress.error);
+        const defaultAddress = constructAddress(publicKey, ADDRESS_VERSION);
+        if (defaultAddress.isErr()) return err(defaultAddress.error);
         switch (address) {
-            case constructAddress(publicKey, TEMP_ADDRESS_VERSION):
-                return TEMP_ADDRESS_VERSION; /* Temporary address structure */
-            case constructAddress(publicKey, ADDRESS_VERSION):
-                return null; /* New address structure */
+            case tempAddress.value:
+                return ok(TEMP_ADDRESS_VERSION); /* Temporary address structure */
+            case defaultAddress.value:
+                return ok(null); /* New address structure */
             default:
-                return null;
+                return err(IErrorInternal.InvalidAddressVersion);
         }
     } else if (version != null) {
         switch (version) {
             case TEMP_ADDRESS_VERSION:
-                return TEMP_ADDRESS_VERSION;
+                return ok(TEMP_ADDRESS_VERSION);
+            case ADDRESS_VERSION:
+                return ok(ADDRESS_VERSION);
             default:
-                return null;
+                return err(IErrorInternal.InvalidAddressVersion);
         }
     } else {
-        return null;
+        return err(IErrorInternal.InvalidParametersProvided);
     }
 }
 
 /**
  * Generates a new seed phrase
  */
-export function generateSeed(): string {
-    const seed = new Mnemonic();
-    return seed.toString();
+export function generateSeed(): SyncResult<string> {
+    try {
+        const seed = new Mnemonic();
+        return ok(seed.toString());
+    } catch {
+        return err(IErrorInternal.UnableToGenerateSeed);
+    }
 }
 
 /**
@@ -55,11 +67,14 @@ export function generateSeed(): string {
  *
  * @param passphrase {string}
  */
-export function getPassphraseBuffer(passphrase: string): Uint8Array {
-    const hash = sha3_256(passphrase);
-    const val = truncateByBytesUTF8(hash, 32);
-
-    return getStringBytes(val);
+export function getPassphraseBuffer(passphrase: string): SyncResult<Uint8Array> {
+    try {
+        const hash = sha3_256(passphrase);
+        const val = truncateByBytesUTF8(hash, 32);
+        return ok(getStringBytes(val));
+    } catch {
+        return err(IErrorInternal.UnableToGetPassphraseBuffer);
+    }
 }
 
 /**
@@ -70,13 +85,17 @@ export function getPassphraseBuffer(passphrase: string): Uint8Array {
  * @param seed {string}
  * @param passphrase {string}
  */
-export function generateMasterKey(seed?: string, passphrase?: string): IMasterKey {
-    const genInput = seed || Mnemonic.Words.ENGLISH.join(' ');
-    const mGen = new Mnemonic(genInput);
-    return {
-        secret: mGen.toHDPrivateKey(passphrase || ''),
-        seed: seed || mGen.toString(),
-    };
+export function generateMasterKey(seed?: string, passphrase?: string): SyncResult<IMasterKey> {
+    try {
+        const genInput = seed || Mnemonic.Words.ENGLISH.join(' ');
+        const mGen = new Mnemonic(genInput);
+        return ok({
+            secret: mGen.toHDPrivateKey(passphrase || ''),
+            seed: seed || mGen.toString(),
+        } as IMasterKey);
+    } catch {
+        return err(IErrorInternal.InvalidSeedPhrase);
+    }
 }
 
 /**
@@ -86,17 +105,24 @@ export function generateMasterKey(seed?: string, passphrase?: string): IMasterKe
  * @param seed {string}
  * @returns
  */
-export function generateKeypair(version = ADDRESS_VERSION, seed?: Uint8Array): IKeypair {
-    if (seed && seed.length != 32) {
-        seed = seed.slice(0, 32);
-    }
-    const keypairRaw = seed ? nacl.sign.keyPair.fromSeed(seed) : nacl.sign.keyPair();
+export function generateKeypair(
+    version = ADDRESS_VERSION,
+    seed?: Uint8Array,
+): SyncResult<IKeypair> {
+    try {
+        if (seed && seed.length != 32) {
+            seed = seed.slice(0, 32);
+        }
+        const keypairRaw = seed ? nacl.sign.keyPair.fromSeed(seed) : nacl.sign.keyPair();
 
-    return {
-        secretKey: keypairRaw.secretKey,
-        publicKey: keypairRaw.publicKey,
-        version,
-    };
+        return ok({
+            secretKey: keypairRaw.secretKey,
+            publicKey: keypairRaw.publicKey,
+            version,
+        } as IKeypair);
+    } catch {
+        return err(IErrorInternal.UnableToGenerateKeypair);
+    }
 }
 
 /**
@@ -109,10 +135,14 @@ export function getNextDerivedKeypair(
     masterKey: IMasterKey,
     depth: number,
     version = ADDRESS_VERSION,
-): IKeypair {
-    const seedKeyRaw = masterKey.secret.deriveChild(depth, true);
-    const seedKey = getStringBytes(seedKeyRaw.xprivkey);
-    return generateKeypair(version, seedKey);
+): SyncResult<IKeypair> {
+    try {
+        const seedKeyRaw = masterKey.secret.deriveChild(depth, true);
+        const seedKey = getStringBytes(seedKeyRaw.xprivkey);
+        return generateKeypair(version, seedKey);
+    } catch {
+        return err(IErrorInternal.UnableToDeriveNextKeypair);
+    }
 }
 
 /**
@@ -121,14 +151,17 @@ export function getNextDerivedKeypair(
  * @param publicKey {Uint8Array}
  * @param version {number}
  */
-export function constructAddress(publicKey: Uint8Array, version: number | null): string {
+export function constructAddress(
+    publicKey: Uint8Array,
+    version: number | null,
+): SyncResult<string> {
     switch (version) {
         case TEMP_ADDRESS_VERSION:
             return constructVersionTempAddress(publicKey);
+        case ADDRESS_VERSION:
+            return constructVersionDefaultAddress(publicKey);
         default:
-            return constructVersionDefaultAddress(
-                publicKey,
-            ); /* `version` can be either 1 or null */
+            return err(IErrorInternal.InvalidAddressVersion);
     }
 }
 
@@ -138,8 +171,12 @@ export function constructAddress(publicKey: Uint8Array, version: number | null):
  * @param publicKey {Uint8Array}
  * @returns
  */
-export function constructVersionDefaultAddress(publicKey: Uint8Array): string {
-    return sha3_256(publicKey);
+export function constructVersionDefaultAddress(publicKey: Uint8Array): SyncResult<string> {
+    try {
+        return ok(sha3_256(publicKey));
+    } catch {
+        return err(IErrorInternal.UnableToConstructDefaultAddress);
+    }
 }
 
 /**
@@ -149,8 +186,12 @@ export function constructVersionDefaultAddress(publicKey: Uint8Array): string {
  * @param publicKey {Uint8Array}
  * @returns
  */
-export function constructVersionTempAddress(publicKey: Uint8Array): string {
-    return sha3_256(getHexStringBytes(bytesToBase64(publicKey)));
+export function constructVersionTempAddress(publicKey: Uint8Array): SyncResult<string> {
+    try {
+        return ok(sha3_256(getHexStringBytes(bytesToBase64(publicKey))));
+    } catch {
+        return err(IErrorInternal.UnableToConstructTempAddress);
+    }
 }
 
 /**
@@ -174,25 +215,28 @@ export function generateNewKeypairAndAddress(
     masterKey: any,
     addressVersion: number | null,
     addresses: string[],
-): [IKeypair, string] {
+): SyncResult<[IKeypair, string]> {
     let counter = addresses.length;
 
     let currentKey = getNextDerivedKeypair(masterKey, counter);
-    let currentAddr = constructAddress(currentKey.publicKey, addressVersion);
-
+    if (currentKey.isErr()) return err(currentKey.error);
+    let currentAddr = constructAddress(currentKey.value.publicKey, addressVersion);
+    if (currentAddr.isErr()) return err(currentAddr.error);
     // Keep generating keys until we get a new one
-    while (addresses.indexOf(currentAddr) != -1) {
+    while (addresses.indexOf(currentAddr.value) != -1) {
         counter++;
         currentKey = getNextDerivedKeypair(masterKey, counter);
-        currentAddr = constructAddress(currentKey.publicKey, addressVersion);
+        if (currentKey.isErr()) return err(currentKey.error);
+        currentAddr = constructAddress(currentKey.value.publicKey, addressVersion);
+        if (currentAddr.isErr()) return err(currentAddr.error);
     }
 
     // Return keypair
     const keypair = {
-        secretKey: currentKey.secretKey,
-        publicKey: currentKey.publicKey,
+        secretKey: currentKey.value.secretKey,
+        publicKey: currentKey.value.publicKey,
         version: addressVersion,
-    };
+    } as IKeypair;
 
-    return [keypair, currentAddr];
+    return ok([keypair, currentAddr.value]);
 }
