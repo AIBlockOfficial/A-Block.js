@@ -240,7 +240,7 @@ export class ZnpClient {
                 .then((response) => {
                     return {
                         status: castAPIStatus(response.data.status),
-                        reason: 'Successfully created receipt-assets',
+                        reason: response.data.reason,
                         apiContent: {
                             createReceiptResponse: response.data.content,
                         },
@@ -291,7 +291,7 @@ export class ZnpClient {
                     const responseData = response.data as INetworkResponse;
                     return {
                         status: castAPIStatus(responseData.status),
-                        reason: 'Payment processing',
+                        reason: responseData.reason,
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
@@ -376,7 +376,6 @@ export class ZnpClient {
                     // TODO: Should we do something with the used addresses?
                     return {
                         status: 'success',
-                        reason: 'Successfully made receipt-based payment request',
                         clientContent: {
                             makeRbPaymentResponse: {
                                 druid: druidValue.value,
