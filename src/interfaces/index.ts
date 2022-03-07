@@ -128,6 +128,8 @@ export enum IErrorInternal {
     UnableToConstructTempAddress = 'Unable to construct temp address',
     UnableToConstructDefaultAddress = 'Unable to construct default address',
     UnableToGenerateSeed = 'Unable to generate seed',
+    UnableToGetExistingSeed = 'Unable to get existing seed phrase',
+    UnableToGetExistingMasterKey = 'Unable to get existing master key',
     UnableToGetPassphraseBuffer = 'Unable to get passphrase buffer',
     UnableToGetKeypair = 'Unable to get key-pair',
     UnableToGenerateMasterKey = 'Unable to generate master key',

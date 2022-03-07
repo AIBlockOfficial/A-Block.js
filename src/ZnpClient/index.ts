@@ -11,7 +11,11 @@ import { mgmtClient } from './mgmtClient';
 import { castAPIStatus } from '../utils';
 import { constructTxInsAddress } from '../mgmt/scriptMgmt';
 import { generateIntercomDelBody } from '../utils/intercomUtils';
-import { ICreateTransactionEncrypted, IMakeRbPaymentResponse } from '../interfaces/index';
+import {
+    ICreateTransactionEncrypted,
+    IMakeRbPaymentResponse,
+    IMasterKeyEncrypted,
+} from '../interfaces/index';
 import {
     IFetchPendingRbResponse,
     IPendingRbTxData,
@@ -41,7 +45,6 @@ export type IClientConfig = {
     computeHost: string;
     intercomHost: string;
     passPhrase: string;
-    seedPhrase?: string;
     timeout?: number;
 };
 
@@ -63,10 +66,14 @@ export type IClientResponse = {
 
 export type IContentType = {
     makeRbPaymentResponse?: IMakeRbPaymentResponse;
-    newAddressResponse?: IKeypairEncrypted | null;
+    newAddressResponse?: IKeypairEncrypted;
     newDRUIDResponse?: string;
     newSeedPhraseResponse?: string;
     getSeedPhraseResponse?: string;
+    getMasterKeyResponse?: IMasterKeyEncrypted;
+    initNewResponse?: [string, IMasterKeyEncrypted];
+    initFromSeedResponse?: IMasterKeyEncrypted;
+    regenWalletResponse?: IKeypairEncrypted[];
 };
 export type IApiContentType = {
     fetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
@@ -93,25 +100,10 @@ export class ZnpClient {
         this.keyMgmt = undefined;
     }
 
-    /**
-     * Initialize the client with the given config
-     *
-     * @param {IClientConfig} config
-     * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
-     */
-    public init(config: IClientConfig): IClientResponse {
-        this.intercomHost = config.intercomHost;
-        this.axiosClient = axios.create({
-            baseURL: config.computeHost,
-            timeout: config.timeout ? config.timeout : 1000,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
+    public initNew(config: IClientConfig): IClientResponse {
+        this.initCommon(config);
         this.keyMgmt = new mgmtClient();
-        const initResult = this.keyMgmt.init(config.passPhrase, config.seedPhrase);
+        const initResult = this.keyMgmt.initNew(config.passPhrase);
         if (initResult.isErr()) {
             return {
                 status: 'error',
@@ -120,9 +112,63 @@ export class ZnpClient {
         } else {
             return {
                 status: 'success',
-                reason: 'Successfully initialized',
+                reason: 'ZNP client initialized',
+                clientContent: {
+                    initNewResponse: initResult.value,
+                },
             } as IClientResponse;
         }
+    }
+
+    public initFromMasterKey(
+        config: IClientConfig,
+        masterKey: IMasterKeyEncrypted,
+    ): IClientResponse {
+        this.initCommon(config);
+        this.keyMgmt = new mgmtClient();
+        const initResult = this.keyMgmt.initFromMasterKey(config.passPhrase, masterKey);
+        if (initResult.isErr()) {
+            return {
+                status: 'error',
+                reason: initResult.error,
+            } as IClientResponse;
+        } else {
+            return {
+                status: 'success',
+                reason: 'ZNP client initialized',
+            } as IClientResponse;
+        }
+    }
+
+    public initFromSeed(config: IClientConfig, seedPhrase: string): IClientResponse {
+        this.initCommon(config);
+        this.keyMgmt = new mgmtClient();
+        const initResult = this.keyMgmt.initFromSeed(config.passPhrase, seedPhrase);
+        if (initResult.isErr()) {
+            return {
+                status: 'error',
+                reason: initResult.error,
+            } as IClientResponse;
+        } else {
+            return {
+                status: 'success',
+                reason: 'ZNP client initialized',
+                clientContent: {
+                    initFromSeedResponse: initResult.value,
+                },
+            } as IClientResponse;
+        }
+    }
+
+    private initCommon(config: IClientConfig) {
+        this.intercomHost = config.intercomHost;
+        this.axiosClient = axios.create({
+            baseURL: config.computeHost,
+            timeout: config.timeout ? config.timeout : 1000,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
     }
 
     /* -------------------------------------------------------------------------- */
@@ -650,18 +696,32 @@ export class ZnpClient {
      * @memberof ZnpClient
      */
     async regenAddresses(
+        passPhrase: string,
         addressList: string[],
         seedRegenThreshold: number = SEED_REGEN_THRES,
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const foundAddr = this.keyMgmt.regenAddresses(addressList, seedRegenThreshold);
+            const foundAddr = this.keyMgmt.regenAddresses(
+                passPhrase,
+                addressList,
+                seedRegenThreshold,
+            );
             if (foundAddr.isErr()) throw new Error(foundAddr.error);
             if (foundAddr.value.length !== 0) {
+                const encryptedKeypairs: IKeypairEncrypted[] = [];
+                for (const addr of foundAddr.value) {
+                    const encryptedKeypair = this.keyMgmt.encryptKeypair(addr);
+                    if (encryptedKeypair.isErr()) throw new Error(encryptedKeypair.error);
+                    encryptedKeypairs.push(encryptedKeypair.value);
+                }
                 return {
                     status: 'success',
                     reason: 'Addresses have successfully been reconstructed',
+                    clientContent: {
+                        regenWalletResponse: encryptedKeypairs,
+                    },
                 } as IClientResponse;
             } else throw new Error('Address reconstruction failed');
         } catch (error: any) {
@@ -717,6 +777,33 @@ export class ZnpClient {
                 reason: 'Successfully obtained seed phrase',
                 clientContent: {
                     getSeedPhraseResponse: seedPhrase.value,
+                },
+            };
+        } catch (error: any) {
+            return {
+                status: 'error',
+                reason: error.message,
+            };
+        }
+    }
+
+    /**
+     * Get the existing master key in an encrypted format
+     *
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
+    getMasterKey(): IClientResponse {
+        try {
+            if (!this.axiosClient || !this.keyMgmt)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const masterKey = this.keyMgmt.getMasterKey();
+            if (masterKey.isErr()) throw new Error(masterKey.error);
+            return {
+                status: 'success',
+                reason: 'Successfully obtained master key',
+                clientContent: {
+                    getMasterKeyResponse: masterKey.value,
                 },
             };
         } catch (error: any) {

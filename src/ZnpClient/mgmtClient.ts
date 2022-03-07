@@ -47,33 +47,50 @@ export class mgmtClient {
         this.masterKey = undefined;
     }
 
-    /**
-     * Initialize the management client
-     *
-     * @param {string} passphraseKey
-     * @param {string} [seedPhrase]
-     * @return {*}  {SyncResult<void>}
-     * @memberof mgmtClient
-     */
-    public init(
-        passphraseKey: string,
-        seedPhrase?: string,
-    ): SyncResult<[string, IMasterKeyEncrypted]> {
+    public initNew(passphraseKey: string): SyncResult<[string, IMasterKeyEncrypted]> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
         const generatedSeed = generateSeed();
         if (generatedSeed.isErr()) return err(generatedSeed.error);
-        /* Either generate a new seed phrase or use the supplied one */
-        const seed: string =
-            seedPhrase && seedPhrase.length != 0 ? seedPhrase : generatedSeed.value;
-        const newMasterKey = generateMasterKey(seed);
+        // Generate a new master key and seed phrase
+        const newMasterKey = generateMasterKey(generatedSeed.value);
         if (newMasterKey.isErr()) return err(newMasterKey.error);
         this.masterKey = newMasterKey.value;
-        this.seedPhrase = seed;
         const saveResult = this.encryptMasterKey(newMasterKey.value, passphrase.value);
-        if (saveResult.isErr()) return err(saveResult.error);
-        return ok([seed, saveResult.value]);
+        if (saveResult && saveResult.isErr()) return err(saveResult.error);
+        this.seedPhrase = generatedSeed.value;
+        return ok([generatedSeed.value, saveResult.value]);
+    }
+
+    public initFromMasterKey(
+        passphraseKey: string,
+        masterKey: IMasterKeyEncrypted,
+    ): SyncResult<void> {
+        const passphrase = getPassphraseBuffer(passphraseKey);
+        if (passphrase.isErr()) return err(passphrase.error);
+        this.passphraseKey = passphrase.value;
+        // Decrypt the existing master key
+        const decryptedMasterKey = this.decryptMasterKey(masterKey, passphrase.value);
+        if (decryptedMasterKey.isErr()) return err(decryptedMasterKey.error);
+        else this.masterKey = decryptedMasterKey.value;
+        return ok(undefined);
+    }
+
+    public initFromSeed(
+        passphraseKey: string,
+        seedPhrase: string,
+    ): SyncResult<IMasterKeyEncrypted> {
+        const passphrase = getPassphraseBuffer(passphraseKey);
+        if (passphrase.isErr()) return err(passphrase.error);
+        this.passphraseKey = passphrase.value;
+        const newMasterKey = generateMasterKey(seedPhrase);
+        if (newMasterKey.isErr()) return err(newMasterKey.error);
+        this.masterKey = newMasterKey.value;
+        const saveResult = this.encryptMasterKey(newMasterKey.value, passphrase.value);
+        if (saveResult && saveResult.isErr()) return err(saveResult.error);
+        this.seedPhrase = seedPhrase;
+        return ok(saveResult.value);
     }
 
     public getNewAddress(allAddresses: string[]): SyncResult<IKeypairEncrypted> {
@@ -93,9 +110,8 @@ export class mgmtClient {
     }
 
     public getSeedPhrase(): SyncResult<string> {
-        const generatedSeedPhrase = generateSeed();
-        if (generatedSeedPhrase.isErr()) return err(generatedSeedPhrase.error);
-        return ok(this._seedPhrase === undefined ? generatedSeedPhrase.value : this._seedPhrase);
+        if (this.seedPhrase) return ok(this.seedPhrase);
+        else return err(IErrorInternal.UnableToGenerateSeed);
     }
 
     public testSeedPhrase(seedPhrase: string): SyncResult<void> {
@@ -282,9 +298,14 @@ export class mgmtClient {
      * @memberof mgmtClient
      */
     public regenAddresses(
+        seedPhrase: string,
         addressList: string[],
         seedRegenThreshold: number = SEED_REGEN_THRES,
     ): SyncResult<IKeypair[]> {
+        const masterKey = generateMasterKey(seedPhrase);
+        if (masterKey.isErr()) return err(masterKey.error);
+        this.seedPhrase = seedPhrase;
+        this.masterKey = masterKey.value;
         let depthCounter = 0;
         let threshCounter = 0;
         const foundAddr = new Map<string, IKeypair>();
@@ -293,48 +314,53 @@ export class mgmtClient {
         const addrSet: Set<string> = new Set(addressList);
 
         while (threshCounter < seedRegenThreshold) {
-            if (this.masterKey !== undefined) {
-                const nextDerived = getNextDerivedKeypair(this.masterKey, depthCounter);
-                if (nextDerived.isErr()) return err(nextDerived.error);
-                const currentAddr = constructAddress(nextDerived.value.publicKey, ADDRESS_VERSION);
-                const currentAddrDefault = constructAddress(
-                    nextDerived.value.publicKey,
-                    TEMP_ADDRESS_VERSION,
-                );
-                if (currentAddr.isErr()) return err(currentAddr.error);
-                if (currentAddrDefault.isErr()) return err(currentAddrDefault.error);
-                if (addrSet.has(currentAddr.value) && !foundAddr.get(currentAddr.value)) {
-                    const keypair = {
-                        address: currentAddr.value,
-                        secretKey: nextDerived.value.secretKey,
-                        publicKey: nextDerived.value.publicKey,
-                        version: ADDRESS_VERSION,
-                    };
-                    foundAddr.set(currentAddr.value, keypair);
-                    threshCounter = 0;
-                    //TODO: Depreciate once temporary address structure is removed
-                } else if (
-                    addrSet.has(currentAddrDefault.value) &&
-                    !foundAddr.get(currentAddrDefault.value)
-                ) {
-                    const keypair = {
-                        address: currentAddrDefault.value,
-                        secretKey: nextDerived.value.secretKey,
-                        publicKey: nextDerived.value.publicKey,
-                        version: TEMP_ADDRESS_VERSION,
-                    };
-                    foundAddr.set(currentAddrDefault.value, keypair);
-                    threshCounter = 0;
-                } else {
-                    threshCounter++;
-                }
-                depthCounter++;
+            const nextDerived = getNextDerivedKeypair(masterKey.value, depthCounter);
+            if (nextDerived.isErr()) return err(nextDerived.error);
+            const currentAddr = constructAddress(nextDerived.value.publicKey, ADDRESS_VERSION);
+            const currentAddrDefault = constructAddress(
+                nextDerived.value.publicKey,
+                TEMP_ADDRESS_VERSION,
+            );
+            if (currentAddr.isErr()) return err(currentAddr.error);
+            if (currentAddrDefault.isErr()) return err(currentAddrDefault.error);
+            if (addrSet.has(currentAddr.value) && !foundAddr.get(currentAddr.value)) {
+                const keypair = {
+                    address: currentAddr.value,
+                    secretKey: nextDerived.value.secretKey,
+                    publicKey: nextDerived.value.publicKey,
+                    version: ADDRESS_VERSION,
+                };
+                foundAddr.set(currentAddr.value, keypair);
+                threshCounter = 0;
+                //TODO: Depreciate once temporary address structure is removed
+            } else if (
+                addrSet.has(currentAddrDefault.value) &&
+                !foundAddr.get(currentAddrDefault.value)
+            ) {
+                const keypair = {
+                    address: currentAddrDefault.value,
+                    secretKey: nextDerived.value.secretKey,
+                    publicKey: nextDerived.value.publicKey,
+                    version: TEMP_ADDRESS_VERSION,
+                };
+                foundAddr.set(currentAddrDefault.value, keypair);
+                threshCounter = 0;
+            } else {
+                threshCounter++;
             }
+            depthCounter++;
         }
         if (foundAddr.size === 0) {
             return err(IErrorInternal.UnableToRegenAddresses);
         } else {
             return ok(Array.from(foundAddr.values()));
         }
+    }
+
+    public getMasterKey(): SyncResult<IMasterKeyEncrypted> {
+        if (!this.masterKey) return err(IErrorInternal.UnableToGetExistingMasterKey);
+        const encryptedMasterKey = this.encryptMasterKey(this.masterKey);
+        if (encryptedMasterKey.isErr()) return err(encryptedMasterKey.error);
+        return ok(encryptedMasterKey.value);
     }
 }
