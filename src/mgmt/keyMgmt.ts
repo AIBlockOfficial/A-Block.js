@@ -215,7 +215,7 @@ export function generateNewKeypairAndAddress(
     masterKey: any,
     addressVersion: number | null,
     addresses: string[],
-): SyncResult<[IKeypair, string]> {
+): SyncResult<IKeypair> {
     let counter = addresses.length;
 
     let currentKey = getNextDerivedKeypair(masterKey, counter);
@@ -233,10 +233,11 @@ export function generateNewKeypairAndAddress(
 
     // Return keypair
     const keypair = {
+        address: currentAddr.value,
         secretKey: currentKey.value.secretKey,
         publicKey: currentKey.value.publicKey,
         version: addressVersion,
     } as IKeypair;
 
-    return ok([keypair, currentAddr.value]);
+    return ok(keypair);
 }

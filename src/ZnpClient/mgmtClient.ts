@@ -14,6 +14,7 @@ import {
 } from '../mgmt/keyMgmt';
 import {
     ICreateTransaction,
+    ICreateTransactionEncrypted,
     IErrorInternal,
     IKeypair,
     IKeypairEncrypted,
@@ -24,19 +25,7 @@ import {
 import { err, ok } from 'neverthrow';
 import { getAddressVersion } from '../mgmt/keyMgmt';
 
-export type IMgmtCallbacks = {
-    saveMasterKey: (saveInfo: string) => void;
-    getMasterKey: () => string | null;
-    saveKeypair: (address: string, saveInfo: string) => void;
-    getKeypair: (address: string) => string | null;
-    getAddresses: () => string[] | null;
-    saveDRUID: (druid: string, saveInfo: string) => void;
-    getDRUID: (druid: string) => string | null;
-    getDRUIDs: () => string[] | null;
-};
-
 export class mgmtClient {
-    private callBacks: IMgmtCallbacks;
     private passphraseKey: Uint8Array;
     private _seedPhrase: string | undefined;
     public get seedPhrase(): string | undefined {
@@ -53,8 +42,7 @@ export class mgmtClient {
         this._masterKey = value;
     }
 
-    constructor(callbacks: IMgmtCallbacks) {
-        this.callBacks = callbacks;
+    constructor() {
         this.passphraseKey = new Uint8Array();
         this.masterKey = undefined;
     }
@@ -67,99 +55,59 @@ export class mgmtClient {
      * @return {*}  {SyncResult<void>}
      * @memberof mgmtClient
      */
-    public init(passphraseKey: string, seedPhrase?: string): SyncResult<void> {
+    public init(
+        passphraseKey: string,
+        seedPhrase?: string,
+    ): SyncResult<[string, IMasterKeyEncrypted]> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
-        /* There is an existing master key */
-        const masterKey = this.getMasterKey(passphrase.value);
-        if (masterKey.isOk()) {
-            this.seedPhrase = undefined;
-            this.masterKey = masterKey.value;
-        }
-        /* There is no existing master key, so generate one */
-        if (masterKey.isErr()) {
-            const generatedSeed = generateSeed();
-            if (generatedSeed.isErr()) return err(generatedSeed.error);
-            /* Either generate a new seed phrase or use the supplied one */
-            const seed: string =
-                seedPhrase && seedPhrase.length != 0 ? seedPhrase : generatedSeed.value;
-            const newMasterKey = generateMasterKey(seed);
-            if (newMasterKey.isErr()) return err(newMasterKey.error);
-            this.masterKey = newMasterKey.value;
-            this.seedPhrase = seed;
-            const saveResult = this.saveMasterKey(newMasterKey.value, passphrase.value);
-            if (saveResult.isErr()) return err(saveResult.error);
-        }
-        return ok(undefined);
+        const generatedSeed = generateSeed();
+        if (generatedSeed.isErr()) return err(generatedSeed.error);
+        /* Either generate a new seed phrase or use the supplied one */
+        const seed: string =
+            seedPhrase && seedPhrase.length != 0 ? seedPhrase : generatedSeed.value;
+        const newMasterKey = generateMasterKey(seed);
+        if (newMasterKey.isErr()) return err(newMasterKey.error);
+        this.masterKey = newMasterKey.value;
+        this.seedPhrase = seed;
+        const saveResult = this.encryptMasterKey(newMasterKey.value, passphrase.value);
+        if (saveResult.isErr()) return err(saveResult.error);
+        return ok([seed, saveResult.value]);
     }
 
-    /**
-     * Generate a new address and save it using the `saveKeypair` callback
-     *
-     * @return {*}  {SyncResult<string>}
-     * @memberof mgmtClient
-     */
-    public getNewAddress(): SyncResult<string> {
-        const allAddresses = this.getAddresses();
-        if (allAddresses.isErr()) return err(allAddresses.error);
+    public getNewAddress(allAddresses: string[]): SyncResult<IKeypairEncrypted> {
         const newKeyPairResult = generateNewKeypairAndAddress(
             this.masterKey,
             ADDRESS_VERSION,
-            allAddresses.value,
+            allAddresses,
         );
         if (newKeyPairResult.isErr()) return err(newKeyPairResult.error);
-        const [keypair, address] = newKeyPairResult.value;
-        const saveResult = this.saveKeypair(keypair, address);
-        if (saveResult.isErr()) return err(saveResult.error);
-        return ok(address);
+        const keypair = newKeyPairResult.value;
+        const saveResult = this.encryptKeypair(keypair);
+        return saveResult;
     }
 
-    /**
-     * Generate a new seed phrase
-     *
-     * @return {*}  {SyncResult<string>}
-     * @memberof mgmtClient
-     */
     public getNewSeedPhrase(): SyncResult<string> {
         return generateSeed();
     }
 
-    /**
-     * Either generate a new seed phrase if there's not an existing one
-     * , or return the existing one
-     *
-     * @return {*}  {SyncResult<string>}
-     * @memberof mgmtClient
-     */
     public getSeedPhrase(): SyncResult<string> {
         const generatedSeedPhrase = generateSeed();
         if (generatedSeedPhrase.isErr()) return err(generatedSeedPhrase.error);
         return ok(this._seedPhrase === undefined ? generatedSeedPhrase.value : this._seedPhrase);
     }
 
-    /**
-     * Test a seed phrase to see if it's valid
-     *
-     * @param {string} seedPhrase
-     * @return {*}  {SyncResult<void>}
-     * @memberof mgmtClient
-     */
     public testSeedPhrase(seedPhrase: string): SyncResult<void> {
         const result = generateMasterKey(seedPhrase);
         if (result.isErr()) return err(result.error);
         else return ok(undefined);
     }
 
-    /**
-     * Save the master key
-     *
-     * @param {IMasterKey} masterKey
-     * @param {Uint8Array} [passphrase]
-     * @return {*}  {SyncResult<void>}
-     * @memberof mgmtClient
-     */
-    public saveMasterKey(masterKey: IMasterKey, passphrase?: Uint8Array): SyncResult<void> {
+    public encryptMasterKey(
+        masterKey: IMasterKey,
+        passphrase?: Uint8Array,
+    ): SyncResult<IMasterKeyEncrypted> {
         try {
             const nonce = truncateByBytesUTF8(uuidv4(), 24);
             const secretKey = getStringBytes(masterKey.secret.xprivkey);
@@ -169,138 +117,90 @@ export class mgmtClient {
                 passphrase ? passphrase : this.passphraseKey,
             );
 
-            const saveInfo = JSON.stringify({
+            return ok({
                 nonce,
                 save: bytesToBase64(save),
-            });
-            this.callBacks.saveMasterKey(saveInfo);
+            } as IMasterKeyEncrypted);
         } catch {
-            return err(IErrorInternal.UnableToSaveMasterKey);
+            return err(IErrorInternal.UnableToEncryptMasterKey);
         }
-        return ok(undefined);
     }
 
-    /**
-     * Get the master key
-     *
-     * @param {Uint8Array} [passphrase]
-     * @return {*}  {SyncResult<IMasterKey>}
-     * @memberof mgmtClient
-     */
-    public getMasterKey(passphrase?: Uint8Array): SyncResult<IMasterKey> {
-        const ret = this.callBacks.getMasterKey();
-        if (ret && this.passphraseKey) {
-            try {
-                const result = JSON.parse(ret) as IMasterKeyEncrypted;
-                const savedDetails = base64ToBytes(result.save);
-                const save = nacl.secretbox.open(
-                    savedDetails,
-                    getStringBytes(result.nonce),
-                    passphrase ? passphrase : this.passphraseKey,
-                );
-                if (save) {
-                    const kRaw = getBytesString(save);
-                    const privKey = new bitcoreLib.HDPrivateKey(kRaw);
+    public decryptMasterKey(
+        masterKeyEncrypted: IMasterKeyEncrypted,
+        passphrase?: Uint8Array,
+    ): SyncResult<IMasterKey> {
+        try {
+            const savedDetails = base64ToBytes(masterKeyEncrypted.save);
+            const save = nacl.secretbox.open(
+                savedDetails,
+                getStringBytes(masterKeyEncrypted.nonce),
+                passphrase ? passphrase : this.passphraseKey,
+            );
+            if (save) {
+                const kRaw = getBytesString(save);
+                const privKey = new bitcoreLib.HDPrivateKey(kRaw);
 
-                    return ok({
-                        secret: privKey,
-                        seed: '',
-                    });
-                } else return err(IErrorInternal.MasterKeyCorrupt);
-            } catch {
-                return err(IErrorInternal.MasterKeyCorrupt);
-            }
+                return ok({
+                    secret: privKey,
+                    seed: '',
+                });
+            } else return err(IErrorInternal.MasterKeyCorrupt);
+        } catch {
+            return err(IErrorInternal.MasterKeyCorrupt);
         }
-        return err(IErrorInternal.UnableToRetrieveMasterKey);
     }
 
-    /**
-     * Save a key-pair
-     *
-     * @param {IKeypair} keypair
-     * @param {string} address
-     * @return {*}  {SyncResult<void>}
-     * @memberof mgmtClient
-     */
-    public saveKeypair(keypair: IKeypair, address: string): SyncResult<void> {
+    public encryptKeypair(keypair: IKeypair): SyncResult<IKeypairEncrypted> {
         try {
             const nonce = truncateByBytesUTF8(uuidv4(), 24);
             const pubPriv = concatTypedArrays(keypair.publicKey, keypair.secretKey);
             const save = nacl.secretbox(pubPriv, getStringBytes(nonce), this.passphraseKey);
-            const saveInfo = JSON.stringify({
+            return ok({
+                address: keypair.address,
                 nonce,
                 version: keypair.version,
                 save: bytesToBase64(save),
-            });
-            this.callBacks.saveKeypair(address, saveInfo);
+            } as IKeypairEncrypted);
         } catch {
-            return err(IErrorInternal.UnableToSaveKeyPair);
+            return err(IErrorInternal.UnableToEncryptKeypair);
         }
-        return ok(undefined);
     }
 
-    /**
-     * Get a key-pair
-     *
-     * @param {string} address
-     * @return {*}  {SyncResult<IKeypair>}
-     * @memberof mgmtClient
-     */
-    public getKeypair(address: string): SyncResult<IKeypair> {
-        const ret = this.callBacks.getKeypair(address);
-        if (ret !== null) {
-            try {
-                const result = JSON.parse(ret) as IKeypairEncrypted;
-                const savedDetails = base64ToBytes(result.save);
-                const save = nacl.secretbox.open(
-                    savedDetails,
-                    getStringBytes(result.nonce),
-                    this.passphraseKey,
-                );
-                let publicKey: Uint8Array = new Uint8Array();
-                let secretKey: Uint8Array = new Uint8Array();
+    public decryptKeypair(keypair: IKeypairEncrypted): SyncResult<IKeypair> {
+        try {
+            const savedDetails = base64ToBytes(keypair.save);
+            const save = nacl.secretbox.open(
+                savedDetails,
+                getStringBytes(keypair.nonce),
+                this.passphraseKey,
+            );
+            let publicKey: Uint8Array = new Uint8Array();
+            let secretKey: Uint8Array = new Uint8Array();
 
-                if (save != null) {
-                    publicKey = save.slice(0, 32);
-                    secretKey = save.slice(32);
-                } else {
-                    return err(IErrorInternal.UnableToRetrieveKeypair);
-                }
-
-                // Handle the case where the version doesn't exist in DB (TEMP ADDRESS STRUCTURE) (pre v1.0.4)
-                // TODO: Depreciate this code once the temporary addresses have retired
-                const version = getAddressVersion(publicKey, address);
-                if (version.isErr()) return err(version.error);
-                if (result.version === null && version.value === TEMP_ADDRESS_VERSION) {
-                    const saveInfo = JSON.stringify({
-                        nonce: result.nonce,
-                        version: TEMP_ADDRESS_VERSION,
-                        save: result.save,
-                    });
-                    this.callBacks.saveKeypair(address, saveInfo);
-                }
-
-                return ok({ publicKey, secretKey, version: result.version });
-            } catch {
-                return err(IErrorInternal.UnableToRetrieveKeypair);
+            if (save != null) {
+                publicKey = save.slice(0, 32);
+                secretKey = save.slice(32);
+            } else {
+                return err(IErrorInternal.UnableToDecryptKeypair);
             }
-        }
-        return err(IErrorInternal.UnableToRetrieveKeypair);
-    }
 
-    /**
-     * Get an array of all the existing addresses
-     * using the `getAddresses` callback
-     *
-     * @return {*}  {SyncResult<string[]>}
-     * @memberof mgmtClient
-     */
-    public getAddresses(): SyncResult<string[]> {
-        const addresses = this.callBacks.getAddresses();
-        if (addresses) {
-            return ok(addresses);
-        } else {
-            return err(IErrorInternal.UnableToRetrieveAddresses);
+            // Handle the case where the version doesn't exist in DB (TEMP ADDRESS STRUCTURE) (pre v1.0.4)
+            // TODO: Depreciate this code once the temporary addresses have retired
+            const version = getAddressVersion(publicKey, keypair.address);
+            if (version.isErr()) return err(version.error);
+            const addrVersion =
+                keypair.version === null && version.value === TEMP_ADDRESS_VERSION
+                    ? TEMP_ADDRESS_VERSION
+                    : ADDRESS_VERSION;
+            return ok({
+                address: keypair.address,
+                version: addrVersion,
+                publicKey,
+                secretKey,
+            });
+        } catch {
+            return err(IErrorInternal.UnableToDecryptKeypair);
         }
     }
 
@@ -318,44 +218,9 @@ export class mgmtClient {
         return newDRUID;
     }
 
-    /**
-     * Save info with druid value
-     *
-     * @param {string} druid
-     * @param {string} saveInfo
-     * @return {*}  {SyncResult<void>}
-     * @memberof mgmtClient
-     */
-    public saveDRUIDInfo(druid: string, saveInfo: string): SyncResult<void> {
-        try {
-            this.callBacks.saveDRUID(druid, saveInfo);
-            return ok(undefined);
-        } catch {
-            return err(IErrorInternal.UnableToSaveDruid);
-        }
-    }
-
-    /**
-     * Get encrypted transaction saved along with DRUID value
-     *
-     * @param {string} druid
-     * @return {*}  {SyncResult<ICreateTransaction>}
-     * @memberof mgmtClient
-     */
-    public getDRUIDInfo(druid: string): SyncResult<ICreateTransaction> {
-        const druidInfo = this.callBacks.getDRUID(druid);
-        if (druidInfo === null) return err(IErrorInternal.UnableToDecryptTransaction);
-        return this.decryptTransaction(druidInfo);
-    }
-
-    /**
-     * Encrypt a transaction
-     *
-     * @param {ICreateTransaction} transaction
-     * @return {*}  {SyncResult<string>}
-     * @memberof mgmtClient
-     */
-    public encryptTransaction(transaction: ICreateTransaction): SyncResult<string> {
+    public encryptTransaction(
+        transaction: ICreateTransaction,
+    ): SyncResult<ICreateTransactionEncrypted> {
         try {
             const nonce = truncateByBytesUTF8(uuidv4(), 24);
             const save = nacl.secretbox(
@@ -363,33 +228,37 @@ export class mgmtClient {
                 getStringBytes(nonce),
                 this.passphraseKey,
             );
-            const saveInfo = JSON.stringify({
+            return ok({
+                druid: transaction.druid_info?.druid,
                 nonce,
                 save: bytesToBase64(save),
-            });
-            return ok(saveInfo);
+            } as ICreateTransactionEncrypted);
         } catch {
             return err(IErrorInternal.UnableToEncryptTransaction);
         }
     }
 
-    /**
-     * Decrypt a transaction
-     *
-     * @param {string} saveInfo
-     * @return {*}  {SyncResult<ICreateTransaction>}
-     * @memberof mgmtClient
-     */
-    public decryptTransaction(saveInfo: string): SyncResult<ICreateTransaction> {
+    public getAllAddressesAndKeypairMap(
+        allKeypairs: IKeypairEncrypted[],
+    ): [string[], Map<string, IKeypair>] {
+        const allAddresses = Object.values(allKeypairs).map((keypair) => keypair.address);
+        const keyPairMap = new Map<string, IKeypair>();
+        for (const keypair of allKeypairs) {
+            const keyPair = this.decryptKeypair(keypair);
+            if (keyPair.isErr()) throw new Error(keyPair.error);
+            keyPairMap.set(keypair.address, keyPair.value);
+        }
+        return [allAddresses, keyPairMap];
+    }
+
+    public decryptTransaction(
+        encryptedTx: ICreateTransactionEncrypted,
+    ): SyncResult<ICreateTransaction> {
         try {
-            const result = JSON.parse(saveInfo) as {
-                nonce: string;
-                save: string;
-            };
-            const savedDetails = base64ToBytes(result.save);
+            const savedDetails = base64ToBytes(encryptedTx.save);
             const save = nacl.secretbox.open(
                 savedDetails,
-                getStringBytes(result.nonce),
+                getStringBytes(encryptedTx.nonce),
                 this.passphraseKey,
             );
 
@@ -415,10 +284,10 @@ export class mgmtClient {
     public regenAddresses(
         addressList: string[],
         seedRegenThreshold: number = SEED_REGEN_THRES,
-    ): SyncResult<Set<string>> {
+    ): SyncResult<IKeypair[]> {
         let depthCounter = 0;
         let threshCounter = 0;
-        const foundAddr = new Set<string>();
+        const foundAddr = new Map<string, IKeypair>();
 
         // Use a `Set` for better indexing performance
         const addrSet: Set<string> = new Set(addressList);
@@ -434,29 +303,27 @@ export class mgmtClient {
                 );
                 if (currentAddr.isErr()) return err(currentAddr.error);
                 if (currentAddrDefault.isErr()) return err(currentAddrDefault.error);
-                if (addrSet.has(currentAddr.value) && !foundAddr.has(currentAddr.value)) {
+                if (addrSet.has(currentAddr.value) && !foundAddr.get(currentAddr.value)) {
                     const keypair = {
+                        address: currentAddr.value,
                         secretKey: nextDerived.value.secretKey,
                         publicKey: nextDerived.value.publicKey,
                         version: ADDRESS_VERSION,
                     };
-                    const saveResult = this.saveKeypair(keypair, currentAddr.value);
-                    if (saveResult.isErr()) return err(saveResult.error);
-                    foundAddr.add(currentAddr.value);
+                    foundAddr.set(currentAddr.value, keypair);
                     threshCounter = 0;
                     //TODO: Depreciate once temporary address structure is removed
                 } else if (
                     addrSet.has(currentAddrDefault.value) &&
-                    !foundAddr.has(currentAddrDefault.value)
+                    !foundAddr.get(currentAddrDefault.value)
                 ) {
                     const keypair = {
+                        address: currentAddrDefault.value,
                         secretKey: nextDerived.value.secretKey,
                         publicKey: nextDerived.value.publicKey,
                         version: TEMP_ADDRESS_VERSION,
                     };
-                    const saveResult = this.saveKeypair(keypair, currentAddrDefault.value);
-                    if (saveResult.isErr()) return err(saveResult.error);
-                    foundAddr.add(currentAddrDefault.value);
+                    foundAddr.set(currentAddrDefault.value, keypair);
                     threshCounter = 0;
                 } else {
                     threshCounter++;
@@ -467,7 +334,7 @@ export class mgmtClient {
         if (foundAddr.size === 0) {
             return err(IErrorInternal.UnableToRegenAddresses);
         } else {
-            return ok(foundAddr);
+            return ok(Array.from(foundAddr.values()));
         }
     }
 }

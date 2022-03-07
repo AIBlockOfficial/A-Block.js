@@ -87,6 +87,15 @@ export type IFetchPendingDDEResponse = {
 };
 
 /* -------------------------------------------------------------------------- */
+/*                            Client Response Types                           */
+/* -------------------------------------------------------------------------- */
+
+export type IMakeRbPaymentResponse = {
+    druid: string;
+    encryptedTx: ICreateTransactionEncrypted;
+};
+
+/* -------------------------------------------------------------------------- */
 /*                                API Payloads                                */
 /* -------------------------------------------------------------------------- */
 export type IReceiptCreationAPIPayload = {
@@ -112,7 +121,6 @@ export enum IErrorInternal {
     NoInputs = 'No inputs for transaction',
     InvalidInputs = 'Some inputs are invalid',
     UnableToGenerateDruid = 'Unable to generate DRUID',
-    UnableToSaveDruid = 'Unable to save DRUID',
     UnableToConstructTxIns = 'Unable to construct tx ins',
     UnableToConstructSignature = 'Unable to construct signature',
     InvalidAddressVersion = 'Unable to determine address version',
@@ -121,15 +129,15 @@ export enum IErrorInternal {
     UnableToConstructDefaultAddress = 'Unable to construct default address',
     UnableToGenerateSeed = 'Unable to generate seed',
     UnableToGetPassphraseBuffer = 'Unable to get passphrase buffer',
+    UnableToGetKeypair = 'Unable to get key-pair',
     UnableToGenerateMasterKey = 'Unable to generate master key',
-    UnableToGenerateKeypair = 'Unable to generate keypair',
-    UnableToDeriveNextKeypair = 'Unable to derive next keypair',
-    UnableToRetrieveKeypair = 'Unable to retrieve keypair',
-    UnableToRetrieveMasterKey = 'Unable to retrieve master key',
-    UnableToSaveMasterKey = 'Unable to save master key',
-    UnableToSaveKeyPair = 'Unable to save key-pair',
+    UnableToGenerateKeypair = 'Unable to generate key-pair',
+    UnableToDeriveNextKeypair = 'Unable to derive next key-pair',
+    UnableToEncryptKeypair = 'Unable to encrypt key-pair',
+    UnableToEncryptMasterKey = 'Unable to encrypt master key',
+    UnableToDecryptKeypair = 'Unable to decrypt keypair',
+    UnableToDecryptMasterKey = 'Unable to decrypt master key',
     MasterKeyCorrupt = 'Master key is corrupt',
-    UnableToRetrieveAddresses = 'Unable to retrieve addresses',
     UnableToRegenAddresses = 'Unable to regenerate addresses',
     UnableToEncryptTransaction = 'Unable to encrypt transaction',
     UnableToDecryptTransaction = 'Unable to decrypt transaction',
@@ -167,12 +175,14 @@ export type IMasterKeyEncrypted = {
 };
 
 export type IKeypair = {
+    address: string;
     secretKey: Uint8Array;
     publicKey: Uint8Array;
     version: number | null;
 };
 
 export type IKeypairEncrypted = {
+    address: string;
     nonce: string;
     version: number | null;
     save: string;
@@ -248,6 +258,12 @@ export type ICreateTransaction = {
     outputs: ITxOut[];
     version: number;
     druid_info: IDdeValues | null;
+};
+
+export type ICreateTransactionEncrypted = {
+    druid: string;
+    nonce: string;
+    save: string;
 };
 
 /*====== ENUMS =======*/

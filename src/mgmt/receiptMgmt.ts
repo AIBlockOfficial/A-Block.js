@@ -74,14 +74,9 @@ export function CreateRbTxHalf(
     receiveAssetType: 'Token' | 'Receipt',
     receiveAddress: string,
     excessAddress: string,
-    getKeypairCallback: (address: string) => SyncResult<IKeypair>,
+    allKeypairs: Map<string, IKeypair>,
 ): SyncResult<ICreateTxPayload> {
-    const txIns = getInputsForTx(
-        sendAmount,
-        sendAssetType,
-        fetchBalanceResponse,
-        getKeypairCallback,
-    );
+    const txIns = getInputsForTx(sendAmount, sendAssetType, fetchBalanceResponse, allKeypairs);
 
     if (txIns.isErr()) return err(txIns.error);
 

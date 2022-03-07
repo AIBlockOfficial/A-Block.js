@@ -40,7 +40,7 @@ export function getInputsForTx(
     paymentAmount: number,
     paymentAsset: 'Token' | 'Receipt',
     fetchBalanceResponse: IFetchBalanceResponse,
-    getKeypairCallback: (address: string) => SyncResult<IKeypair>,
+    allKeypairs: Map<string, IKeypair>,
 ): SyncResult<[string[], number, ICreateTxIn[]]> {
     // Check to see if there's enough funds
     const enoughRunningTotal =
@@ -56,8 +56,8 @@ export function getInputsForTx(
         const inputs = Object.entries(fetchBalanceResponse.address_list).map(
             ([address, outPoints]) => {
                 const ICreateTxIn: ICreateTxIn[] = [];
-                const keyPair = getKeypairCallback(address);
-                if (keyPair.isErr()) return err(keyPair.error);
+                const keyPair = allKeypairs.get(address);
+                if (!keyPair) throw new Error(IErrorInternal.UnableToConstructTxIns);
                 let usedOutpointsCount = 0;
                 outPoints.forEach(({ out_point, value }) => {
                     if (
@@ -67,12 +67,9 @@ export function getInputsForTx(
                     ) {
                         const signableData = constructTxInSignableData(out_point);
                         const signature = signableData
-                            ? constructSignature(
-                                  getStringBytes(signableData),
-                                  keyPair.value.secretKey,
-                              )
+                            ? constructSignature(getStringBytes(signableData), keyPair.secretKey)
                             : ok('');
-                        const addressVersion = getAddressVersion(keyPair.value.publicKey, address);
+                        const addressVersion = getAddressVersion(keyPair.publicKey, address);
                         if (addressVersion.isErr()) return err(addressVersion.error);
                         if (signature.isErr()) return err(signature.error);
 
@@ -80,7 +77,7 @@ export function getInputsForTx(
                             Pay2PkH: {
                                 signable_data: signableData || '',
                                 signature: signature.value,
-                                public_key: Buffer.from(keyPair.value.publicKey).toString('hex'),
+                                public_key: Buffer.from(keyPair.publicKey).toString('hex'),
                                 address_version: addressVersion.value,
                             },
                         };
@@ -226,9 +223,9 @@ export function CreateTokenPaymentTx(
     paymentAddress: string,
     excessAddress: string,
     fetchBalanceResponse: IFetchBalanceResponse,
-    getKeypairCallback: (address: string) => SyncResult<IKeypair>,
+    allKeypairs: Map<string, IKeypair>,
 ): SyncResult<ICreateTxPayload> {
-    const txIns = getInputsForTx(amount, 'Token', fetchBalanceResponse, getKeypairCallback);
+    const txIns = getInputsForTx(amount, 'Token', fetchBalanceResponse, allKeypairs);
     if (txIns.isErr()) return err(txIns.error);
 
     return CreateTx(paymentAddress, amount, 'Token', excessAddress, null, txIns.value);

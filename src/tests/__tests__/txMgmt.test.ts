@@ -1,26 +1,26 @@
 /* eslint-disable jest/no-conditional-expect */
-import { ok } from 'neverthrow';
-import { IKeypair, IOutPoint, ICreateTxInScript, SyncResult } from '../../interfaces';
+import { IKeypair, IOutPoint, ICreateTxInScript } from '../../interfaces';
 import { ADDRESS_VERSION } from '../../mgmt';
 import * as txMgmt from '../../mgmt/txMgmt';
-import { getHexStringBytes } from '../../utils';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
 
 test('create transaction for a token amount', () => {
-    const getKeypairCallback = (address: string): SyncResult<IKeypair> => {
-        return ok({
-            secretKey: getHexStringBytes(ADDRESS_LIST_TEST[address].secret_key),
-            publicKey: getHexStringBytes(ADDRESS_LIST_TEST[address].public_key),
+    const keyPairMap = new Map<string, IKeypair>();
+    for (const addr of Object.keys(ADDRESS_LIST_TEST)) {
+        keyPairMap.set(addr, {
+            address: addr,
+            secretKey: Buffer.from(ADDRESS_LIST_TEST[addr].secret_key, 'hex'),
+            publicKey: Buffer.from(ADDRESS_LIST_TEST[addr].public_key, 'hex'),
             version: ADDRESS_VERSION,
         });
-    };
+    }
 
     const createTransaction = txMgmt.CreateTokenPaymentTx(
         1050,
         'payment_address',
         'excess_address',
         FETCH_BALANCE_RESPONSE_TEST,
-        getKeypairCallback,
+        keyPairMap,
     );
 
     if (createTransaction.isOk()) {
