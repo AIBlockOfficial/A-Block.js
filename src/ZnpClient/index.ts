@@ -435,7 +435,6 @@ export class ZnpClient {
             );
             if (sendRbTxHalf.isErr()) throw new Error(sendRbTxHalf.error);
             // Create transaction struct has successfully been created
-            // TODO: Save encrypted TX to database for usage when RB transaction is accepted
             const encryptedTx = this.keyMgmt.encryptTransaction(sendRbTxHalf.value.createTx);
             if (encryptedTx.isErr()) throw new Error(encryptedTx.error);
             // Save encrypted transaction along with druid value if we are the initiators of this Tx
@@ -541,23 +540,6 @@ export class ZnpClient {
                 const fromAddr = constructTxInsAddress(sendRbTxHalf.value.createTx.inputs);
                 if (fromAddr.isErr()) throw new Error(fromAddr.error);
                 txInfo.fromAddr = fromAddr.value;
-                const value: IPendingRbTxData = {};
-                value[druid] = txInfo;
-                const setBody = [
-                    generateIntercomSetBody<IPendingRbTxData>(
-                        txInfo.senderAddress,
-                        txInfo.receiverAddress,
-                        receiverKeypair.value,
-                        value,
-                    ),
-                ];
-
-                // Update 'sender' bucket value
-                await axios
-                    .post(`${this.intercomHost}${IAPIRoute.IntercomSet}`, setBody)
-                    .catch(async (error) => {
-                        throw new Error(error.message);
-                    });
 
                 // Send transaction to compute if accepted
                 await this.axiosClient
@@ -573,6 +555,24 @@ export class ZnpClient {
                         throw new Error(error.message);
                     });
             }
+
+            const value: IPendingRbTxData = {};
+            value[druid] = txInfo;
+            const setBody = [
+                generateIntercomSetBody<IPendingRbTxData>(
+                    txInfo.senderAddress,
+                    txInfo.receiverAddress,
+                    receiverKeypair.value,
+                    value,
+                ),
+            ];
+
+            // Update 'sender' bucket value
+            await axios
+                .post(`${this.intercomHost}${IAPIRoute.IntercomSet}`, setBody)
+                .catch(async (error) => {
+                    throw new Error(error.message);
+                });
 
             return {
                 status: 'success',
@@ -657,7 +657,8 @@ export class ZnpClient {
             // Get accepted and rejected receipt-based transactions
             //TODO: Do something with rejected transactions (they will expire on the intercom server in a few days anyways)
             // const [acceptedRbTxs, rejectedRbTxs];
-            const [acceptedRbTxs] = [
+            const rbDataToDelete: IRequestDelBody[] = [];
+            const [acceptedRbTxs, rejectedRbTxs] = [
                 Object.values(responseData).filter((response) =>
                     Object.values(response.value).every((val) => val.status === 'accepted'),
                 ),
@@ -668,7 +669,6 @@ export class ZnpClient {
             // TODO: Delete locally stored encrypted transactions
             // We have accepted receipt-based payments to send to compute
             if (acceptedRbTxs.length > 0) {
-                const rbDataToDelete: IRequestDelBody[] = [];
                 const transactionsToSend: ICreateTransaction[] = [];
                 for (const acceptedTx of acceptedRbTxs) {
                     const druid = Object.keys(
@@ -699,14 +699,6 @@ export class ZnpClient {
                     );
                 }
 
-                // Delete receipt-based data from intercom
-                // Update 'sender' bucket value
-                await axios
-                    .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
-                    .catch(async (error) => {
-                        throw new Error(error.message);
-                    });
-
                 // Send transactions to compute for processing
                 await this.axiosClient
                     .post<INetworkResponse>(IAPIRoute.CreateTransactions, transactionsToSend)
@@ -718,6 +710,32 @@ export class ZnpClient {
                         throw new Error(error.message);
                     });
             }
+
+            // Add rejected receipt-based transactions to the delete list as well!
+            if (rejectedRbTxs.length > 0) {
+                for (const rejectedTx of rejectedRbTxs) {
+                    const keyPair = allKeyPairs.filter(
+                        (keyPair) =>
+                            keyPair.address === Object.values(rejectedTx.value)[0].senderAddress,
+                    )[0].keyPair;
+                    rbDataToDelete.push(
+                        generateIntercomDelBody(
+                            Object.values(rejectedTx.value)[0].senderAddress,
+                            Object.values(rejectedTx.value)[0].receiverAddress,
+                            keyPair,
+                        ),
+                    );
+                }
+            }
+
+            // Delete receipt-based data from intercom
+            // Update 'sender' bucket value
+            await axios
+                .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
+                .catch(async (error) => {
+                    throw new Error(error.message);
+                });
+
             return {
                 status: 'success',
                 reason: 'Succesfully fetched pending receipt-based transactions',

@@ -1,6 +1,6 @@
 {
   "name": "@zenotta/zenotta-js",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "API module to access the Zenotta network",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -29,28 +29,28 @@
   "license": "MIT",
   "devDependencies": {
     "@types/bitcore-lib": "^0.15.3",
-    "@types/jest": "27.4.0",
-    "@typescript-eslint/eslint-plugin": "^5.12.0",
-    "@typescript-eslint/parser": "^5.12.0",
+    "@types/jest": "27.4.1",
+    "@typescript-eslint/eslint-plugin": "^5.13.0",
+    "@typescript-eslint/parser": "^5.13.0",
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
-    "eslint": "7.14.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-jest": "25.3.4",
+    "eslint": "7.5.0",
+    "eslint-config-prettier": "^8.4.0",
+    "eslint-plugin-jest": "26.1.1",
     "eslint-plugin-neverthrow": "^1.1.4",
     "eslint-plugin-typesafe": "^0.5.2",
-    "jest": "27.4.7",
+    "jest": "27.5.1",
     "microbundle": "^0.14.2",
     "prettier": "2.5.1",
     "ts-jest": "27.1.3",
-    "tslib": "^2.1.0",
-    "typescript": "4.5.4"
+    "tslib": "^2.3.1",
+    "typescript": "^4.5.0"
   },
   "files": [
     "lib/**/*"
   ],
   "dependencies": {
-    "axios": "^0.25.0",
+    "axios": "^0.26.0",
     "bitcore-lib": "^8.25.25",
     "bitcore-mnemonic": "^8.25.25",
     "byte-base64": "^1.1.0",
