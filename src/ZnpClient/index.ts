@@ -100,6 +100,13 @@ export class ZnpClient {
         this.keyMgmt = undefined;
     }
 
+    /**
+     * Initialize a new instance of the client without providing a master key or seed phrase
+     *
+     * @param {IClientConfig} config
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
     public initNew(config: IClientConfig): IClientResponse {
         this.initCommon(config);
         this.keyMgmt = new mgmtClient();
@@ -120,6 +127,14 @@ export class ZnpClient {
         }
     }
 
+    /**
+     * Initialize an instance of the client with a provided master key
+     *
+     * @param {IClientConfig} config
+     * @param {IMasterKeyEncrypted} masterKey
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
     public initFromMasterKey(
         config: IClientConfig,
         masterKey: IMasterKeyEncrypted,
@@ -140,6 +155,14 @@ export class ZnpClient {
         }
     }
 
+    /**
+     * Initialize an instance of the wallet with a provided seed phrase
+     *
+     * @param {IClientConfig} config
+     * @param {string} seedPhrase
+     * @return {*}  {IClientResponse}
+     * @memberof ZnpClient
+     */
     public initFromSeed(config: IClientConfig, seedPhrase: string): IClientResponse {
         this.initCommon(config);
         this.keyMgmt = new mgmtClient();
@@ -160,6 +183,13 @@ export class ZnpClient {
         }
     }
 
+    /**
+     * Common initialization
+     *
+     * @private
+     * @param {IClientConfig} config
+     * @memberof ZnpClient
+     */
     private initCommon(config: IClientConfig) {
         this.intercomHost = config.intercomHost;
         this.axiosClient = axios.create({
@@ -199,14 +229,21 @@ export class ZnpClient {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }
 
+    /**
+     * Fetch balance for an address list from the UTXO set
+     *
+     * @param {string[]} addressList
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     async fetchBalance(addressList: string[]): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
@@ -228,14 +265,21 @@ export class ZnpClient {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }
 
+    /**
+     * Fetch pending DDE transaction from the compute node
+     *
+     * @param {string[]} druids
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
@@ -257,14 +301,21 @@ export class ZnpClient {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }
 
+    /**
+     * Create receipt-assets for a provided address/key-pair
+     *
+     * @param {IKeypairEncrypted} address
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     public async createReceipts(address: IKeypairEncrypted): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
@@ -295,14 +346,24 @@ export class ZnpClient {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }
 
+    /**
+     * Make a payment of a specified token amount to a payment address
+     *
+     * @param {string} paymentAddress
+     * @param {number} paymentAmount
+     * @param {IKeypairEncrypted[]} allKeypairs
+     * @param {IKeypairEncrypted} excessKeypair
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     async makeTokenPayment(
         paymentAddress: string,
         paymentAmount: number,
@@ -320,7 +381,7 @@ export class ZnpClient {
             if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
                 throw new Error(balance.reason);
             // Get all existing addresses
-            if (allKeypairs.length === 0) throw new Error('No existing keypairs provided');
+            if (allKeypairs.length === 0) throw new Error('No existing key-pairs provided');
             // Create transaction
             const paymentBody = CreateTokenPaymentTx(
                 paymentAmount,
@@ -343,14 +404,24 @@ export class ZnpClient {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }
 
+    /**
+     * Create the "send" portion of a receipt-based payment
+     *
+     * @param {string} paymentAddress
+     * @param {number} tokenAmount
+     * @param {IKeypairEncrypted} receiveAddress
+     * @param {IKeypairEncrypted[]} allKeypairs
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     public async createRbSendTx(
         paymentAddress: string,
         tokenAmount: number,
@@ -368,7 +439,7 @@ export class ZnpClient {
             const balance = await this.fetchBalance(allAddresses);
             if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
                 throw new Error(balance.reason);
-            if (allAddresses.length === 0) throw new Error('No existing key-pairs found');
+            if (allAddresses.length === 0) throw new Error('No existing key-pairs provided');
 
             // Generate a DRUID value for this transaction
             const druidValue = this.keyMgmt.getNewDRUID();
@@ -433,14 +504,25 @@ export class ZnpClient {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }
 
+    /**
+     * Respond to a pending receipt-based payment
+     *
+     * @private
+     * @param {string} druid
+     * @param {IFetchPendingRbResponse} pendingResponse
+     * @param {('accepted' | 'rejected')} status
+     * @param {IKeypairEncrypted[]} allKeypairs
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     private async handleRbTxResponse(
         druid: string,
         pendingResponse: IFetchPendingRbResponse,
@@ -532,6 +614,15 @@ export class ZnpClient {
         }
     }
 
+    /**
+     * Accept a pending receipt-based payment
+     *
+     * @param {string} druid
+     * @param {IFetchPendingRbResponse} pendingResponse
+     * @param {IKeypairEncrypted[]} allKeypairs
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     public async acceptRbTx(
         druid: string,
         pendingResponse: IFetchPendingRbResponse,
@@ -540,6 +631,15 @@ export class ZnpClient {
         return this.handleRbTxResponse(druid, pendingResponse, 'accepted', allKeypairs);
     }
 
+    /**
+     * Reject a pending receipt-based payment
+     *
+     * @param {string} druid
+     * @param {IFetchPendingRbResponse} pendingResponse
+     * @param {IKeypairEncrypted[]} allKeypairs
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     public async rejectRbTx(
         druid: string,
         pendingResponse: IFetchPendingRbResponse,
@@ -548,6 +648,14 @@ export class ZnpClient {
         return this.handleRbTxResponse(druid, pendingResponse, 'rejected', allKeypairs);
     }
 
+    /**
+     * Fetch pending receipt-based payments from the Zenotta Intercom server
+     *
+     * @param {IKeypairEncrypted[]} allKeypairs
+     * @param {ICreateTransactionEncrypted[]} allEncryptedTxs
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZnpClient
+     */
     public async fetchPendingRbTransactions(
         allKeypairs: IKeypairEncrypted[],
         allEncryptedTxs: ICreateTransactionEncrypted[],
@@ -585,8 +693,6 @@ export class ZnpClient {
                 });
 
             // Get accepted and rejected receipt-based transactions
-            //TODO: Do something with rejected transactions (they will expire on the intercom server in a few days anyways)
-            // const [acceptedRbTxs, rejectedRbTxs];
             const rbDataToDelete: IRequestDelBody[] = [];
             const [acceptedRbTxs, rejectedRbTxs] = [
                 Object.values(responseData).filter((response) =>
@@ -596,7 +702,6 @@ export class ZnpClient {
                     Object.values(response.value).every((val) => val.status === 'rejected'),
                 ),
             ]; /* 'every' can be used here because there should only be a single DRUID key */
-            // TODO: Delete locally stored encrypted transactions
             // We have accepted receipt-based payments to send to compute
             if (acceptedRbTxs.length > 0) {
                 const transactionsToSend: ICreateTransaction[] = [];
@@ -660,8 +765,7 @@ export class ZnpClient {
                 }
             }
 
-            // Delete receipt-based data from intercom
-            // Update 'sender' bucket value
+            // Delete receipt-based data from intercom (accepted and rejected txs)
             await axios
                 .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
                 .catch(async (error) => {
@@ -675,10 +779,10 @@ export class ZnpClient {
                     fetchPendingRbResponse: responseData,
                 },
             } as IClientResponse;
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }
@@ -724,10 +828,10 @@ export class ZnpClient {
                     },
                 } as IClientResponse;
             } else throw new Error('Address reconstruction failed');
-        } catch (error: any) {
+        } catch (e) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${e}`,
             } as IClientResponse;
         }
     }

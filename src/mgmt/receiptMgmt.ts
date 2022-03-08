@@ -50,8 +50,7 @@ export function createReceiptPayload(
  *  Creates one half of a receipt-based payment to send to compute
  *
  * @export
- * @param {fetchBalanceResponse} fetchBalanceResponse
- * @param {Uint8Array} passphrase
+ * @param {IFetchBalanceResponse} fetchBalanceResponse
  * @param {string} paymentAddress
  * @param {string} fullDruid
  * @param {string} fromValue
@@ -59,9 +58,10 @@ export function createReceiptPayload(
  * @param {('Token' | 'Receipt')} sendAssetType
  * @param {number} receiveAmount
  * @param {('Token' | 'Receipt')} receiveAssetType
+ * @param {string} receiveAddress
  * @param {string} excessAddress
- * @param {(address: string, passphraseKey: Uint8Array) => Keypair} getKeypairCallback
- * @return {*}  {(CreateTxReturn | undefined)}
+ * @param {Map<string, IKeypair>} allKeypairs
+ * @return {*}  {SyncResult<ICreateTxPayload>}
  */
 export function CreateRbTxHalf(
     fetchBalanceResponse: IFetchBalanceResponse,
@@ -78,7 +78,7 @@ export function CreateRbTxHalf(
 ): SyncResult<ICreateTxPayload> {
     const txIns = getInputsForTx(sendAmount, sendAssetType, fetchBalanceResponse, allKeypairs);
 
-    if (txIns.isErr()) return err(txIns.error);
+    if (txIns.isErr()) return err(txIns.error); /* Inputs for this payment could not be found */
 
     const druidExpectation: IDruidExpectation = {
         from: fromValue,

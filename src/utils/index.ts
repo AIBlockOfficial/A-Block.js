@@ -1,6 +1,15 @@
 import { BAL_LIMIT } from '../mgmt';
 import { generateMasterKey, generateSeed } from '../mgmt/keyMgmt';
 
+/**
+ * Cast `status` received from ZNP to lowercase string variant
+ *
+ * TODO: There's probably already a built-in function for this?
+ *
+ * @export
+ * @param {('Success' | 'Error' | 'InProgress' | 'Unknown')} status
+ * @return {*}  {('success' | 'error' | 'pending' | 'unknown')}
+ */
 export function castAPIStatus(
     status: 'Success' | 'Error' | 'InProgress' | 'Unknown',
 ): 'success' | 'error' | 'pending' | 'unknown' {
