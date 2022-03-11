@@ -123,7 +123,7 @@ export class mgmtClient {
      * @return {*}  {SyncResult<IKeypairEncrypted>}
      * @memberof mgmtClient
      */
-    public getNewAddress(allAddresses: string[]): SyncResult<IKeypairEncrypted> {
+    public getNewKeypair(allAddresses: string[]): SyncResult<IKeypairEncrypted> {
         const newKeyPairResult = generateNewKeypairAndAddress(
             this.masterKey,
             ADDRESS_VERSION,

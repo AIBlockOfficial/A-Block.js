@@ -60,21 +60,21 @@ export type IClientResponse = {
     id?: string;
     status: 'success' | 'error' | 'pending' | 'unknown';
     reason?: string;
-    clientContent?: IContentType;
-    apiContent?: IApiContentType;
+    content?: IContentType;
 };
 
 export type IContentType = {
-    makeRbPaymentResponse?: IMakeRbPaymentResponse;
-    newAddressResponse?: IKeypairEncrypted;
     newDRUIDResponse?: string;
     newSeedPhraseResponse?: string;
     getSeedPhraseResponse?: string;
+    makeRbPaymentResponse?: IMakeRbPaymentResponse;
+    newKeypairResponse?: IKeypairEncrypted;
     getMasterKeyResponse?: IMasterKeyEncrypted;
     initNewResponse?: [string, IMasterKeyEncrypted];
     initFromSeedResponse?: IMasterKeyEncrypted;
     regenWalletResponse?: IKeypairEncrypted[];
-};
+} & IApiContentType;
+
 export type IApiContentType = {
     fetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
     fetchBalanceResponse?: IFetchBalanceResponse;
@@ -83,7 +83,7 @@ export type IApiContentType = {
     fetchPendingRbResponse?: IFetchPendingRbResponse;
 };
 
-export class ZnpClient {
+export class ZenottaInstance {
     /* -------------------------------------------------------------------------- */
     /*                              Member Variables                              */
     /* -------------------------------------------------------------------------- */
@@ -105,7 +105,7 @@ export class ZnpClient {
      *
      * @param {IClientConfig} config
      * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public initNew(config: IClientConfig): IClientResponse {
         this.initCommon(config);
@@ -120,7 +120,7 @@ export class ZnpClient {
             return {
                 status: 'success',
                 reason: 'ZNP client initialized',
-                clientContent: {
+                content: {
                     initNewResponse: initResult.value,
                 },
             } as IClientResponse;
@@ -133,7 +133,7 @@ export class ZnpClient {
      * @param {IClientConfig} config
      * @param {IMasterKeyEncrypted} masterKey
      * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public initFromMasterKey(
         config: IClientConfig,
@@ -161,7 +161,7 @@ export class ZnpClient {
      * @param {IClientConfig} config
      * @param {string} seedPhrase
      * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public initFromSeed(config: IClientConfig, seedPhrase: string): IClientResponse {
         this.initCommon(config);
@@ -176,7 +176,7 @@ export class ZnpClient {
             return {
                 status: 'success',
                 reason: 'ZNP client initialized',
-                clientContent: {
+                content: {
                     initFromSeedResponse: initResult.value,
                 },
             } as IClientResponse;
@@ -188,7 +188,7 @@ export class ZnpClient {
      *
      * @private
      * @param {IClientConfig} config
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     private initCommon(config: IClientConfig) {
         this.intercomHost = config.intercomHost;
@@ -209,7 +209,7 @@ export class ZnpClient {
      * Get all the addresses present on the ZNP UTXO set
      *
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public async getUtxoAddressList(): Promise<IClientResponse> {
         try {
@@ -221,7 +221,7 @@ export class ZnpClient {
                     return {
                         status: castAPIStatus(response.data.status),
                         reason: response.data.reason,
-                        apiContent: {
+                        content: {
                             fetchUtxoAddressesResponse: response.data.content,
                         },
                     } as IClientResponse;
@@ -242,7 +242,7 @@ export class ZnpClient {
      *
      * @param {string[]} addressList
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     async fetchBalance(addressList: string[]): Promise<IClientResponse> {
         try {
@@ -257,7 +257,7 @@ export class ZnpClient {
                     return {
                         status: castAPIStatus(response.data.status),
                         reason: response.data.reason,
-                        apiContent: {
+                        content: {
                             fetchBalanceResponse: response.data.content,
                         },
                     } as IClientResponse;
@@ -278,7 +278,7 @@ export class ZnpClient {
      *
      * @param {string[]} druids
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
         try {
@@ -293,7 +293,7 @@ export class ZnpClient {
                     return {
                         status: castAPIStatus(response.data.status),
                         reason: response.data.reason,
-                        apiContent: {
+                        content: {
                             fetchPendingDDEResponse: response.data.content,
                         },
                     } as IClientResponse;
@@ -314,7 +314,7 @@ export class ZnpClient {
      *
      * @param {IKeypairEncrypted} address
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public async createReceipts(address: IKeypairEncrypted): Promise<IClientResponse> {
         try {
@@ -338,7 +338,7 @@ export class ZnpClient {
                     return {
                         status: castAPIStatus(response.data.status),
                         reason: response.data.reason,
-                        apiContent: {
+                        content: {
                             createReceiptResponse: response.data.content,
                         },
                     } as IClientResponse;
@@ -362,7 +362,7 @@ export class ZnpClient {
      * @param {IKeypairEncrypted[]} allKeypairs
      * @param {IKeypairEncrypted} excessKeypair
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     async makeTokenPayment(
         paymentAddress: string,
@@ -378,7 +378,7 @@ export class ZnpClient {
 
             // First update balance
             const balance = await this.fetchBalance(allAddresses);
-            if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
+            if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
                 throw new Error(balance.reason);
             // Get all existing addresses
             if (allKeypairs.length === 0) throw new Error('No existing key-pairs provided');
@@ -387,7 +387,7 @@ export class ZnpClient {
                 paymentAmount,
                 paymentAddress,
                 excessKeypair.address,
-                balance.apiContent.fetchBalanceResponse,
+                balance.content.fetchBalanceResponse,
                 keyPairMap,
             );
             if (paymentBody.isErr()) throw new Error(paymentBody.error);
@@ -420,13 +420,13 @@ export class ZnpClient {
      * @param {IKeypairEncrypted} receiveAddress
      * @param {IKeypairEncrypted[]} allKeypairs
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
-    public async createRbSendTx(
+    public async makeRbPayment(
         paymentAddress: string,
         tokenAmount: number,
-        receiveAddress: IKeypairEncrypted,
         allKeypairs: IKeypairEncrypted[],
+        receiveAddress: IKeypairEncrypted,
     ): Promise<IClientResponse> {
         try {
             if (!this.axiosClient || !this.keyMgmt)
@@ -437,7 +437,7 @@ export class ZnpClient {
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs);
             // Update balance
             const balance = await this.fetchBalance(allAddresses);
-            if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
+            if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
                 throw new Error(balance.reason);
             if (allAddresses.length === 0) throw new Error('No existing key-pairs provided');
 
@@ -446,7 +446,7 @@ export class ZnpClient {
             if (druidValue.isErr()) throw new Error(druidValue.error);
 
             const sendRbTxHalf = CreateRbTxHalf(
-                balance.apiContent.fetchBalanceResponse,
+                balance.content.fetchBalanceResponse,
                 paymentAddress,
                 druidValue.value,
                 '' /* No TxIns address from receiving party */,
@@ -490,10 +490,10 @@ export class ZnpClient {
                 .post(`${this.intercomHost}${IAPIRoute.IntercomSet}`, sendBody)
                 .then(() => {
                     // Payment now getting processed
-                    // TODO: Should we do something with the used addresses?
                     return {
                         status: 'success',
-                        clientContent: {
+                        reason: 'Receipt-based payment processing',
+                        content: {
                             makeRbPaymentResponse: {
                                 druid: druidValue.value,
                                 encryptedTx: encryptedTx.value,
@@ -521,7 +521,7 @@ export class ZnpClient {
      * @param {('accepted' | 'rejected')} status
      * @param {IKeypairEncrypted[]} allKeypairs
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     private async handleRbTxResponse(
         druid: string,
@@ -537,7 +537,7 @@ export class ZnpClient {
 
             // Update balance
             const balance = await this.fetchBalance(allAddresses);
-            if (balance.status !== 'success' || !balance.apiContent?.fetchBalanceResponse)
+            if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
                 throw new Error(balance.reason);
             // Filter DRUID values to find specified DRUID value and entry that is still marked as 'pending'
             const rbDataForDruid = getRbDataForDruid(druid, pendingResponse);
@@ -550,7 +550,7 @@ export class ZnpClient {
             txInfo.status = status;
             if (status === 'accepted') {
                 const sendRbTxHalf = CreateRbTxHalf(
-                    balance.apiContent.fetchBalanceResponse,
+                    balance.content.fetchBalanceResponse,
                     txInfo.senderAddress,
                     druid,
                     // 'Sender' fromAddr is their TxIns address
@@ -621,7 +621,7 @@ export class ZnpClient {
      * @param {IFetchPendingRbResponse} pendingResponse
      * @param {IKeypairEncrypted[]} allKeypairs
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public async acceptRbTx(
         druid: string,
@@ -638,7 +638,7 @@ export class ZnpClient {
      * @param {IFetchPendingRbResponse} pendingResponse
      * @param {IKeypairEncrypted[]} allKeypairs
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public async rejectRbTx(
         druid: string,
@@ -654,7 +654,7 @@ export class ZnpClient {
      * @param {IKeypairEncrypted[]} allKeypairs
      * @param {ICreateTransactionEncrypted[]} allEncryptedTxs
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     public async fetchPendingRbTransactions(
         allKeypairs: IKeypairEncrypted[],
@@ -766,16 +766,17 @@ export class ZnpClient {
             }
 
             // Delete receipt-based data from intercom (accepted and rejected txs)
-            await axios
-                .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
-                .catch(async (error) => {
-                    throw new Error(error.message);
-                });
+            if (rbDataToDelete.length > 0)
+                await axios
+                    .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
+                    .catch(async (error) => {
+                        throw new Error(error.message);
+                    });
 
             return {
                 status: 'success',
                 reason: 'Succesfully fetched pending receipt-based transactions',
-                apiContent: {
+                content: {
                     fetchPendingRbResponse: responseData,
                 },
             } as IClientResponse;
@@ -797,7 +798,7 @@ export class ZnpClient {
      * @param {string[]} addressList
      * @param {number} [seedRegenThreshold=SEED_REGEN_THRES]
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     async regenAddresses(
         passPhrase: string,
@@ -823,7 +824,7 @@ export class ZnpClient {
                 return {
                     status: 'success',
                     reason: 'Addresses have successfully been reconstructed',
-                    clientContent: {
+                    content: {
                         regenWalletResponse: encryptedKeypairs,
                     },
                 } as IClientResponse;
@@ -841,19 +842,19 @@ export class ZnpClient {
      * , then saves it to the wallet
      *
      * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
-    getNewAddress(allAddresses: string[]): IClientResponse {
+    getNewKeypair(allAddresses: string[]): IClientResponse {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const result = this.keyMgmt.getNewAddress(allAddresses);
+            const result = this.keyMgmt.getNewKeypair(allAddresses);
             if (result.isErr()) throw new Error(result.error);
             return {
                 status: 'success',
                 reason: 'Successfully generated new address',
-                clientContent: {
-                    newAddressResponse: result.value,
+                content: {
+                    newKeypairResponse: result.value,
                 },
             } as IClientResponse;
         } catch (error: any) {
@@ -868,7 +869,7 @@ export class ZnpClient {
      * Get the existing seed phrase, or generate a new one
      *
      * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     getSeedPhrase(): IClientResponse {
         try {
@@ -879,7 +880,7 @@ export class ZnpClient {
             return {
                 status: 'success',
                 reason: 'Successfully obtained seed phrase',
-                clientContent: {
+                content: {
                     getSeedPhraseResponse: seedPhrase.value,
                 },
             };
@@ -895,7 +896,7 @@ export class ZnpClient {
      * Get the existing master key in an encrypted format
      *
      * @return {*}  {IClientResponse}
-     * @memberof ZnpClient
+     * @memberof ZenottaInstance
      */
     getMasterKey(): IClientResponse {
         try {
@@ -906,7 +907,7 @@ export class ZnpClient {
             return {
                 status: 'success',
                 reason: 'Successfully obtained master key',
-                clientContent: {
+                content: {
                     getMasterKeyResponse: masterKey.value,
                 },
             };
