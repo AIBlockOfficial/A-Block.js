@@ -10,7 +10,7 @@ import axios, { AxiosInstance } from 'axios';
 import { mgmtClient } from './mgmtClient';
 import { castAPIStatus } from '../utils';
 import { constructTxInsAddress } from '../mgmt/scriptMgmt';
-import { generateIntercomDelBody } from '../utils/intercomUtils';
+import { generateIntercomDelBody, validateRbData } from '../utils/intercomUtils';
 import {
     ICreateTransactionEncrypted,
     IMakeRbPaymentResponse,
@@ -41,6 +41,8 @@ import {
 /* -------------------------------------------------------------------------- */
 /*                                 Interfaces                                 */
 /* -------------------------------------------------------------------------- */
+
+// Config needed for initialization
 export type IClientConfig = {
     computeHost: string;
     intercomHost: string;
@@ -48,6 +50,7 @@ export type IClientConfig = {
     timeout?: number;
 };
 
+// Response structure received from compute API endpoints
 type INetworkResponse = {
     id?: string;
     status: 'Success' | 'Error' | 'InProgress' | 'Unknown';
@@ -56,6 +59,7 @@ type INetworkResponse = {
     content?: IApiContentType;
 };
 
+// Response structure returned from `ZenottaInstance` methods
 export type IClientResponse = {
     id?: string;
     status: 'success' | 'error' | 'pending' | 'unknown';
@@ -63,6 +67,7 @@ export type IClientResponse = {
     content?: IContentType;
 };
 
+// `content` field of `IClientResponse`
 export type IContentType = {
     newDRUIDResponse?: string;
     newSeedPhraseResponse?: string;
@@ -75,6 +80,7 @@ export type IContentType = {
     regenWalletResponse?: IKeypairEncrypted[];
 } & IApiContentType;
 
+// Content received from compute node API endpoints
 export type IApiContentType = {
     fetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
     fetchBalanceResponse?: IFetchBalanceResponse;
@@ -200,10 +206,6 @@ export class ZenottaInstance {
             },
         });
     }
-
-    /* -------------------------------------------------------------------------- */
-    /*                             Compute API Routes                             */
-    /* -------------------------------------------------------------------------- */
 
     /**
      * Get all the addresses present on the ZNP UTXO set
@@ -540,7 +542,7 @@ export class ZenottaInstance {
             if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
                 throw new Error(balance.reason);
             // Filter DRUID values to find specified DRUID value and entry that is still marked as 'pending'
-            const rbDataForDruid = getRbDataForDruid(druid, pendingResponse);
+            const rbDataForDruid = getRbDataForDruid(druid, 'pending', pendingResponse);
             if (rbDataForDruid.isErr()) throw new Error(rbDataForDruid.error);
             const txInfo = rbDataForDruid.value.data;
             // Get the key-pair assigned to this receiver address
@@ -661,6 +663,7 @@ export class ZenottaInstance {
         allEncryptedTxs: ICreateTransactionEncrypted[],
     ): Promise<IClientResponse> {
         try {
+            // TODO: Refactor complex pieces of code to separate functions
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
 
@@ -680,7 +683,7 @@ export class ZenottaInstance {
                 .filter((input): input is IRequestGetBody => !!input); /* Filter array */
 
             // Get all pending RB transactions
-            const responseData = await axios
+            let responseData = await axios
                 .post<IFetchPendingRbResponse>(
                     `${this.intercomHost}${IAPIRoute.IntercomGet}`,
                     pendingIntercom,
@@ -691,6 +694,9 @@ export class ZenottaInstance {
                 .catch(async (error) => {
                     throw new Error(error.message);
                 });
+
+            // NB: Validate receipt-based data and remove garbage entries
+            responseData = validateRbData(responseData);
 
             // Get accepted and rejected receipt-based transactions
             const rbDataToDelete: IRequestDelBody[] = [];

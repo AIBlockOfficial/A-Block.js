@@ -379,12 +379,9 @@ export class mgmtClient {
                 this.passphraseKey,
             );
 
-            if (save !== null) {
-                const transaction = JSON.parse(Buffer.from(save).toString()) as ICreateTransaction;
-                return ok(transaction);
-            } else {
-                return err(IErrorInternal.UnableToDecryptTransaction);
-            }
+            if (save === null) return err(IErrorInternal.UnableToDecryptTransaction);
+            const transaction = JSON.parse(Buffer.from(save).toString()) as ICreateTransaction;
+            return ok(transaction);
         } catch {
             return err(IErrorInternal.UnableToDecryptTransaction);
         }
@@ -451,11 +448,8 @@ export class mgmtClient {
             }
             depthCounter++;
         }
-        if (foundAddr.size === 0) {
-            return err(IErrorInternal.UnableToRegenAddresses);
-        } else {
-            return ok(Array.from(foundAddr.values()));
-        }
+        if (foundAddr.size === 0) return err(IErrorInternal.UnableToRegenAddresses);
+        return ok(Array.from(foundAddr.values()));
     }
 
     /**
