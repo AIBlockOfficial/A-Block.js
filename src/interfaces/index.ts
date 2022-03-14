@@ -150,7 +150,7 @@ export enum IErrorInternal {
     UnknownError = 'Unknown Error',
 }
 
-export type SyncResult<T> = Result<T, IErrorInternal>;
+export type SyncResult<T> = Result<T, IErrorInternal | string>;
 
 /* -------------------------------------------------------------------------- */
 /*                             Internal Interfaces                            */

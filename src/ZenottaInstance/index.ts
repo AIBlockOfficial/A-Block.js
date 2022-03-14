@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // TODO: Refactor this file to be more readable
 import {
     CreateRbTxHalf,
@@ -8,7 +7,7 @@ import {
 } from '../mgmt';
 import axios, { AxiosInstance } from 'axios';
 import { mgmtClient } from './mgmtClient';
-import { castAPIStatus } from '../utils';
+import { castAPIStatus, throwIfErr } from '../utils';
 import { constructTxInsAddress } from '../mgmt/scriptMgmt';
 import { generateIntercomDelBody, validateRbData } from '../utils/intercomUtils';
 import {
@@ -229,12 +228,13 @@ export class ZenottaInstance {
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -265,12 +265,13 @@ export class ZenottaInstance {
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -301,12 +302,13 @@ export class ZenottaInstance {
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -322,19 +324,15 @@ export class ZenottaInstance {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const keyPair = this.keyMgmt.decryptKeypair(address);
-            if (keyPair.isErr()) throw new Error(keyPair.error);
+            const keyPair = throwIfErr(this.keyMgmt.decryptKeypair(address));
             // Create receipt-creation transaction
-            const createReceiptBody = createReceiptPayload(
-                keyPair.value.secretKey,
-                keyPair.value.publicKey,
-                keyPair.value.version,
+            const createReceiptBody = throwIfErr(
+                createReceiptPayload(keyPair.secretKey, keyPair.publicKey, keyPair.version),
             );
-            if (createReceiptBody.isErr()) throw new Error(createReceiptBody.error);
             return await this.axiosClient
                 .post<INetworkResponse>(
                     `${this.axiosClient.defaults.baseURL}${IAPIRoute.CreateReceiptAsset}`,
-                    createReceiptBody.value,
+                    createReceiptBody,
                 )
                 .then((response) => {
                     return {
@@ -346,12 +344,13 @@ export class ZenottaInstance {
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -385,17 +384,18 @@ export class ZenottaInstance {
             // Get all existing addresses
             if (allKeypairs.length === 0) throw new Error('No existing key-pairs provided');
             // Create transaction
-            const paymentBody = CreateTokenPaymentTx(
-                paymentAmount,
-                paymentAddress,
-                excessKeypair.address,
-                balance.content.fetchBalanceResponse,
-                keyPairMap,
+            const paymentBody = throwIfErr(
+                CreateTokenPaymentTx(
+                    paymentAmount,
+                    paymentAddress,
+                    excessKeypair.address,
+                    balance.content.fetchBalanceResponse,
+                    keyPairMap,
+                ),
             );
-            if (paymentBody.isErr()) throw new Error(paymentBody.error);
             // Create transaction struct has successfully been created
             return await this.axiosClient
-                .post<INetworkResponse>(IAPIRoute.CreateTransactions, [paymentBody.value.createTx])
+                .post<INetworkResponse>(IAPIRoute.CreateTransactions, [paymentBody.createTx])
                 .then((response) => {
                     const responseData = response.data as INetworkResponse;
                     return {
@@ -404,12 +404,13 @@ export class ZenottaInstance {
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -433,8 +434,7 @@ export class ZenottaInstance {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const senderKeypair = this.keyMgmt.decryptKeypair(receiveAddress);
-            if (senderKeypair.isErr()) throw new Error(senderKeypair.error);
+            const senderKeypair = throwIfErr(this.keyMgmt.decryptKeypair(receiveAddress));
             const [allAddresses, keyPairMap] =
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs);
             // Update balance
@@ -444,47 +444,45 @@ export class ZenottaInstance {
             if (allAddresses.length === 0) throw new Error('No existing key-pairs provided');
 
             // Generate a DRUID value for this transaction
-            const druidValue = this.keyMgmt.getNewDRUID();
-            if (druidValue.isErr()) throw new Error(druidValue.error);
+            const druidValue = throwIfErr(this.keyMgmt.getNewDRUID());
 
-            const sendRbTxHalf = CreateRbTxHalf(
-                balance.content.fetchBalanceResponse,
-                paymentAddress,
-                druidValue.value,
-                '' /* No TxIns address from receiving party */,
-                tokenAmount,
-                'Token',
-                1,
-                'Receipt',
-                senderKeypair.value.address,
-                senderKeypair.value.address,
-                keyPairMap,
+            const sendRbTxHalf = throwIfErr(
+                CreateRbTxHalf(
+                    balance.content.fetchBalanceResponse,
+                    paymentAddress,
+                    druidValue,
+                    '' /* No TxIns address from receiving party */,
+                    tokenAmount,
+                    'Token',
+                    1,
+                    'Receipt',
+                    senderKeypair.address,
+                    senderKeypair.address,
+                    keyPairMap,
+                ),
             );
-            if (sendRbTxHalf.isErr()) throw new Error(sendRbTxHalf.error);
             // Create transaction struct has successfully been created
-            const encryptedTx = this.keyMgmt.encryptTransaction(sendRbTxHalf.value.createTx);
-            if (encryptedTx.isErr()) throw new Error(encryptedTx.error);
+            const encryptedTx = throwIfErr(this.keyMgmt.encryptTransaction(sendRbTxHalf.createTx));
 
-            const senderFromAddr = constructTxInsAddress(sendRbTxHalf.value.createTx.inputs);
-            if (senderFromAddr.isErr()) throw new Error(senderFromAddr.error);
-            if (sendRbTxHalf.value.createTx.druid_info === null)
+            const senderFromAddr = throwIfErr(constructTxInsAddress(sendRbTxHalf.createTx.inputs));
+            if (sendRbTxHalf.createTx.druid_info === null)
                 throw new Error(IErrorInternal.NoDRUIDValues);
             const valuePayload: IPendingRbTxData = {};
-            valuePayload[druidValue.value] = {
+            valuePayload[druidValue] = {
                 senderAsset: 'Token',
                 senderAmount: tokenAmount,
-                senderAddress: senderKeypair.value.address,
+                senderAddress: senderKeypair.address,
                 receiverAsset: 'Receipt',
                 receiverAmount: 1,
                 receiverAddress: paymentAddress,
-                fromAddr: senderFromAddr.value,
+                fromAddr: senderFromAddr,
                 status: 'pending',
             };
             const sendBody = [
                 generateIntercomSetBody<IPendingRbTxData>(
                     paymentAddress,
-                    senderKeypair.value.address,
-                    senderKeypair.value,
+                    senderKeypair.address,
+                    senderKeypair,
                     valuePayload,
                 ),
             ];
@@ -497,19 +495,20 @@ export class ZenottaInstance {
                         reason: 'Receipt-based payment processing',
                         content: {
                             makeRbPaymentResponse: {
-                                druid: druidValue.value,
-                                encryptedTx: encryptedTx.value,
+                                druid: druidValue,
+                                encryptedTx: encryptedTx,
                             },
                         },
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -542,47 +541,45 @@ export class ZenottaInstance {
             if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
                 throw new Error(balance.reason);
             // Filter DRUID values to find specified DRUID value and entry that is still marked as 'pending'
-            const rbDataForDruid = getRbDataForDruid(druid, 'pending', pendingResponse);
-            if (rbDataForDruid.isErr()) throw new Error(rbDataForDruid.error);
-            const txInfo = rbDataForDruid.value.data;
+            const rbDataForDruid = throwIfErr(getRbDataForDruid(druid, 'pending', pendingResponse));
+            const txInfo = rbDataForDruid.data;
             // Get the key-pair assigned to this receiver address
             const receiverKeypair = keyPairMap.get(txInfo.receiverAddress);
             if (!receiverKeypair) throw new Error('Unable to retrieve key-pair from map');
             // Set the status of the pending request
             txInfo.status = status;
             if (status === 'accepted') {
-                const sendRbTxHalf = CreateRbTxHalf(
-                    balance.content.fetchBalanceResponse,
-                    txInfo.senderAddress,
-                    druid,
-                    // 'Sender' fromAddr is their TxIns address
-                    txInfo.fromAddr /* TxIns received from sending party */,
-                    txInfo.receiverAmount,
-                    txInfo.receiverAsset,
-                    txInfo.senderAmount,
-                    txInfo.senderAsset,
-                    txInfo.receiverAddress,
-                    txInfo.receiverAddress,
-                    keyPairMap,
+                const sendRbTxHalf = throwIfErr(
+                    CreateRbTxHalf(
+                        balance.content.fetchBalanceResponse,
+                        txInfo.senderAddress,
+                        druid,
+                        // 'Sender' fromAddr is their TxIns address
+                        txInfo.fromAddr /* TxIns received from sending party */,
+                        txInfo.receiverAmount,
+                        txInfo.receiverAsset,
+                        txInfo.senderAmount,
+                        txInfo.senderAsset,
+                        txInfo.receiverAddress,
+                        txInfo.receiverAddress,
+                        keyPairMap,
+                    ),
                 );
 
-                if (sendRbTxHalf.isErr()) throw new Error(sendRbTxHalf.error);
-                const fromAddr = constructTxInsAddress(sendRbTxHalf.value.createTx.inputs);
-                if (fromAddr.isErr()) throw new Error(fromAddr.error);
-                txInfo.fromAddr = fromAddr.value;
+                const fromAddr = throwIfErr(constructTxInsAddress(sendRbTxHalf.createTx.inputs));
+                txInfo.fromAddr = fromAddr;
 
                 // Send transaction to compute if accepted
                 await this.axiosClient
-                    .post<INetworkResponse>(IAPIRoute.CreateTransactions, [
-                        sendRbTxHalf.value.createTx,
-                    ])
+                    .post<INetworkResponse>(IAPIRoute.CreateTransactions, [sendRbTxHalf.createTx])
                     .then((response) => {
                         const responseData = response.data as INetworkResponse;
                         if (castAPIStatus(responseData.status) !== 'success')
                             throw new Error(responseData.reason);
                     })
                     .catch(async (error) => {
-                        throw new Error(error.message);
+                        if (error instanceof Error) throw new Error(error.message);
+                        else throw new Error(`${error}`);
                     });
             }
 
@@ -601,17 +598,18 @@ export class ZenottaInstance {
             await axios
                 .post(`${this.intercomHost}${IAPIRoute.IntercomSet}`, setBody)
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
 
             return {
                 status: 'success',
                 reason: 'Successfully responded to receipt-based payment',
             } as IClientResponse;
-        } catch (error: any) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${error}`,
             };
         }
     }
@@ -692,7 +690,8 @@ export class ZenottaInstance {
                     return response.data;
                 })
                 .catch(async (error) => {
-                    throw new Error(error.message);
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
                 });
 
             // NB: Validate receipt-based data and remove garbage entries
@@ -719,14 +718,15 @@ export class ZenottaInstance {
                     // Decrypt transaction stored along with DRUID value
                     const encryptedTx = encryptedTxMap.get(druid);
                     if (!encryptedTx) throw new Error(IErrorInternal.InvalidDRUIDProvided);
-                    const decryptedTransaction = this.keyMgmt.decryptTransaction(encryptedTx);
-                    if (decryptedTransaction.isErr()) throw new Error(decryptedTransaction.error);
-                    if (!decryptedTransaction.value.druid_info)
+                    const decryptedTransaction = throwIfErr(
+                        this.keyMgmt.decryptTransaction(encryptedTx),
+                    );
+                    if (!decryptedTransaction.druid_info)
                         throw new Error(IErrorInternal.NoDRUIDValues);
                     // Set `TxIns` address value from receipient
-                    decryptedTransaction.value.druid_info.expectations[0].from =
+                    decryptedTransaction.druid_info.expectations[0].from =
                         fromAddr; /* There should be only one expectation in a receipt-based payment */
-                    transactionsToSend.push(decryptedTransaction.value);
+                    transactionsToSend.push(decryptedTransaction);
                     const keyPair = keyPairMap.get(
                         Object.values(acceptedTx.value)[0].senderAddress,
                     );
@@ -749,7 +749,8 @@ export class ZenottaInstance {
                             throw new Error(response.data.reason);
                     })
                     .catch(async (error) => {
-                        throw new Error(error.message);
+                        if (error instanceof Error) throw new Error(error.message);
+                        else throw new Error(`${error}`);
                     });
             }
 
@@ -776,7 +777,8 @@ export class ZenottaInstance {
                 await axios
                     .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
                     .catch(async (error) => {
-                        throw new Error(error.message);
+                        if (error instanceof Error) throw new Error(error.message);
+                        else throw new Error(`${error}`);
                     });
 
             return {
@@ -786,10 +788,10 @@ export class ZenottaInstance {
                     fetchPendingRbResponse: responseData,
                 },
             } as IClientResponse;
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -814,18 +816,14 @@ export class ZenottaInstance {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const foundAddr = this.keyMgmt.regenAddresses(
-                passPhrase,
-                addressList,
-                seedRegenThreshold,
+            const foundAddr = throwIfErr(
+                this.keyMgmt.regenAddresses(passPhrase, addressList, seedRegenThreshold),
             );
-            if (foundAddr.isErr()) throw new Error(foundAddr.error);
-            if (foundAddr.value.length !== 0) {
+            if (foundAddr.length !== 0) {
                 const encryptedKeypairs: IKeypairEncrypted[] = [];
-                for (const addr of foundAddr.value) {
-                    const encryptedKeypair = this.keyMgmt.encryptKeypair(addr);
-                    if (encryptedKeypair.isErr()) throw new Error(encryptedKeypair.error);
-                    encryptedKeypairs.push(encryptedKeypair.value);
+                for (const addr of foundAddr) {
+                    const encryptedKeypair = throwIfErr(this.keyMgmt.encryptKeypair(addr));
+                    encryptedKeypairs.push(encryptedKeypair);
                 }
                 return {
                     status: 'success',
@@ -835,10 +833,10 @@ export class ZenottaInstance {
                     },
                 } as IClientResponse;
             } else throw new Error('Address reconstruction failed');
-        } catch (e) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: `${e}`,
+                reason: `${error}`,
             } as IClientResponse;
         }
     }
@@ -854,19 +852,17 @@ export class ZenottaInstance {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const result = this.keyMgmt.getNewKeypair(allAddresses);
-            if (result.isErr()) throw new Error(result.error);
             return {
                 status: 'success',
                 reason: 'Successfully generated new address',
                 content: {
-                    newKeypairResponse: result.value,
+                    newKeypairResponse: throwIfErr(this.keyMgmt.getNewKeypair(allAddresses)),
                 },
             } as IClientResponse;
-        } catch (error: any) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${error}`,
             };
         }
     }
@@ -881,19 +877,17 @@ export class ZenottaInstance {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const seedPhrase = this.keyMgmt.getSeedPhrase();
-            if (seedPhrase.isErr()) throw new Error(seedPhrase.error);
             return {
                 status: 'success',
                 reason: 'Successfully obtained seed phrase',
                 content: {
-                    getSeedPhraseResponse: seedPhrase.value,
+                    getSeedPhraseResponse: throwIfErr(this.keyMgmt.getSeedPhrase()),
                 },
             };
-        } catch (error: any) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${error}`,
             };
         }
     }
@@ -908,19 +902,17 @@ export class ZenottaInstance {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const masterKey = this.keyMgmt.getMasterKey();
-            if (masterKey.isErr()) throw new Error(masterKey.error);
             return {
                 status: 'success',
                 reason: 'Successfully obtained master key',
                 content: {
-                    getMasterKeyResponse: masterKey.value,
+                    getMasterKeyResponse: throwIfErr(this.keyMgmt.getMasterKey()),
                 },
             };
-        } catch (error: any) {
+        } catch (error) {
             return {
                 status: 'error',
-                reason: error.message,
+                reason: `${error}`,
             };
         }
     }

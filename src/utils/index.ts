@@ -1,3 +1,4 @@
+import { SyncResult } from '../interfaces';
 import { BAL_LIMIT } from '../mgmt';
 import { generateMasterKey, generateSeed } from '../mgmt/keyMgmt';
 
@@ -204,4 +205,18 @@ function toBytesUTF8(chars: string) {
  */
 function fromBytesUTF8(bytes: string) {
     return decodeURIComponent(escape(bytes));
+}
+
+/**
+ * Filter out `value` from result containing possible errors,
+ * if an error occurs, throw an exception
+ *
+ * @export
+ * @template T
+ * @param {SyncResult<T>} result
+ * @return {*}
+ */
+export function throwIfErr<T>(result: SyncResult<T>) {
+    if (result.isErr()) throw new Error(result.error);
+    return result.value;
 }

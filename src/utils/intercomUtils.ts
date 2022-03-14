@@ -58,9 +58,8 @@ export function getRbDataForDruid(
             key: response[0].key,
             data: response[0].data[druid],
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-        return err(error.message);
+    } catch (error) {
+        return err(`${error}`);
     }
 }
 
