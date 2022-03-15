@@ -143,6 +143,16 @@ export function constructTxInSignableAssetHash(type: 'Token' | 'Receipt', amount
     }
 }
 
+/**
+ * Construct a Pay-to-Public-Key-Hash script
+ *
+ * @export
+ * @param {string} checkData
+ * @param {string} signatureData
+ * @param {string} publicKeyData
+ * @param {(number | null)} addressVersion
+ * @return {*}  {SyncResult<Script>}
+ */
 export function p2pkh(
     checkData: string,
     signatureData: string,

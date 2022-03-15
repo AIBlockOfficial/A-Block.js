@@ -13,8 +13,20 @@ import {
 import { createSignature } from '../mgmt';
 
 // TODO: This function may change to accomodate more than just receipt-based payments moving forward
+/**
+ * Get the receipt-based data for a single DRUID
+ *
+ * @export
+ * @param {string} druid
+ * @param {IFetchPendingRbResponse} rbData
+ * @return {*}  {SyncResult<{
+ *     key: string;
+ *     data: IPendingRbTxDetails;
+ * }>}
+ */
 export function getRbDataForDruid(
     druid: string,
+    status: 'pending' | 'rejected' | 'accepted',
     rbData: IFetchPendingRbResponse,
 ): SyncResult<{
     key: string;
@@ -24,7 +36,7 @@ export function getRbDataForDruid(
         const response = Object.entries(rbData)
             .filter(([, value]) => Object.keys(value.value).includes(druid))
             .filter(([, value]) =>
-                Object.values(value.value).every((entry) => entry.status === 'pending'),
+                Object.values(value.value).every((entry) => entry.status === status),
             )
             .map(([key, value]) => ({
                 key: key,
@@ -46,12 +58,19 @@ export function getRbDataForDruid(
             key: response[0].key,
             data: response[0].data[druid],
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-        return err(error.message);
+    } catch (error) {
+        return err(`${error}`);
     }
 }
 
+/**
+ * Generate the needed request body to retrieve data from the intercom server
+ *
+ * @export
+ * @param {string} addressKey
+ * @param {IKeypair} keyPairForKey
+ * @return {*}  {IRequestGetBody}
+ */
 export function generateIntercomGetBody(
     addressKey: string,
     keyPairForKey: IKeypair,
@@ -68,6 +87,17 @@ export function generateIntercomGetBody(
     } as IRequestGetBody;
 }
 
+/**
+ * Generate the needed request body to place data on the intercom server
+ *
+ * @export
+ * @template T
+ * @param {string} addressKey
+ * @param {string} addressField
+ * @param {IKeypair} keyPairForField
+ * @param {T} value
+ * @return {*}  {IRequestSetBody<T>}
+ */
 export function generateIntercomSetBody<T>(
     addressKey: string,
     addressField: string,
@@ -88,6 +118,15 @@ export function generateIntercomSetBody<T>(
     } as IRequestSetBody<T>;
 }
 
+/**
+ * Generate the needed request body to delete data from the intercom server
+ *
+ * @export
+ * @param {string} addressKey
+ * @param {string} addressField
+ * @param {IKeypair} keyPairForKey
+ * @return {*}  {IRequestDelBody}
+ */
 export function generateIntercomDelBody(
     addressKey: string,
     addressField: string,
@@ -105,3 +144,49 @@ export function generateIntercomDelBody(
         publicKey: Buffer.from(keyPairForKey.publicKey).toString('hex'),
     } as IRequestDelBody;
 }
+
+/**
+ * Filter and remove garbage entries placed on the intercom server
+ *
+ * @export
+ * @param {IFetchPendingRbResponse} pending
+ * @return {*}  {IFetchPendingRbResponse}
+ */
+export function validateRbData(pending: IFetchPendingRbResponse): IFetchPendingRbResponse {
+    // We test against this body structure to ensure that the data is valid
+    const emptyDetails = {
+        senderAsset: '',
+        senderAmount: 0,
+        senderAddress: '',
+        receiverAsset: '',
+        receiverAmount: 0,
+        receiverAddress: '',
+        fromAddr: '',
+        status: '',
+    };
+
+    const returnValue: IFetchPendingRbResponse = {};
+    const filtered = Object.entries(pending).filter(
+        ([, value]) =>
+            Object.keys(value.value).length === 1 /* Single DRUID value */ &&
+            Object.values(value.value).every((entry) =>
+                isOfType<IPendingRbTxDetails>(entry, emptyDetails),
+            ) /* Has valid structure */,
+    );
+    filtered.forEach(([key, value]) => (returnValue[key] = value));
+    return returnValue;
+}
+
+/**
+ * Test to see if an object is of a specified interface type
+ *
+ * @template T
+ * @param {*} arg
+ * @param {T} testAgainst
+ * @return {*}  {arg is T}
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isOfType = <T>(arg: any, testAgainst: any): arg is T =>
+    Object.entries(testAgainst).every(
+        ([key]) => key in arg && typeof arg[key] === typeof testAgainst[key],
+    );

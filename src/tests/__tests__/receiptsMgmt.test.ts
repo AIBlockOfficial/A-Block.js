@@ -1,6 +1,5 @@
 /* eslint-disable jest/no-conditional-expect */
-import { ok } from 'neverthrow';
-import { IKeypair, IOutPoint, ICreateTxInScript, SyncResult } from '../../interfaces';
+import { IKeypair, IOutPoint, ICreateTxInScript } from '../../interfaces';
 import {
     ADDRESS_VERSION,
     constructTxInsAddress,
@@ -44,13 +43,15 @@ test('creates a valid payload to create receipts', () => {
 });
 
 test('create transaction for the SEND portion of a receipt-based payment', () => {
-    const getKeypairCallback = (address: string): SyncResult<IKeypair> => {
-        return ok({
-            secretKey: Buffer.from(ADDRESS_LIST_TEST[address].secret_key, 'hex'),
-            publicKey: Buffer.from(ADDRESS_LIST_TEST[address].public_key, 'hex'),
+    const keyPairMap = new Map<string, IKeypair>();
+    for (const addr of Object.keys(ADDRESS_LIST_TEST)) {
+        keyPairMap.set(addr, {
+            address: addr,
+            secretKey: Buffer.from(ADDRESS_LIST_TEST[addr].secret_key, 'hex'),
+            publicKey: Buffer.from(ADDRESS_LIST_TEST[addr].public_key, 'hex'),
             version: ADDRESS_VERSION,
         });
-    };
+    }
 
     const createTransaction = receiptMgmt.CreateRbTxHalf(
         FETCH_BALANCE_RESPONSE_TEST,
@@ -63,7 +64,7 @@ test('create transaction for the SEND portion of a receipt-based payment', () =>
         'Receipt',
         'our_receive_address',
         'excess_address',
-        getKeypairCallback,
+        keyPairMap,
     );
 
     if (createTransaction.isOk()) {
@@ -180,13 +181,15 @@ test('create transaction for the SEND portion of a receipt-based payment', () =>
 });
 
 test('create transaction for the RECEIVE portion of a receipt-based payment', () => {
-    const getKeypairCallback = (address: string): SyncResult<IKeypair> => {
-        return ok({
-            secretKey: Buffer.from(ADDRESS_LIST_TEST[address].secret_key, 'hex'),
-            publicKey: Buffer.from(ADDRESS_LIST_TEST[address].public_key, 'hex'),
+    const keyPairMap = new Map<string, IKeypair>();
+    for (const addr of Object.keys(ADDRESS_LIST_TEST)) {
+        keyPairMap.set(addr, {
+            address: addr,
+            secretKey: Buffer.from(ADDRESS_LIST_TEST[addr].secret_key, 'hex'),
+            publicKey: Buffer.from(ADDRESS_LIST_TEST[addr].public_key, 'hex'),
             version: ADDRESS_VERSION,
         });
-    };
+    }
 
     const createTransaction = receiptMgmt.CreateRbTxHalf(
         FETCH_BALANCE_RESPONSE_TEST,
@@ -199,7 +202,7 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
         'Token',
         'our_receive_address',
         'excess_address',
-        getKeypairCallback,
+        keyPairMap,
     );
 
     if (createTransaction.isOk()) {
@@ -287,15 +290,16 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
 
 // NOTE: This test corresponds with `test_construct_valid_tx_ins_address` in NAOM
 test('create TxIns address used as `from` value in DdeValues', () => {
-    const getKeypairCallback = (address: string): SyncResult<IKeypair> => {
-        return ok({
-            secretKey: Buffer.from(ADDRESS_LIST_TEST[address].secret_key, 'hex'),
-            publicKey: Buffer.from(ADDRESS_LIST_TEST[address].public_key, 'hex'),
+    const keyPairMap = new Map<string, IKeypair>();
+    for (const addr of Object.keys(ADDRESS_LIST_TEST)) {
+        keyPairMap.set(addr, {
+            address: addr,
+            secretKey: Buffer.from(ADDRESS_LIST_TEST[addr].secret_key, 'hex'),
+            publicKey: Buffer.from(ADDRESS_LIST_TEST[addr].public_key, 'hex'),
             version: ADDRESS_VERSION,
         });
-    };
-
-    const txInputs = getInputsForTx(1050, 'Token', FETCH_BALANCE_RESPONSE_TEST, getKeypairCallback);
+    }
+    const txInputs = getInputsForTx(1050, 'Token', FETCH_BALANCE_RESPONSE_TEST, keyPairMap);
 
     if (txInputs.isOk()) {
         const ourFromAddress = constructTxInsAddress(txInputs.value[2]).unwrapOr('');

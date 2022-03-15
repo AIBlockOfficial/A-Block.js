@@ -1,6 +1,16 @@
+import { SyncResult } from '../interfaces';
 import { BAL_LIMIT } from '../mgmt';
 import { generateMasterKey, generateSeed } from '../mgmt/keyMgmt';
 
+/**
+ * Cast `status` received from ZNP to lowercase string variant
+ *
+ * TODO: There's probably already a built-in function for this?
+ *
+ * @export
+ * @param {('Success' | 'Error' | 'InProgress' | 'Unknown')} status
+ * @return {*}  {('success' | 'error' | 'pending' | 'unknown')}
+ */
 export function castAPIStatus(
     status: 'Success' | 'Error' | 'InProgress' | 'Unknown',
 ): 'success' | 'error' | 'pending' | 'unknown' {
@@ -195,4 +205,18 @@ function toBytesUTF8(chars: string) {
  */
 function fromBytesUTF8(bytes: string) {
     return decodeURIComponent(escape(bytes));
+}
+
+/**
+ * Filter out `value` from result containing possible errors,
+ * if an error occurs, throw an exception
+ *
+ * @export
+ * @template T
+ * @param {SyncResult<T>} result
+ * @return {*}
+ */
+export function throwIfErr<T>(result: SyncResult<T>) {
+    if (result.isErr()) throw new Error(result.error);
+    return result.value;
 }
