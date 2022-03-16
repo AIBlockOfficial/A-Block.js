@@ -207,6 +207,8 @@ export function createSignature(secretKey: Uint8Array, message: Uint8Array): Uin
 /**
  * Generates a new keypair from a given master key and address version
  *
+ * TODO: Use a provided depth instead of the entire address list
+ *
  * @param {*} masterKey
  * @param {number} addressVersion
  * @return {*}  {[Keypair, string]}
@@ -215,7 +217,7 @@ export function generateNewKeypairAndAddress(
     masterKey: any,
     addressVersion: number | null,
     addresses: string[],
-): SyncResult<[IKeypair, string]> {
+): SyncResult<IKeypair> {
     let counter = addresses.length;
 
     let currentKey = getNextDerivedKeypair(masterKey, counter);
@@ -233,10 +235,11 @@ export function generateNewKeypairAndAddress(
 
     // Return keypair
     const keypair = {
+        address: currentAddr.value,
         secretKey: currentKey.value.secretKey,
         publicKey: currentKey.value.publicKey,
         version: addressVersion,
     } as IKeypair;
 
-    return ok([keypair, currentAddr.value]);
+    return ok(keypair);
 }

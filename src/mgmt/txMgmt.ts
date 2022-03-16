@@ -26,21 +26,20 @@ import { constructSignature, constructTxInSignableData } from './scriptMgmt';
 /* -------------------------------------------------------------------------- */
 
 /**
- * Gather TxIn values
+ * Gather `TxIn` values for a transaction
  *
  * @export
  * @param {number} paymentAmount
  * @param {('Token' | 'Receipt')} paymentAsset
- * @param {fetchBalanceResponse} fetchBalanceResponse
- * @param {(address: string, passphraseKey: Uint8Array) => Keypair} getKeypairCallback
- * @param {Uint8Array} passphrase
- * @return {*}  {[string[], number, ICreateTxIn[]]}
+ * @param {IFetchBalanceResponse} fetchBalanceResponse
+ * @param {Map<string, IKeypair>} allKeypairs
+ * @return {*}  {SyncResult<[string[], number, ICreateTxIn[]]>}
  */
 export function getInputsForTx(
     paymentAmount: number,
     paymentAsset: 'Token' | 'Receipt',
     fetchBalanceResponse: IFetchBalanceResponse,
-    getKeypairCallback: (address: string) => SyncResult<IKeypair>,
+    allKeypairs: Map<string, IKeypair>,
 ): SyncResult<[string[], number, ICreateTxIn[]]> {
     // Check to see if there's enough funds
     const enoughRunningTotal =
@@ -56,8 +55,8 @@ export function getInputsForTx(
         const inputs = Object.entries(fetchBalanceResponse.address_list).map(
             ([address, outPoints]) => {
                 const ICreateTxIn: ICreateTxIn[] = [];
-                const keyPair = getKeypairCallback(address);
-                if (keyPair.isErr()) return err(keyPair.error);
+                const keyPair = allKeypairs.get(address);
+                if (!keyPair) throw new Error(IErrorInternal.UnableToConstructTxIns);
                 let usedOutpointsCount = 0;
                 outPoints.forEach(({ out_point, value }) => {
                     if (
@@ -67,12 +66,9 @@ export function getInputsForTx(
                     ) {
                         const signableData = constructTxInSignableData(out_point);
                         const signature = signableData
-                            ? constructSignature(
-                                  getStringBytes(signableData),
-                                  keyPair.value.secretKey,
-                              )
+                            ? constructSignature(getStringBytes(signableData), keyPair.secretKey)
                             : ok('');
-                        const addressVersion = getAddressVersion(keyPair.value.publicKey, address);
+                        const addressVersion = getAddressVersion(keyPair.publicKey, address);
                         if (addressVersion.isErr()) return err(addressVersion.error);
                         if (signature.isErr()) return err(signature.error);
 
@@ -80,7 +76,7 @@ export function getInputsForTx(
                             Pay2PkH: {
                                 signable_data: signableData || '',
                                 signature: signature.value,
-                                public_key: Buffer.from(keyPair.value.publicKey).toString('hex'),
+                                public_key: Buffer.from(keyPair.publicKey).toString('hex'),
                                 address_version: addressVersion.value,
                             },
                         };
@@ -124,6 +120,7 @@ export function getInputsForTx(
 }
 
 /**
+ *
  * Creates a transaction structure for sending to the network.
  *
  *  This function will return the `CreateTransaction` struct the,
@@ -131,15 +128,14 @@ export function getInputsForTx(
  *  was an excess. It will return undefined if creating the structure
  *  was unsuccessful.
  *
- *
  * @export
  * @param {string} paymentAddress
  * @param {number} amount
  * @param {('Token' | 'Receipt')} assetType
  * @param {string} excessAddress
  * @param {(IDdeValues | null)} druidInfo
- * @param {([string[], number, ICreateTxIn[]] | undefined)} txIns
- * @return {*}  {(ICreateTxPayload | undefined)}
+ * @param {[string[], number, ICreateTxIn[]]} txIns
+ * @return {*}  {SyncResult<ICreateTxPayload>}
  */
 export function CreateTx(
     paymentAddress: string,
@@ -196,7 +192,7 @@ export function CreateTx(
     const createTransaction: ICreateTransaction = {
         inputs: inputs,
         outputs: outputs,
-        version: ZNP_NETWORK_VERSION,
+        version: ZNP_NETWORK_VERSION /* Always keep up to date with ZNP! */,
         druid_info: druidInfo,
     };
 
@@ -217,18 +213,17 @@ export function CreateTx(
  * @param {string} paymentAddress
  * @param {string} excessAddress
  * @param {IFetchBalanceResponse} fetchBalanceResponse
- * @param {(address: string) => IKeypair} getKeypairCallback
- * @param {Uint8Array} passphrase
- * @return {*} {(ICreateTxPayload | undefined)}
+ * @param {Map<string, IKeypair>} allKeypairs
+ * @return {*}  {SyncResult<ICreateTxPayload>}
  */
 export function CreateTokenPaymentTx(
     amount: number,
     paymentAddress: string,
     excessAddress: string,
     fetchBalanceResponse: IFetchBalanceResponse,
-    getKeypairCallback: (address: string) => SyncResult<IKeypair>,
+    allKeypairs: Map<string, IKeypair>,
 ): SyncResult<ICreateTxPayload> {
-    const txIns = getInputsForTx(amount, 'Token', fetchBalanceResponse, getKeypairCallback);
+    const txIns = getInputsForTx(amount, 'Token', fetchBalanceResponse, allKeypairs);
     if (txIns.isErr()) return err(txIns.error);
 
     return CreateTx(paymentAddress, amount, 'Token', excessAddress, null, txIns.value);
