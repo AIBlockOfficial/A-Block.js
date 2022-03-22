@@ -809,7 +809,7 @@ export class ZenottaInstance {
      * @memberof ZenottaInstance
      */
     async regenAddresses(
-        passPhrase: string,
+        seedPhrase: string,
         addressList: string[],
         seedRegenThreshold: number = SEED_REGEN_THRES,
     ): Promise<IClientResponse> {
@@ -817,7 +817,7 @@ export class ZenottaInstance {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const foundAddr = throwIfErr(
-                this.keyMgmt.regenAddresses(passPhrase, addressList, seedRegenThreshold),
+                this.keyMgmt.regenAddresses(seedPhrase, addressList, seedRegenThreshold),
             );
             if (foundAddr.length !== 0) {
                 const encryptedKeypairs: IKeypairEncrypted[] = [];
