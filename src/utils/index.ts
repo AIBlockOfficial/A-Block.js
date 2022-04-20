@@ -1,6 +1,8 @@
 import { SyncResult } from '../interfaces';
 import { BAL_LIMIT } from '../mgmt';
 import { generateMasterKey, generateSeed } from '../mgmt/keyMgmt';
+import { sha3_256 } from 'js-sha3';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Cast `status` received from ZNP to lowercase string variant
@@ -220,3 +222,56 @@ export function throwIfErr<T>(result: SyncResult<T>) {
     if (result.isErr()) throw new Error(result.error);
     return result.value;
 }
+
+/**
+ * Calculate the nonce value required to provide valid PoW
+ * for a specified ID (challenge) and target (difficulty)
+ *
+ * @export
+ * @param {number} target
+ * @param {string} id
+ * @return {*}  {number}
+ */
+export function calculateNonceForId(target: number, id: string): number {
+    let nonce = 0;
+    let hashBuffer = Buffer.from(sha3_256(`${nonce}-${id}`), 'hex');
+    while (
+        !Array.from(hashBuffer)
+            .slice(0, target)
+            .every((e) => e === 0)
+    ) {
+        nonce++;
+        hashBuffer = Buffer.from(sha3_256(`${nonce}-${id}`), 'hex');
+    }
+    return nonce;
+}
+
+/**
+ * Create a unique ID as well as the required nonce for PoW
+ *
+ * @export
+ * @param {number} [difficulty]
+ * @return {*}  {{
+ *     headers: { 'x-request-id': string; 'x-nonce': number };
+ * }}
+ */
+export function createIdAndNonceHeaders(difficulty?: number): {
+    headers: { 'x-request-id': string; 'x-nonce': number };
+} {
+    const id = getUniqueID();
+    const nonce = difficulty ? calculateNonceForId(difficulty, id) : 0;
+    return {
+        headers: {
+            'x-request-id': id,
+            'x-nonce': nonce,
+        },
+    };
+}
+
+/**
+ * Generate a unique ID
+ *
+ * @export
+ * @return {*}  {string}
+ */
+export const getUniqueID = (): string => uuidv4().replace(/-/gi, '').toString().substring(0, 32);

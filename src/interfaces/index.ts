@@ -4,6 +4,7 @@ import { Result } from 'neverthrow';
 /*                                 API Routes                                 */
 /* -------------------------------------------------------------------------- */
 export enum IAPIRoute {
+    DebugData = '/debug_data',
     FetchBalance = '/fetch_balance',
     SignableTransactions = '/signable_transactions',
     CreateTransactions = '/create_transactions',
@@ -65,6 +66,13 @@ export type IPendingRbTxData = {
 /* -------------------------------------------------------------------------- */
 /*                             API Response Types                             */
 /* -------------------------------------------------------------------------- */
+export type IDebugDataResponse = {
+    node_type: string;
+    node_api: string[];
+    node_peers: string[];
+    routes_pow: GenericKeyPair<number>;
+};
+
 export type IFetchUtxoAddressesResponse = string[];
 
 export type ICreateReceiptResponse = string;
@@ -98,6 +106,7 @@ export type IMakeRbPaymentResponse = {
 /* -------------------------------------------------------------------------- */
 /*                                API Payloads                                */
 /* -------------------------------------------------------------------------- */
+
 export type IReceiptCreationAPIPayload = {
     receipt_amount: number;
     script_public_key: string;

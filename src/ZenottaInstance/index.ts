@@ -1,5 +1,6 @@
 // TODO: Refactor this file to be more readable
 import {
+    constructTxInsAddress,
     CreateRbTxHalf,
     createReceiptPayload,
     CreateTokenPaymentTx,
@@ -7,35 +8,32 @@ import {
 } from '../mgmt';
 import axios, { AxiosInstance } from 'axios';
 import { mgmtClient } from './mgmtClient';
-import { castAPIStatus, throwIfErr } from '../utils';
-import { constructTxInsAddress } from '../mgmt/scriptMgmt';
-import { generateIntercomDelBody, validateRbData } from '../utils/intercomUtils';
+import { castAPIStatus, createIdAndNonceHeaders, throwIfErr } from '../utils';
 import {
-    ICreateTransactionEncrypted,
-    IMakeRbPaymentResponse,
-    IMasterKeyEncrypted,
-} from '../interfaces/index';
-import {
-    IFetchPendingRbResponse,
-    IPendingRbTxData,
-    IRequestGetBody,
-    ICreateTransaction,
-    IRequestDelBody,
-    IErrorInternal,
-    IKeypairEncrypted,
-} from '../interfaces';
-import {
-    IFetchUtxoAddressesResponse,
-    IFetchBalanceResponse,
-    IFetchPendingDDEResponse,
-    ICreateReceiptResponse,
-    IAPIRoute,
-} from '../interfaces';
-import {
+    generateIntercomDelBody,
     generateIntercomGetBody,
     generateIntercomSetBody,
     getRbDataForDruid,
+    validateRbData,
 } from '../utils/intercomUtils';
+import {
+    IAPIRoute,
+    ICreateReceiptResponse,
+    ICreateTransaction,
+    ICreateTransactionEncrypted,
+    IDebugDataResponse,
+    IErrorInternal,
+    IFetchBalanceResponse,
+    IFetchPendingDDEResponse,
+    IFetchPendingRbResponse,
+    IFetchUtxoAddressesResponse,
+    IKeypairEncrypted,
+    IMakeRbPaymentResponse,
+    IMasterKeyEncrypted,
+    IPendingRbTxData,
+    IRequestDelBody,
+    IRequestGetBody,
+} from '../interfaces';
 
 /* -------------------------------------------------------------------------- */
 /*                                 Interfaces                                 */
@@ -86,6 +84,7 @@ export type IApiContentType = {
     fetchPendingDDEResponse?: IFetchPendingDDEResponse;
     createReceiptResponse?: ICreateReceiptResponse;
     fetchPendingRbResponse?: IFetchPendingRbResponse;
+    debugDataResponse?: IDebugDataResponse;
 };
 
 export class ZenottaInstance {
@@ -95,6 +94,7 @@ export class ZenottaInstance {
     private intercomHost: string;
     private axiosClient: AxiosInstance | undefined;
     private keyMgmt: mgmtClient | undefined;
+    private routesPoW: Map<string, number>;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Constructor                                */
@@ -103,6 +103,7 @@ export class ZenottaInstance {
         this.intercomHost = '';
         this.axiosClient = undefined;
         this.keyMgmt = undefined;
+        this.routesPoW = new Map();
     }
 
     /**
@@ -112,14 +113,16 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
-    public initNew(config: IClientConfig): IClientResponse {
-        this.initCommon(config);
+    public async initNew(config: IClientConfig): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
         const initResult = this.keyMgmt.initNew(config.passPhrase);
-        if (initResult.isErr()) {
+        const initCommonResult = await this.initCommon(config);
+        if (initCommonResult.status === 'error') {
+            return initCommonResult; // Return network error
+        } else if (initResult.isErr()) {
             return {
                 status: 'error',
-                reason: initResult.error,
+                reason: initResult.error, // Return initialization error
             } as IClientResponse;
         } else {
             return {
@@ -140,17 +143,19 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
-    public initFromMasterKey(
+    public async initFromMasterKey(
         config: IClientConfig,
         masterKey: IMasterKeyEncrypted,
-    ): IClientResponse {
-        this.initCommon(config);
+    ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
         const initResult = this.keyMgmt.initFromMasterKey(config.passPhrase, masterKey);
-        if (initResult.isErr()) {
+        const initCommonResult = await this.initCommon(config);
+        if (initCommonResult.status === 'error') {
+            return initCommonResult; // Return network error
+        } else if (initResult.isErr()) {
             return {
                 status: 'error',
-                reason: initResult.error,
+                reason: initResult.error, // Return initialization error
             } as IClientResponse;
         } else {
             return {
@@ -168,14 +173,16 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
-    public initFromSeed(config: IClientConfig, seedPhrase: string): IClientResponse {
-        this.initCommon(config);
+    public async initFromSeed(config: IClientConfig, seedPhrase: string): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
         const initResult = this.keyMgmt.initFromSeed(config.passPhrase, seedPhrase);
-        if (initResult.isErr()) {
+        const initCommonResult = await this.initCommon(config);
+        if (initCommonResult.status === 'error') {
+            return initCommonResult; // Return network error
+        } else if (initResult.isErr()) {
             return {
                 status: 'error',
-                reason: initResult.error,
+                reason: initResult.error, // Return initialization error
             } as IClientResponse;
         } else {
             return {
@@ -195,7 +202,7 @@ export class ZenottaInstance {
      * @param {IClientConfig} config
      * @memberof ZenottaInstance
      */
-    private initCommon(config: IClientConfig) {
+    private async initCommon(config: IClientConfig): Promise<IClientResponse> {
         this.intercomHost = config.intercomHost;
         this.axiosClient = axios.create({
             baseURL: config.computeHost,
@@ -204,6 +211,20 @@ export class ZenottaInstance {
                 'Content-Type': 'application/json',
             },
         });
+        // Set routes proof-of-work requirements
+        const debugData = await this.getDebugData();
+        if (debugData.status === 'error')
+            return {
+                status: 'error',
+                reason: debugData.reason,
+            } as IClientResponse;
+        else if (debugData.status === 'success' && debugData.content?.debugDataResponse)
+            for (const route in debugData.content.debugDataResponse.routes_pow) {
+                this.routesPoW.set(route, debugData.content.debugDataResponse.routes_pow[route]);
+            }
+        return {
+            status: 'success',
+        } as IClientResponse;
     }
 
     /**
@@ -216,8 +237,9 @@ export class ZenottaInstance {
         try {
             if (!this.axiosClient || !this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
+            const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.GetUtxoAddressList);
             return await this.axiosClient
-                .get<INetworkResponse>(IAPIRoute.GetUtxoAddressList)
+                .get<INetworkResponse>(IAPIRoute.GetUtxoAddressList, headers)
                 .then((response) => {
                     return {
                         status: castAPIStatus(response.data.status),
@@ -253,8 +275,9 @@ export class ZenottaInstance {
             const fetchBalanceBody = {
                 address_list: addressList,
             };
+            const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.FetchBalance);
             return await this.axiosClient
-                .post<INetworkResponse>(IAPIRoute.FetchBalance, fetchBalanceBody)
+                .post<INetworkResponse>(IAPIRoute.FetchBalance, fetchBalanceBody, headers)
                 .then((response) => {
                     return {
                         status: castAPIStatus(response.data.status),
@@ -290,8 +313,9 @@ export class ZenottaInstance {
             const fetchPendingBody = {
                 druid_list: druids,
             };
+            const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.FetchPending);
             return await this.axiosClient
-                .post<INetworkResponse>(IAPIRoute.FetchPending, fetchPendingBody)
+                .post<INetworkResponse>(IAPIRoute.FetchPending, fetchPendingBody, headers)
                 .then((response) => {
                     return {
                         status: castAPIStatus(response.data.status),
@@ -329,10 +353,12 @@ export class ZenottaInstance {
             const createReceiptBody = throwIfErr(
                 createReceiptPayload(keyPair.secretKey, keyPair.publicKey, keyPair.version),
             );
+            const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.CreateReceiptAsset);
             return await this.axiosClient
                 .post<INetworkResponse>(
                     `${this.axiosClient.defaults.baseURL}${IAPIRoute.CreateReceiptAsset}`,
                     createReceiptBody,
+                    headers,
                 )
                 .then((response) => {
                     return {
@@ -393,9 +419,14 @@ export class ZenottaInstance {
                     keyPairMap,
                 ),
             );
+            const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.CreateTransactions);
             // Create transaction struct has successfully been created
             return await this.axiosClient
-                .post<INetworkResponse>(IAPIRoute.CreateTransactions, [paymentBody.createTx])
+                .post<INetworkResponse>(
+                    IAPIRoute.CreateTransactions,
+                    [paymentBody.createTx],
+                    headers,
+                )
                 .then((response) => {
                     const responseData = response.data as INetworkResponse;
                     return {
@@ -566,12 +597,16 @@ export class ZenottaInstance {
                     ),
                 );
 
-                const fromAddr = throwIfErr(constructTxInsAddress(sendRbTxHalf.createTx.inputs));
-                txInfo.fromAddr = fromAddr;
+                txInfo.fromAddr = throwIfErr(constructTxInsAddress(sendRbTxHalf.createTx.inputs));
 
                 // Send transaction to compute if accepted
+                const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.CreateTransactions);
                 await this.axiosClient
-                    .post<INetworkResponse>(IAPIRoute.CreateTransactions, [sendRbTxHalf.createTx])
+                    .post<INetworkResponse>(
+                        IAPIRoute.CreateTransactions,
+                        [sendRbTxHalf.createTx],
+                        headers,
+                    )
                     .then((response) => {
                         const responseData = response.data as INetworkResponse;
                         if (castAPIStatus(responseData.status) !== 'success')
@@ -742,8 +777,13 @@ export class ZenottaInstance {
                 }
 
                 // Send transactions to compute for processing
+                const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.CreateTransactions);
                 await this.axiosClient
-                    .post<INetworkResponse>(IAPIRoute.CreateTransactions, transactionsToSend)
+                    .post<INetworkResponse>(
+                        IAPIRoute.CreateTransactions,
+                        transactionsToSend,
+                        headers,
+                    )
                     .then(async (response) => {
                         if (castAPIStatus(response.data.status) === 'error')
                             throw new Error(response.data.reason);
@@ -796,6 +836,65 @@ export class ZenottaInstance {
         }
     }
 
+    /**
+     * Get information regarding the PoW required for all routes
+     *
+     * @private
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    private async getDebugData(): Promise<IClientResponse> {
+        try {
+            if (!this.axiosClient || !this.keyMgmt)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const headers = this.getRequestIdAndNonceForRoute(IAPIRoute.DebugData);
+            return await this.axiosClient
+                .get<INetworkResponse>(IAPIRoute.DebugData, headers)
+                .then(async (response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: {
+                            debugDataResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Generate a unique request ID as well as the corresponding required
+     * nonce for a route
+     *
+     * @private
+     * @param {string} route
+     * @return {*}  {{
+     *         headers: {
+     *             'x-request-id': string;
+     *             'x-nonce': number;
+     *         };
+     *     }}
+     * @memberof ZenottaInstance
+     */
+    private getRequestIdAndNonceForRoute(route: string): {
+        headers: {
+            'x-request-id': string;
+            'x-nonce': number;
+        };
+    } {
+        const routeDifficulty = this.routesPoW.get(route.slice(1)); // Slice removes the '/' prefix
+        return createIdAndNonceHeaders(routeDifficulty);
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                    Utils                                   */
     /* -------------------------------------------------------------------------- */
@@ -803,6 +902,7 @@ export class ZenottaInstance {
     /**
      * Regenerates the addresses for a newly imported wallet (from seed phrase)
      *
+     * @param seedPhrase
      * @param {string[]} addressList
      * @param {number} [seedRegenThreshold=SEED_REGEN_THRES]
      * @return {*}  {Promise<IClientResponse>}

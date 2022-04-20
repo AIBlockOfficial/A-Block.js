@@ -1,4 +1,5 @@
 import { ZenottaInstance } from '../../ZenottaInstance';
+import { SEED } from '../constants';
 
 let znpInstance = new ZenottaInstance();
 
@@ -7,8 +8,6 @@ beforeEach(() => {
 });
 
 test('handles key-pair re-generation from wallet seed phrase', async () => {
-    const seedPhrase = 'army van defense carry jealous true garbage claim echo media make crunch';
-
     const utxoAddressList = [
         /* TEMP_ADDRESS_VERSION = 99999 */
         '8532c5b5581aa926c1bdcc250cf2c66ad6eee4eb05970473b8beb1636f2bdc0d',
@@ -21,12 +20,12 @@ test('handles key-pair re-generation from wallet seed phrase', async () => {
         '28a7de5c30f8271be690db7a979e1be33d31f6b6aebaa3c82888354ba214c24d',
     ];
 
-    znpInstance.initFromSeed(
+    await znpInstance.initFromSeed(
         { computeHost: '', intercomHost: '', passPhrase: 'passphrase' },
-        seedPhrase,
+        SEED,
     );
 
-    const foundAddresses = await znpInstance.regenAddresses(seedPhrase, utxoAddressList, 6);
+    const foundAddresses = await znpInstance.regenAddresses(SEED, utxoAddressList, 6);
 
     // Test to see if we have a success response from the client
     expect(foundAddresses.status).toBe('success');
