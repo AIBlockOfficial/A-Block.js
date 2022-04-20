@@ -13,6 +13,9 @@ export type IAddressListTest = {
     };
 };
 
+// Seeds have to be string only
+export const SEED = 'army van defense carry jealous true garbage claim echo media make crunch';
+
 export const ADDRESS_LIST_TEST: IAddressListTest = {
     cf0067d6c42463b2c1e4236e9669df546c74b16c0e2ef37114549b2944e05b7c: {
         public_key: '5e6d463ec66d7999769fa4de56f690dfb62e685b97032f5926b0cb6c93ba83c6',
