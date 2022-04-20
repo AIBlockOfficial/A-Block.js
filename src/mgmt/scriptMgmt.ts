@@ -89,9 +89,7 @@ export function generateDRUID(): SyncResult<string> {
  */
 export function getFormattedScriptString(script: Script): string {
     return Object.values(script.stack)
-        .map((stackEntry) => {
-            return stackEntry.toString();
-        })
+        .map((stackEntry) => stackEntry.toString())
         .join('-');
 }
 

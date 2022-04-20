@@ -295,7 +295,7 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
   // We only need the 'address' field of the key-pairs
   const addressList = allKeypairs.map(keypair => keypair.address);
 
-  const balanceResult = await client.getBalance(addressList);
+  const balanceResult = await client.fetchBalance(addressList);
 
   const balance: IFetchBalanceResponse = balanceResult.content.balanceResponse;
   ```

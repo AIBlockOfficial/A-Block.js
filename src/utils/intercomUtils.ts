@@ -154,15 +154,15 @@ export function generateIntercomDelBody(
  */
 export function validateRbData(pending: IFetchPendingRbResponse): IFetchPendingRbResponse {
     // We test against this body structure to ensure that the data is valid
-    const emptyDetails = {
-        senderAsset: '',
+    const emptyDetails: IPendingRbTxDetails = {
+        senderAsset: 'Token',
         senderAmount: 0,
         senderAddress: '',
-        receiverAsset: '',
+        receiverAsset: 'Receipt',
         receiverAmount: 0,
         receiverAddress: '',
         fromAddr: '',
-        status: '',
+        status: 'pending',
     };
 
     const returnValue: IFetchPendingRbResponse = {};

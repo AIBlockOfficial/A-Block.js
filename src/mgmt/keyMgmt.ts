@@ -7,6 +7,7 @@ import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION } from './constants';
 import Mnemonic from 'bitcore-mnemonic';
 import { err, ok } from 'neverthrow';
 import { SyncResult, IErrorInternal, IMasterKey, IKeypair } from '../interfaces';
+import { throwIfErr } from '../utils/index';
 
 /**
  * Get the address version for either a given public key and address
@@ -114,11 +115,12 @@ export function generateKeypair(
             seed = seed.slice(0, 32);
         }
         const keypairRaw = seed ? nacl.sign.keyPair.fromSeed(seed) : nacl.sign.keyPair();
-
+        const address = throwIfErr(constructAddress(keypairRaw.publicKey, version));
         return ok({
+            address: address,
             secretKey: keypairRaw.secretKey,
             publicKey: keypairRaw.publicKey,
-            version,
+            version: version,
         } as IKeypair);
     } catch {
         return err(IErrorInternal.UnableToGenerateKeypair);
