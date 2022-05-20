@@ -1,17 +1,24 @@
-import { getHexStringBytes, getStringBytes, truncateByBytesUTF8 } from '../utils';
 import { constructAddress } from './keyMgmt';
 import { err, ok } from 'neverthrow';
 import { v4 as uuidv4 } from 'uuid';
 import { sha3_256 } from 'js-sha3';
 import nacl from 'tweetnacl';
 import {
-    SyncResult,
+    IResult,
     IErrorInternal,
     IOutPoint,
     Script,
     ICreateTxIn,
     StackEntry,
+    IAssetReceipt,
+    IAssetToken,
 } from '../interfaces';
+import {
+    truncateByBytesUTF8,
+    getStringBytes,
+    getHexStringBytes,
+    isOfTypeIAssetToken,
+} from '../utils';
 
 /* -------------------------------------------------------------------------- */
 /*                            Transaction Utilities                           */
@@ -28,7 +35,7 @@ import {
 export function constructSignature(
     signableData: Uint8Array,
     secretKey: Uint8Array,
-): SyncResult<string> {
+): IResult<string> {
     try {
         const signature = nacl.sign.detached(signableData, secretKey);
         return ok(Buffer.from(signature).toString('hex'));
@@ -65,14 +72,15 @@ export function getFormattedOutPointString(outPoint: IOutPoint | null): string |
 }
 
 /**
- * Generates a new 16 byte DRUID
+ * Generates a new 32 byte DRUID
  *
  * @returns {string}
  */
-export function generateDRUID(): SyncResult<string> {
+export function generateDRUID(): IResult<string> {
     try {
         let newDRUID = uuidv4().replace(/-/gi, '');
-        newDRUID = truncateByBytesUTF8(sha3_256(newDRUID), 9);
+        // TODO: Change DRUID character length to 64?
+        newDRUID = truncateByBytesUTF8(sha3_256(newDRUID), 32);
 
         return ok(`DRUID0x${newDRUID}`);
     } catch {
@@ -101,7 +109,7 @@ export function getFormattedScriptString(script: Script): string {
  * @param {StackEntry[]} stackEntries
  * @return {*}  {string}
  */
-export function constructTxInsAddress(txIns: ICreateTxIn[]): SyncResult<string> {
+export function constructTxInsAddress(txIns: ICreateTxIn[]): IResult<string> {
     const signableTxIns = txIns
         .map((txIn) => {
             const script_sig = txIn.script_signature;
@@ -130,14 +138,14 @@ export function constructTxInsAddress(txIns: ICreateTxIn[]): SyncResult<string> 
 }
 
 //TODO: Add data asset type
-export function constructTxInSignableAssetHash(type: 'Token' | 'Receipt', amount: number): string {
-    switch (type) {
-        case 'Token':
-            return sha3_256(
-                getStringBytes(`Token:${amount}`),
-            ); /* Actual token amount, not formatted */
-        case 'Receipt':
-            return sha3_256(getStringBytes(`Receipt:${amount}`));
+//TODO: Use DRS transaction hash as part of the signable data?
+export function constructTxInSignableAssetHash(asset: IAssetToken | IAssetReceipt): string {
+    if (isOfTypeIAssetToken(asset)) {
+        return sha3_256(
+            getStringBytes(`Token:${asset.Token}`),
+        ); /* Actual token amount, not formatted for display */
+    } else {
+        return sha3_256(getStringBytes(`Receipt:${asset.Receipt.amount}`));
     }
 }
 
@@ -145,18 +153,18 @@ export function constructTxInSignableAssetHash(type: 'Token' | 'Receipt', amount
  * Construct a Pay-to-Public-Key-Hash script
  *
  * @export
- * @param {string} checkData
- * @param {string} signatureData
- * @param {string} publicKeyData
- * @param {(number | null)} addressVersion
- * @return {*}  {SyncResult<Script>}
+ * @param {string} checkData - Data to check
+ * @param {string} signatureData - Signature
+ * @param {string} publicKeyData - Public key
+ * @param {(number | null)} addressVersion - Address version
+ * @return {*}  {IResult<Script>}
  */
 export function p2pkh(
     checkData: string,
     signatureData: string,
     publicKeyData: string,
     addressVersion: number | null,
-): SyncResult<Script> {
+): IResult<Script> {
     const stackEntries: StackEntry[] = [];
     stackEntries.push(new StackEntry('Bytes', checkData));
     stackEntries.push(new StackEntry('Signature', signatureData));
