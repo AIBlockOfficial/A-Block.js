@@ -23,6 +23,7 @@ test('handles key-pair re-generation from wallet seed phrase', async () => {
     await znpInstance.initFromSeed(
         { computeHost: '', intercomHost: '', passPhrase: 'passphrase' },
         SEED,
+        true,
     );
 
     const foundAddresses = await znpInstance.regenAddresses(SEED, utxoAddressList, 6);

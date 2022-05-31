@@ -45,19 +45,19 @@ export class ZenottaInstance {
     /* -------------------------------------------------------------------------- */
     /*                              Member Variables                              */
     /* -------------------------------------------------------------------------- */
-    private intercomHost: string;
-    private computeHost: string;
+    private intercomHost: string | undefined;
+    private computeHost: string | undefined;
     private keyMgmt: mgmtClient | undefined;
-    private routesPoW: Map<string, number>;
+    private routesPoW: Map<string, number> | undefined;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Constructor                                */
     /* -------------------------------------------------------------------------- */
     constructor() {
-        this.intercomHost = '';
-        this.computeHost = '';
+        this.intercomHost = undefined;
+        this.computeHost = undefined;
         this.keyMgmt = undefined;
-        this.routesPoW = new Map();
+        this.routesPoW = undefined;
     }
 
     /**
@@ -67,13 +67,16 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
-    public async initNew(config: IClientConfig): Promise<IClientResponse> {
+    public async initNew(config: IClientConfig, initOffline = false): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
         const initIResult = this.keyMgmt.initNew(config.passPhrase);
-        const initCommonIResult = await this.initCommon(config);
-        if (initCommonIResult.status === 'error') {
-            return initCommonIResult; // Return network error
-        } else if (initIResult.isErr()) {
+        if (!initOffline) {
+            const initNetworkIResult = await this.initNetwork(config);
+            if (initNetworkIResult.status === 'error') {
+                return initNetworkIResult; // Return network error
+            }
+        }
+        if (initIResult.isErr()) {
             return {
                 status: 'error',
                 reason: initIResult.error, // Return initialization error
@@ -100,13 +103,18 @@ export class ZenottaInstance {
     public async initFromMasterKey(
         config: IClientConfig,
         masterKey: IMasterKeyEncrypted,
+        initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
         const initIResult = this.keyMgmt.initFromMasterKey(config.passPhrase, masterKey);
-        const initCommonIResult = await this.initCommon(config);
-        if (initCommonIResult.status === 'error') {
-            return initCommonIResult; // Return network error
-        } else if (initIResult.isErr()) {
+        if (!initOffline) {
+            const initNetworkIResult = await this.initNetwork(config);
+            if (initNetworkIResult.status === 'error') {
+                return initNetworkIResult; // Return network error
+            }
+        }
+
+        if (initIResult.isErr()) {
             return {
                 status: 'error',
                 reason: initIResult.error, // Return initialization error
@@ -127,13 +135,20 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
-    public async initFromSeed(config: IClientConfig, seedPhrase: string): Promise<IClientResponse> {
+    public async initFromSeed(
+        config: IClientConfig,
+        seedPhrase: string,
+        initOffline = false,
+    ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
         const initIResult = this.keyMgmt.initFromSeed(config.passPhrase, seedPhrase);
-        const initCommonIResult = await this.initCommon(config);
-        if (initCommonIResult.status === 'error') {
-            return initCommonIResult; // Return network error
-        } else if (initIResult.isErr()) {
+        if (!initOffline) {
+            const initNetworkIResult = await this.initNetwork(config);
+            if (initNetworkIResult.status === 'error') {
+                return initNetworkIResult; // Return network error
+            }
+        }
+        if (initIResult.isErr()) {
             return {
                 status: 'error',
                 reason: initIResult.error, // Return initialization error
@@ -150,14 +165,15 @@ export class ZenottaInstance {
     }
 
     /**
-     * Common initialization
+     * Common network initialization (retrieval of PoW list)
      *
      * @private
      * @param {IClientConfig} config - Additional configuration parameters
      * @memberof ZenottaInstance
      */
-    private async initCommon(config: IClientConfig): Promise<IClientResponse> {
+    public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
         // TODO: Add check for IPv4 and IPv6 IP address validity
+        this.routesPoW = new Map();
         this.intercomHost = config.intercomHost;
         this.computeHost = config.computeHost;
         // Set routes proof-of-work requirements
@@ -177,6 +193,8 @@ export class ZenottaInstance {
     }
 
     /**
+     * @deprecated due to instability.
+     *
      * Get all the addresses present on the ZNP UTXO set
      *
      * @return {*}  {Promise<IClientResponse>}
@@ -184,7 +202,8 @@ export class ZenottaInstance {
      */
     public async getUtxoAddressList(): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.GetUtxoAddressList);
             return await axios
                 .get<INetworkResponse>(
@@ -221,7 +240,8 @@ export class ZenottaInstance {
      */
     async fetchBalance(addressList: string[]): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const fetchBalanceBody = {
                 address_list: addressList,
             };
@@ -262,7 +282,8 @@ export class ZenottaInstance {
      */
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const fetchPendingBody = {
                 druid_list: druids,
             };
@@ -307,7 +328,8 @@ export class ZenottaInstance {
         defaultDrsTxHash = true,
     ): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const keyPair = throwIfErr(this.keyMgmt.decryptKeypair(address));
             // Create receipt-creation transaction
             const createReceiptBody = throwIfErr(
@@ -366,7 +388,8 @@ export class ZenottaInstance {
         excessKeypair: IKeypairEncrypted,
     ) {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
             );
@@ -482,7 +505,8 @@ export class ZenottaInstance {
         receiveAddress: IKeypairEncrypted,
     ): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const senderKeypair = throwIfErr(this.keyMgmt.decryptKeypair(receiveAddress));
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
@@ -527,7 +551,7 @@ export class ZenottaInstance {
             const encryptedTx = throwIfErr(this.keyMgmt.encryptTransaction(sendRbTxHalf.createTx));
 
             // Create "sender" details and expectations for intercom server
-            senderExpectation.from = throwIfErr(
+            receiverExpectation.from = throwIfErr(
                 constructTxInsAddress(sendRbTxHalf.createTx.inputs),
             );
             if (sendRbTxHalf.createTx.druid_info === null)
@@ -535,7 +559,7 @@ export class ZenottaInstance {
 
             // Generate the values to be placed on the intercom server for the receiving party
             const valuePayload: IPendingRbTxDetails = {
-                druid: throwIfErr(this.keyMgmt.getNewDRUID()),
+                druid,
                 senderExpectation,
                 receiverExpectation,
                 status: 'pending', // Status of the DDE transaction
@@ -596,7 +620,8 @@ export class ZenottaInstance {
         allKeypairs: IKeypairEncrypted[],
     ): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
             );
@@ -746,7 +771,8 @@ export class ZenottaInstance {
         allEncryptedTxs: ICreateTransactionEncrypted[],
     ): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
 
             // Generate a key-pair map
             const [allAddresses, keyPairMap] = throwIfErr(
@@ -799,6 +825,11 @@ export class ZenottaInstance {
                 const transactionsToSend: ICreateTransaction[] = [];
                 for (const acceptedTx of Object.values(acceptedRbTxs)) {
                     // Decrypt transaction stored along with DRUID value
+                    console.log(
+                        `Trying to get DRUID value ${acceptedTx.value.druid} from ${JSON.stringify(
+                            encryptedTxMap,
+                        )}`,
+                    );
                     const encryptedTx = encryptedTxMap.get(acceptedTx.value.druid);
                     if (!encryptedTx) throw new Error(IErrorInternal.InvalidDRUIDProvided);
                     const decryptedTransaction = throwIfErr(
@@ -831,6 +862,7 @@ export class ZenottaInstance {
                 const headers = this.getRequestIdAndNonceHeadersForRoute(
                     IAPIRoute.CreateTransactions,
                 );
+                console.log(JSON.stringify(transactionsToSend));
 
                 // Send transactions to compute for processing
                 await axios
@@ -899,7 +931,8 @@ export class ZenottaInstance {
      */
     private async getDebugData(): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.DebugData);
             return await axios
                 .get<INetworkResponse>(`${this.computeHost}${IAPIRoute.DebugData}`, headers)
@@ -938,12 +971,13 @@ export class ZenottaInstance {
      *     }}
      * @memberof ZenottaInstance
      */
-    private getRequestIdAndNonceHeadersForRoute(route: IAPIRoute): {
+    private getRequestIdAndNonceHeadersForRoute(route: string): {
         headers: {
             'x-request-id': string;
             'x-nonce': number;
         };
     } {
+        if (!this.routesPoW) throw new Error(IErrorInternal.ClientNotInitialized);
         const routeDifficulty = this.routesPoW.get(route.slice(1)); // Slice removes the '/' prefix
         return { ...DEFAULT_HEADERS, ...createIdAndNonceHeaders(routeDifficulty) };
     }
@@ -1002,7 +1036,8 @@ export class ZenottaInstance {
      */
     getNewKeypair(allAddresses: string[]): IClientResponse {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             return {
                 status: 'success',
                 reason: 'Successfully generated new address',
@@ -1026,7 +1061,8 @@ export class ZenottaInstance {
      */
     getSeedPhrase(): IClientResponse {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             return {
                 status: 'success',
                 reason: 'Successfully obtained seed phrase',
@@ -1050,7 +1086,8 @@ export class ZenottaInstance {
      */
     getMasterKey(): IClientResponse {
         try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
             return {
                 status: 'success',
                 reason: 'Successfully obtained master key',
