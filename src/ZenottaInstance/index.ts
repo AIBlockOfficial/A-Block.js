@@ -825,11 +825,6 @@ export class ZenottaInstance {
                 const transactionsToSend: ICreateTransaction[] = [];
                 for (const acceptedTx of Object.values(acceptedRbTxs)) {
                     // Decrypt transaction stored along with DRUID value
-                    console.log(
-                        `Trying to get DRUID value ${acceptedTx.value.druid} from ${JSON.stringify(
-                            encryptedTxMap,
-                        )}`,
-                    );
                     const encryptedTx = encryptedTxMap.get(acceptedTx.value.druid);
                     if (!encryptedTx) throw new Error(IErrorInternal.InvalidDRUIDProvided);
                     const decryptedTransaction = throwIfErr(
@@ -862,7 +857,6 @@ export class ZenottaInstance {
                 const headers = this.getRequestIdAndNonceHeadersForRoute(
                     IAPIRoute.CreateTransactions,
                 );
-                console.log(JSON.stringify(transactionsToSend));
 
                 // Send transactions to compute for processing
                 await axios
