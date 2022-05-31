@@ -17,7 +17,6 @@ export type IClientConfig = {
     computeHost: string;
     intercomHost: string;
     passPhrase: string;
-    timeout?: number;
 };
 
 // Response structure returned from `ZenottaInstance` methods
