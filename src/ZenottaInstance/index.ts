@@ -1,3 +1,5 @@
+import axios from 'axios';
+import { mgmtClient } from './mgmtClient';
 import {
     constructTxInsAddress,
     createPaymentTx,
@@ -7,18 +9,28 @@ import {
     RECEIPT_DEFAULT,
     SEED_REGEN_THRES,
 } from '../mgmt';
-import axios from 'axios';
-import { mgmtClient } from './mgmtClient';
-import { formatSingleCustomKeyValuePair } from '../utils/generalUtils';
 import {
-    IDruidExpectation,
-    IAssetToken,
-    IAssetReceipt,
+    castAPIStatus,
+    createIdAndNonceHeaders,
+    filterIntercomDataForPredicates,
+    filterValidIntercomData,
+    formatSingleCustomKeyValuePair,
+    generateIntercomDelBody,
+    generateIntercomGetBody,
+    generateIntercomSetBody,
+    initIAssetReceipt,
+    initIAssetToken,
+    throwIfErr,
+} from '../utils';
+import {
     IAPIRoute,
+    IAssetReceipt,
+    IAssetToken,
     IClientConfig,
     IClientResponse,
     ICreateTransaction,
     ICreateTransactionEncrypted,
+    IDruidExpectation,
     IErrorInternal,
     IKeypairEncrypted,
     IMasterKeyEncrypted,
@@ -28,18 +40,6 @@ import {
     IRequestIntercomGetBody,
     IResponseIntercom,
 } from '../interfaces';
-import {
-    castAPIStatus,
-    throwIfErr,
-    generateIntercomSetBody,
-    generateIntercomGetBody,
-    generateIntercomDelBody,
-    createIdAndNonceHeaders,
-    filterIntercomDataForPredicates,
-    filterValidIntercomData,
-    initIAssetToken,
-    initIAssetReceipt,
-} from '../utils';
 
 export class ZenottaInstance {
     /* -------------------------------------------------------------------------- */
@@ -52,6 +52,7 @@ export class ZenottaInstance {
 
     /* -------------------------------------------------------------------------- */
     /*                                 Constructor                                */
+
     /* -------------------------------------------------------------------------- */
     constructor() {
         this.intercomHost = undefined;
@@ -64,6 +65,7 @@ export class ZenottaInstance {
      * Initialize a new instance of the client without providing a master key or seed phrase
      *
      * @param {IClientConfig} config - Additional configuration parameters
+     * @param initOffline - Optionally initialize the client without initializing network settings
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
@@ -97,6 +99,8 @@ export class ZenottaInstance {
      *
      * @param {IClientConfig} config - Additional configuration parameters
      * @param {IMasterKeyEncrypted} masterKey - Master key
+     * @param initOffline - Optionally initialize the client without initializing network settings
+     *
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
@@ -133,6 +137,8 @@ export class ZenottaInstance {
      * @param {IClientConfig} config - Additional configuration parameters
      * @param {string} seedPhrase - Seed phrase
      * @return {*}  {IClientResponse}
+     * @param initOffline - Optionally initialize the client without initializing network settings
+     *
      * @memberof ZenottaInstance
      */
     public async initFromSeed(
@@ -276,6 +282,8 @@ export class ZenottaInstance {
     /**
      * Fetch pending DDE transaction from the compute node
      *
+     * @deprecated due to security concerns.
+     *
      * @param {string[]} druids - A list of DRUID values
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ZenottaInstance
@@ -319,13 +327,15 @@ export class ZenottaInstance {
      *  Create receipt-assets for a provided address/key-pair
      *
      * @param {IKeypairEncrypted} address - Key-pair to use for the creation of the receipt-assets
-     * @param {boolean} [defaultDrsTxHash=true]
+     * @param {boolean} [defaultDrsTxHash=true] - Whether to create `Receipt` assets that contain the default DRS identifier
+     * @param {number} [amount=RECEIPT_DEFAULT] - The amount of `Receipt` assets to create
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ZenottaInstance
      */
     public async createReceipts(
         address: IKeypairEncrypted,
         defaultDrsTxHash = true,
+        amount: number = RECEIPT_DEFAULT,
     ): Promise<IClientResponse> {
         try {
             if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
@@ -337,7 +347,7 @@ export class ZenottaInstance {
                     keyPair.secretKey,
                     keyPair.publicKey,
                     keyPair.version,
-                    RECEIPT_DEFAULT,
+                    amount,
                     defaultDrsTxHash,
                 ),
             );
@@ -356,78 +366,6 @@ export class ZenottaInstance {
                         content: {
                             createReceiptResponse: response.data.content,
                         },
-                    } as IClientResponse;
-                })
-                .catch(async (error) => {
-                    if (error instanceof Error) throw new Error(error.message);
-                    else throw new Error(`${error}`);
-                });
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            } as IClientResponse;
-        }
-    }
-
-    /**
-     * Make a payment of a certain asset to a specified destination
-     *
-     * @private
-     * @param {string} paymentAddress - Address to make the payment to
-     * @param {(IAssetToken | IAssetReceipt)} paymentAsset - The asset to send
-     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
-     * @param {IKeypairEncrypted} excessKeypair - A key-pair (encrypted) to assign excess funds to
-     * @return {*}
-     * @memberof ZenottaInstance
-     */
-    private async makePayment(
-        paymentAddress: string,
-        paymentAsset: IAssetToken | IAssetReceipt,
-        allKeypairs: IKeypairEncrypted[],
-        excessKeypair: IKeypairEncrypted,
-    ) {
-        try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            const [allAddresses, keyPairMap] = throwIfErr(
-                this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
-            );
-
-            // First update balance
-            const balance = await this.fetchBalance(allAddresses);
-            if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
-                throw new Error(balance.reason);
-
-            // Get all existing addresses
-            if (allKeypairs.length === 0) throw new Error('No existing key-pairs provided');
-
-            // Create transaction
-            const paymentBody = throwIfErr(
-                createPaymentTx(
-                    paymentAddress,
-                    paymentAsset,
-                    excessKeypair.address,
-                    balance.content.fetchBalanceResponse,
-                    keyPairMap,
-                ),
-            );
-
-            // Generate the needed headers
-            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.CreateTransactions);
-
-            // Send transaction to compute for processing
-            return await axios
-                .post<INetworkResponse>(
-                    `${this.computeHost}${IAPIRoute.CreateTransactions}`,
-                    [paymentBody.createTx],
-                    headers,
-                )
-                .then((response) => {
-                    const responseData = response.data as INetworkResponse;
-                    return {
-                        status: castAPIStatus(responseData.status),
-                        reason: responseData.reason,
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
@@ -534,7 +472,7 @@ export class ZenottaInstance {
                 asset: sendingAsset,
             };
 
-            // Create "sender" half transaction with some missing data in DruidExpecations objects (`from`)
+            // Create "sender" half transaction with some missing data in DruidExpectations objects (`from`)
             const sendRbTxHalf = throwIfErr(
                 createRbTxHalf(
                     balance.content.fetchBalanceResponse,
@@ -588,6 +526,390 @@ export class ZenottaInstance {
                                 encryptedTx: encryptedTx,
                             },
                         },
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Accept a receipt-based payment
+     *
+     * @param {string} druid - Unique DRUID value associated with a receipt-based payment
+     * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
+     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    public async acceptRbTx(
+        druid: string,
+        pendingResponse: IResponseIntercom<IPendingRbTxDetails>,
+        allKeypairs: IKeypairEncrypted[],
+    ): Promise<IClientResponse> {
+        return this.handleRbTxResponse(druid, pendingResponse, 'accepted', allKeypairs);
+    }
+
+    /**
+     * Reject a receipt-based payment
+     *
+     * @param {string} druid - Unique DRUID value associated with a receipt-based payment
+     * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
+     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+
+    public async rejectRbTx(
+        druid: string,
+        pendingResponse: IResponseIntercom<IPendingRbTxDetails>,
+        allKeypairs: IKeypairEncrypted[],
+    ): Promise<IClientResponse> {
+        return this.handleRbTxResponse(druid, pendingResponse, 'rejected', allKeypairs);
+    }
+
+    /**
+     * Fetch pending receipt-based payments from the Zenotta Intercom server
+     *
+     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
+     * @param {ICreateTransactionEncrypted[]} allEncryptedTxs - A list of all existing saved transactions (encrypted)
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    public async fetchPendingRbTransactions(
+        allKeypairs: IKeypairEncrypted[],
+        allEncryptedTxs: ICreateTransactionEncrypted[],
+    ): Promise<IClientResponse> {
+        try {
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+
+            // Generate a key-pair map
+            const [allAddresses, keyPairMap] = throwIfErr(
+                this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
+            );
+
+            // DRUID - Encrypted Transaction Mapping
+            const encryptedTxMap = new Map<string, ICreateTransactionEncrypted>();
+            allEncryptedTxs.forEach((tx) => encryptedTxMap.set(tx.druid, tx));
+
+            const pendingIntercom: IRequestIntercomGetBody[] = allAddresses
+                .map((address) => {
+                    if (!this.keyMgmt) return null;
+                    const keyPair = keyPairMap.get(address);
+                    if (!keyPair) return null;
+                    return generateIntercomGetBody(address, keyPair);
+                })
+                .filter((input): input is IRequestIntercomGetBody => !!input); /* Filter array */
+
+            // Get all pending RB transactions
+            let responseData = await axios
+                .post<IResponseIntercom<IPendingRbTxDetails>>(
+                    `${this.intercomHost}${IAPIRoute.IntercomGet}`,
+                    pendingIntercom,
+                )
+                .then((response) => {
+                    return response.data;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+
+            // NB: Validate receipt-based data and remove garbage entries
+            responseData = filterValidIntercomData(responseData);
+
+            // Get accepted and rejected receipt-based transactions
+            const rbDataToDelete: IRequestIntercomDelBody[] = [];
+            const [acceptedRbTxs, rejectedRbTxs] = [
+                throwIfErr(
+                    filterIntercomDataForPredicates(responseData, { status: 'accepted' }, true),
+                ),
+                throwIfErr(
+                    filterIntercomDataForPredicates(responseData, { status: 'rejected' }, true),
+                ),
+            ];
+
+            // We have accepted receipt-based payments to send to compute
+            if (Object.entries(acceptedRbTxs).length > 0) {
+                const transactionsToSend: ICreateTransaction[] = [];
+                for (const acceptedTx of Object.values(acceptedRbTxs)) {
+                    // Decrypt transaction stored along with DRUID value
+                    const encryptedTx = encryptedTxMap.get(acceptedTx.value.druid);
+                    if (!encryptedTx) throw new Error(IErrorInternal.InvalidDRUIDProvided);
+                    const decryptedTransaction = throwIfErr(
+                        this.keyMgmt.decryptTransaction(encryptedTx),
+                    );
+
+                    // Ensure this transaction is actually a DDE transaction
+                    if (!decryptedTransaction.druid_info)
+                        throw new Error(IErrorInternal.NoDRUIDValues);
+
+                    // Set `from` address value from recipient by setting the entire expectation to the one received from the intercom server
+                    decryptedTransaction.druid_info.expectations[0] =
+                        acceptedTx.value.senderExpectation; /* There should be only one expectation in a receipt-based payment */
+
+                    // Add to list of transactions to send to compute node
+                    transactionsToSend.push(decryptedTransaction);
+                    const keyPair = keyPairMap.get(acceptedTx.value.senderExpectation.to);
+                    if (!keyPair) throw new Error(IErrorInternal.UnableToGetKeypair);
+
+                    rbDataToDelete.push(
+                        generateIntercomDelBody(
+                            acceptedTx.value.senderExpectation.to,
+                            acceptedTx.value.receiverExpectation.to,
+                            keyPair,
+                        ),
+                    );
+                }
+
+                // Generate the required headers
+                const headers = this.getRequestIdAndNonceHeadersForRoute(
+                    IAPIRoute.CreateTransactions,
+                );
+
+                // Send transactions to compute for processing
+                await axios
+                    .post<INetworkResponse>(
+                        // NB: Make sure we use the same compute host when initializing all receipt-based payments
+                        `${this.computeHost}${IAPIRoute.CreateTransactions}`,
+                        transactionsToSend,
+                        headers,
+                    )
+                    .then(async (response) => {
+                        if (castAPIStatus(response.data.status) === 'error')
+                            throw new Error(response.data.reason);
+                    })
+                    .catch(async (error) => {
+                        if (error instanceof Error) throw new Error(error.message);
+                        else throw new Error(`${error}`);
+                    });
+            }
+
+            // Add rejected receipt-based transactions to delete list as well
+            if (Object.entries(rejectedRbTxs).length > 0) {
+                for (const rejectedTx of Object.values(rejectedRbTxs)) {
+                    const keyPair = keyPairMap.get(rejectedTx.value.senderExpectation.to);
+                    if (!keyPair) throw new Error(IErrorInternal.UnableToGetKeypair);
+
+                    rbDataToDelete.push(
+                        generateIntercomDelBody(
+                            rejectedTx.value.senderExpectation.to,
+                            rejectedTx.value.receiverExpectation.to,
+                            keyPair,
+                        ),
+                    );
+                }
+            }
+
+            // Delete receipt-based data from intercom since the information is no longer relevant (accepted and rejected txs)
+            if (rbDataToDelete.length > 0)
+                await axios
+                    .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
+                    .catch(async (error) => {
+                        if (error instanceof Error) throw new Error(error.message);
+                        else throw new Error(`${error}`);
+                    });
+
+            return {
+                status: 'success',
+                reason: 'Succesfully fetched pending receipt-based transactions',
+                content: {
+                    fetchPendingRbResponse: responseData,
+                },
+            } as IClientResponse;
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Regenerates the addresses for a newly imported wallet (from seed phrase)
+     *
+     * @param seedPhrase
+     * @param {string[]} addressList - A list of addresses to regenerate
+     * @param {number} [seedRegenThreshold=SEED_REGEN_THRES] - Regeneration threshold
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    async regenAddresses(
+        seedPhrase: string,
+        addressList: string[],
+        seedRegenThreshold: number = SEED_REGEN_THRES,
+    ): Promise<IClientResponse> {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            const foundAddr = throwIfErr(
+                this.keyMgmt.regenAddresses(seedPhrase, addressList, seedRegenThreshold),
+            );
+            if (foundAddr.length !== 0) {
+                const encryptedKeypairs: IKeypairEncrypted[] = [];
+                for (const addr of foundAddr) {
+                    const encryptedKeypair = throwIfErr(this.keyMgmt.encryptKeypair(addr));
+                    encryptedKeypairs.push(encryptedKeypair);
+                }
+                return {
+                    status: 'success',
+                    reason: 'Addresses have successfully been reconstructed',
+                    content: {
+                        regenWalletResponse: encryptedKeypairs,
+                    },
+                } as IClientResponse;
+            } else throw new Error(IErrorInternal.UnableToFindNonEmptyAddresses);
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Generates a new key-pair
+     *
+     * @param {string[]} allAddresses - A list of all public addresses (used to avoid re-generating the same key-pair)
+     * @return {*}  {IClientResponse}
+     * @memberof ZenottaInstance
+     */
+    getNewKeypair(allAddresses: string[]): IClientResponse {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            return {
+                status: 'success',
+                reason: 'Successfully generated new address',
+                content: {
+                    newKeypairResponse: throwIfErr(this.keyMgmt.getNewKeypair(allAddresses)),
+                },
+            } as IClientResponse;
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            };
+        }
+    }
+
+    /**
+     * Get the existing seed phrase, or generate a new one
+     *
+     * @return {*}  {IClientResponse}
+     * @memberof ZenottaInstance
+     */
+    getSeedPhrase(): IClientResponse {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            return {
+                status: 'success',
+                reason: 'Successfully obtained seed phrase',
+                content: {
+                    getSeedPhraseResponse: throwIfErr(this.keyMgmt.getSeedPhrase()),
+                },
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            };
+        }
+    }
+
+    /**
+     * Get the existing master key in an encrypted format
+     *
+     * @return {*}  {IClientResponse}
+     * @memberof ZenottaInstance
+     */
+    getMasterKey(): IClientResponse {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            return {
+                status: 'success',
+                reason: 'Successfully obtained master key',
+                content: {
+                    getMasterKeyResponse: throwIfErr(this.keyMgmt.getMasterKey()),
+                },
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            };
+        }
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                    Utils                                   */
+
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * Make a payment of a certain asset to a specified destination
+     *
+     * @private
+     * @param {string} paymentAddress - Address to make the payment to
+     * @param {(IAssetToken | IAssetReceipt)} paymentAsset - The asset to send
+     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
+     * @param {IKeypairEncrypted} excessKeypair - A key-pair (encrypted) to assign excess funds to
+     * @return {*}
+     * @memberof ZenottaInstance
+     */
+    private async makePayment(
+        paymentAddress: string,
+        paymentAsset: IAssetToken | IAssetReceipt,
+        allKeypairs: IKeypairEncrypted[],
+        excessKeypair: IKeypairEncrypted,
+    ) {
+        try {
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const [allAddresses, keyPairMap] = throwIfErr(
+                this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
+            );
+
+            // First update balance
+            const balance = await this.fetchBalance(allAddresses);
+            if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
+                throw new Error(balance.reason);
+
+            // Get all existing addresses
+            if (allKeypairs.length === 0) throw new Error('No existing key-pairs provided');
+
+            // Create transaction
+            const paymentBody = throwIfErr(
+                createPaymentTx(
+                    paymentAddress,
+                    paymentAsset,
+                    excessKeypair.address,
+                    balance.content.fetchBalanceResponse,
+                    keyPairMap,
+                ),
+            );
+
+            // Generate the needed headers
+            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.CreateTransactions);
+
+            // Send transaction to compute for processing
+            return await axios
+                .post<INetworkResponse>(
+                    `${this.computeHost}${IAPIRoute.CreateTransactions}`,
+                    [paymentBody.createTx],
+                    headers,
+                )
+                .then((response) => {
+                    const responseData = response.data as INetworkResponse;
+                    return {
+                        status: castAPIStatus(responseData.status),
+                        reason: responseData.reason,
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
@@ -724,199 +1046,6 @@ export class ZenottaInstance {
     }
 
     /**
-     * Accept a receipt-based payment
-     *
-     * @param {string} druid - Unique DRUID value associated with a receipt-based payment
-     * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
-     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
-     */
-    public async acceptRbTx(
-        druid: string,
-        pendingResponse: IResponseIntercom<IPendingRbTxDetails>,
-        allKeypairs: IKeypairEncrypted[],
-    ): Promise<IClientResponse> {
-        return this.handleRbTxResponse(druid, pendingResponse, 'accepted', allKeypairs);
-    }
-
-    /**
-     * Reject a receipt-based payment
-     *
-     * @param {string} druid - Unique DRUID value associated with a receipt-based payment
-     * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
-     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
-     */
-
-    public async rejectRbTx(
-        druid: string,
-        pendingResponse: IResponseIntercom<IPendingRbTxDetails>,
-        allKeypairs: IKeypairEncrypted[],
-    ): Promise<IClientResponse> {
-        return this.handleRbTxResponse(druid, pendingResponse, 'rejected', allKeypairs);
-    }
-
-    /**
-     * Fetch pending receipt-based payments from the Zenotta Intercom server
-     *
-     * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
-     * @param {ICreateTransactionEncrypted[]} allEncryptedTxs - A list of all existing saved transactions (encrypted)
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
-     */
-    public async fetchPendingRbTransactions(
-        allKeypairs: IKeypairEncrypted[],
-        allEncryptedTxs: ICreateTransactionEncrypted[],
-    ): Promise<IClientResponse> {
-        try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-
-            // Generate a key-pair map
-            const [allAddresses, keyPairMap] = throwIfErr(
-                this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
-            );
-
-            // DRUID - Encrypted Transaction Mapping
-            const encryptedTxMap = new Map<string, ICreateTransactionEncrypted>();
-            allEncryptedTxs.forEach((tx) => encryptedTxMap.set(tx.druid, tx));
-
-            const pendingIntercom: IRequestIntercomGetBody[] = allAddresses
-                .map((address) => {
-                    if (!this.keyMgmt) return null;
-                    const keyPair = keyPairMap.get(address);
-                    if (!keyPair) return null;
-                    return generateIntercomGetBody(address, keyPair);
-                })
-                .filter((input): input is IRequestIntercomGetBody => !!input); /* Filter array */
-
-            // Get all pending RB transactions
-            let responseData = await axios
-                .post<IResponseIntercom<IPendingRbTxDetails>>(
-                    `${this.intercomHost}${IAPIRoute.IntercomGet}`,
-                    pendingIntercom,
-                )
-                .then((response) => {
-                    return response.data;
-                })
-                .catch(async (error) => {
-                    if (error instanceof Error) throw new Error(error.message);
-                    else throw new Error(`${error}`);
-                });
-
-            // NB: Validate receipt-based data and remove garbage entries
-            responseData = filterValidIntercomData(responseData);
-
-            // Get accepted and rejected receipt-based transactions
-            const rbDataToDelete: IRequestIntercomDelBody[] = [];
-            const [acceptedRbTxs, rejectedRbTxs] = [
-                throwIfErr(
-                    filterIntercomDataForPredicates(responseData, { status: 'accepted' }, true),
-                ),
-                throwIfErr(
-                    filterIntercomDataForPredicates(responseData, { status: 'rejected' }, true),
-                ),
-            ];
-
-            // We have accepted receipt-based payments to send to compute
-            if (Object.entries(acceptedRbTxs).length > 0) {
-                const transactionsToSend: ICreateTransaction[] = [];
-                for (const acceptedTx of Object.values(acceptedRbTxs)) {
-                    // Decrypt transaction stored along with DRUID value
-                    const encryptedTx = encryptedTxMap.get(acceptedTx.value.druid);
-                    if (!encryptedTx) throw new Error(IErrorInternal.InvalidDRUIDProvided);
-                    const decryptedTransaction = throwIfErr(
-                        this.keyMgmt.decryptTransaction(encryptedTx),
-                    );
-
-                    // Ensure this transaction is actually a DDE transaction
-                    if (!decryptedTransaction.druid_info)
-                        throw new Error(IErrorInternal.NoDRUIDValues);
-
-                    // Set `from` address value from receipient by setting the entire expectation to the one received from the intercom server
-                    decryptedTransaction.druid_info.expectations[0] =
-                        acceptedTx.value.senderExpectation; /* There should be only one expectation in a receipt-based payment */
-
-                    // Add to list of transactions to send to compute node
-                    transactionsToSend.push(decryptedTransaction);
-                    const keyPair = keyPairMap.get(acceptedTx.value.senderExpectation.to);
-                    if (!keyPair) throw new Error(IErrorInternal.UnableToGetKeypair);
-
-                    rbDataToDelete.push(
-                        generateIntercomDelBody(
-                            acceptedTx.value.senderExpectation.to,
-                            acceptedTx.value.receiverExpectation.to,
-                            keyPair,
-                        ),
-                    );
-                }
-
-                // Generate the required headers
-                const headers = this.getRequestIdAndNonceHeadersForRoute(
-                    IAPIRoute.CreateTransactions,
-                );
-
-                // Send transactions to compute for processing
-                await axios
-                    .post<INetworkResponse>(
-                        // NB: Make sure we use the same compute host when initializing all receipt-based payments
-                        `${this.computeHost}${IAPIRoute.CreateTransactions}`,
-                        transactionsToSend,
-                        headers,
-                    )
-                    .then(async (response) => {
-                        if (castAPIStatus(response.data.status) === 'error')
-                            throw new Error(response.data.reason);
-                    })
-                    .catch(async (error) => {
-                        if (error instanceof Error) throw new Error(error.message);
-                        else throw new Error(`${error}`);
-                    });
-            }
-
-            // Add rejected receipt-based transactions to the delete list as well
-            if (Object.entries(rejectedRbTxs).length > 0) {
-                for (const rejectedTx of Object.values(rejectedRbTxs)) {
-                    const keyPair = keyPairMap.get(rejectedTx.value.senderExpectation.to);
-                    if (!keyPair) throw new Error(IErrorInternal.UnableToGetKeypair);
-
-                    rbDataToDelete.push(
-                        generateIntercomDelBody(
-                            rejectedTx.value.senderExpectation.to,
-                            rejectedTx.value.receiverExpectation.to,
-                            keyPair,
-                        ),
-                    );
-                }
-            }
-
-            // Delete receipt-based data from intercom since the information is no longer relevant (accepted and rejected txs)
-            if (rbDataToDelete.length > 0)
-                await axios
-                    .post(`${this.intercomHost}${IAPIRoute.IntercomDel}`, rbDataToDelete)
-                    .catch(async (error) => {
-                        if (error instanceof Error) throw new Error(error.message);
-                        else throw new Error(`${error}`);
-                    });
-
-            return {
-                status: 'success',
-                reason: 'Succesfully fetched pending receipt-based transactions',
-                content: {
-                    fetchPendingRbResponse: responseData,
-                },
-            } as IClientResponse;
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            } as IClientResponse;
-        }
-    }
-
-    /**
      * Get information regarding the PoW required for all routes
      *
      * @private
@@ -974,126 +1103,5 @@ export class ZenottaInstance {
         if (!this.routesPoW) throw new Error(IErrorInternal.ClientNotInitialized);
         const routeDifficulty = this.routesPoW.get(route.slice(1)); // Slice removes the '/' prefix
         return { ...DEFAULT_HEADERS, ...createIdAndNonceHeaders(routeDifficulty) };
-    }
-
-    /* -------------------------------------------------------------------------- */
-    /*                                    Utils                                   */
-    /* -------------------------------------------------------------------------- */
-
-    /**
-     * Regenerates the addresses for a newly imported wallet (from seed phrase)
-     *
-     * @param seedPhrase
-     * @param {string[]} addressList - A list of addresses to regenerate
-     * @param {number} [seedRegenThreshold=SEED_REGEN_THRES] - Regeneration threshold
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
-     */
-    async regenAddresses(
-        seedPhrase: string,
-        addressList: string[],
-        seedRegenThreshold: number = SEED_REGEN_THRES,
-    ): Promise<IClientResponse> {
-        try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
-            const foundAddr = throwIfErr(
-                this.keyMgmt.regenAddresses(seedPhrase, addressList, seedRegenThreshold),
-            );
-            if (foundAddr.length !== 0) {
-                const encryptedKeypairs: IKeypairEncrypted[] = [];
-                for (const addr of foundAddr) {
-                    const encryptedKeypair = throwIfErr(this.keyMgmt.encryptKeypair(addr));
-                    encryptedKeypairs.push(encryptedKeypair);
-                }
-                return {
-                    status: 'success',
-                    reason: 'Addresses have successfully been reconstructed',
-                    content: {
-                        regenWalletResponse: encryptedKeypairs,
-                    },
-                } as IClientResponse;
-            } else throw new Error(IErrorInternal.UnableToFindNonEmptyAddresses);
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            } as IClientResponse;
-        }
-    }
-
-    /**
-     * Generates a new key-pair
-     *
-     * @param {string[]} allAddresses - A list of all public addresses (used to avoid re-generating the same key-pair)
-     * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
-     */
-    getNewKeypair(allAddresses: string[]): IClientResponse {
-        try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            return {
-                status: 'success',
-                reason: 'Successfully generated new address',
-                content: {
-                    newKeypairResponse: throwIfErr(this.keyMgmt.getNewKeypair(allAddresses)),
-                },
-            } as IClientResponse;
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            };
-        }
-    }
-
-    /**
-     * Get the existing seed phrase, or generate a new one
-     *
-     * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
-     */
-    getSeedPhrase(): IClientResponse {
-        try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            return {
-                status: 'success',
-                reason: 'Successfully obtained seed phrase',
-                content: {
-                    getSeedPhraseResponse: throwIfErr(this.keyMgmt.getSeedPhrase()),
-                },
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            };
-        }
-    }
-
-    /**
-     * Get the existing master key in an encrypted format
-     *
-     * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
-     */
-    getMasterKey(): IClientResponse {
-        try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            return {
-                status: 'success',
-                reason: 'Successfully obtained master key',
-                content: {
-                    getMasterKeyResponse: throwIfErr(this.keyMgmt.getMasterKey()),
-                },
-            };
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            };
-        }
     }
 }

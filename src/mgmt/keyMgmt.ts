@@ -7,7 +7,7 @@ import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION } from './constants';
 import Mnemonic from 'bitcore-mnemonic';
 import { err, ok } from 'neverthrow';
 import { IResult, IErrorInternal, IMasterKey, IKeypair } from '../interfaces';
-import { throwIfErr } from '../utils/index';
+import { throwIfErr } from '../utils';
 
 /**
  * Get the address version for either a given public key and address
@@ -17,6 +17,7 @@ import { throwIfErr } from '../utils/index';
  *
  * @param {Uint8Array} publicKey - Public key
  * @param {string} address - Public address associated with public key
+ * @param version - Address version
  * @return {*}  {(number | null)}
  */
 export function getAddressVersion(

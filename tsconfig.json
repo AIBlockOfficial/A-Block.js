@@ -25,7 +25,19 @@
     "typeRoots": [
       "./node_modules/@types",
       "./src/declaration.d.ts"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@interfaces/*": [
+        "src/interfaces/*"
+      ],
+      "@utils/*": [
+        "src/utils/*"
+      ],
+      "@mgmt/*": [
+        "src/mgmt/*"
+      ]
+    }
   },
   "include": [
     "src"

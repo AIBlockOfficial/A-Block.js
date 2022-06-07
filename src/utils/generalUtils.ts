@@ -1,6 +1,5 @@
 import { IClientResponse, ICustomKeyPair, IErrorInternal, IResult } from '../interfaces';
-import { BAL_LIMIT } from '../mgmt';
-import { generateMasterKey, generateSeed } from '../mgmt/keyMgmt';
+import { BAL_LIMIT, generateMasterKey, generateSeed } from '../mgmt';
 import { sha3_256 } from 'js-sha3';
 import { v4 as uuidv4 } from 'uuid';
 import { err, ok } from 'neverthrow';
@@ -37,8 +36,7 @@ export function castAPIStatus(
  * @return {*}  {boolean}
  */
 export function testSeedPhrase(seed: string): boolean {
-    if (generateMasterKey(seed).isErr()) return false;
-    return true;
+    return !generateMasterKey(seed).isErr();
 }
 
 /**
@@ -63,10 +61,10 @@ export function getStringBytes(msg: string): Uint8Array {
 }
 
 /**
- * Converts a HEX string into a byte array for handling by nacl
+ * Converts a HEX string into a byte array
  *
- * @param msg {string}
  * @returns
+ * @param hexString - HEX string to obtain byte array from
  */
 export function getHexStringBytes(hexString: string): Uint8Array {
     const IResult = [];
@@ -93,6 +91,7 @@ export function getBytesHexString(bytes: Uint8Array): string {
  * Formats a token balance for display
  *
  * @param balance {number}
+ * @param fraction - Optional fraction to divide the balance by
  * @returns
  */
 export function formatBalance(balance: number, fraction?: number): string {
@@ -221,8 +220,8 @@ function fromBytesUTF8(bytes: string) {
  *
  * @export
  * @template T
- * @param {IResult<T>} IResult
  * @return {*}
+ * @param result - Result wrapper
  */
 export function throwIfErr<T>(result: IResult<T>) {
     if (result.isErr()) throw new Error(result.error);
@@ -235,7 +234,6 @@ export function throwIfErr<T>(result: IResult<T>) {
  *
  * @export
  * @param {IClientResponse} result
- * @param {keyof IContentType} [contentRequired]
  * @return {*}  {IClientResponse}
  */
 export function throwIfIClientError(result: IClientResponse): IClientResponse {

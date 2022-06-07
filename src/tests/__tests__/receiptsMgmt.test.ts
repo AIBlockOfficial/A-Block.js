@@ -10,11 +10,7 @@ import {
 } from '../../mgmt';
 import * as receiptMgmt from '../../mgmt/receiptMgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
-import {
-    initIAssetReceipt,
-    initIAssetToken,
-    initIDruidExpectation,
-} from '../../utils/interfaceUtils';
+import { initIAssetReceipt, initIAssetToken, initIDruidExpectation } from '../../utils';
 
 test('creates a valid payload to create receipts', () => {
     const keypair = {
