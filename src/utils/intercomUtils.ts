@@ -8,7 +8,7 @@ import {
     IRequestIntercomSetBody,
     IResponseIntercom,
     IResult,
-} from '../interfaces/index';
+} from '../interfaces';
 import { createSignature } from '../mgmt';
 import { isOfTypeIPendingRbTxDetails } from './interfaceUtils';
 

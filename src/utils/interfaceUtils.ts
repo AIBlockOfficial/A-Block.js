@@ -97,10 +97,6 @@ export function initIPendingRbTxDetails(
     };
 }
 
-/* -------------------------------------------------------------------------- */
-/*            Utilities for Operations Using Different Asset Types            */
-/* -------------------------------------------------------------------------- */
-
 /**
  * Add left-hand-side asset to right-hand-side asset
  *
@@ -149,7 +145,6 @@ export const subRhsAssetFromLhsAsset = (
     // Assets are incompatible due to different asset types or to lhs < rhs (we cannot have a negative asset amount)
     if (lhsAssetGreaterOrEq.isErr()) return err(IErrorInternal.AssetsIncompatible);
     if (lhsAssetGreaterOrEq.isOk() && !lhsAssetGreaterOrEq.value)
-        // TODO: Add a better error message here!
         err(IErrorInternal.AssetsIncompatible);
     if (isOfTypeIAssetToken(lhs) && isOfTypeIAssetToken(rhs) && lhsAssetGreaterOrEq.value) {
         const returnValue: IAssetToken = {

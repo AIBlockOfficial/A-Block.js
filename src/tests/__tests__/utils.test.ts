@@ -21,7 +21,7 @@ import {
 import { sha3_256 } from 'js-sha3';
 import { IKeypair, IResponseIntercom, IPendingRbTxDetails } from '../../interfaces';
 import { DEFAULT_DRS_TX_HASH } from '../../mgmt';
-import { initIDruidExpectation } from '../../utils/interfaceUtils';
+import { initIDruidExpectation } from '../../utils';
 
 /* -------------------------------------------------------------------------- */
 /*                           General Utilities Tests                          */

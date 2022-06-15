@@ -4,20 +4,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { sha3_256 } from 'js-sha3';
 import nacl from 'tweetnacl';
 import {
-    IResult,
-    IErrorInternal,
-    IOutPoint,
-    Script,
-    ICreateTxIn,
-    StackEntry,
     IAssetReceipt,
     IAssetToken,
+    ICreateTxIn,
+    IErrorInternal,
+    IOutPoint,
+    IResult,
+    Script,
+    StackEntry,
 } from '../interfaces';
 import {
-    truncateByBytesUTF8,
-    getStringBytes,
     getHexStringBytes,
+    getStringBytes,
     isOfTypeIAssetToken,
+    truncateByBytesUTF8,
 } from '../utils';
 
 /* -------------------------------------------------------------------------- */
@@ -48,7 +48,7 @@ export function constructSignature(
  * Constructs signable data from previous OutPoint for P2PKH script
  *
  * @export
- * @param {OutPoint} outPoint
+ * @param {IOutPoint} outPoint - Previous `OutPoint`
  * @return {*}  {string}
  */
 export function constructTxInSignableData(outPoint: IOutPoint | null): string | null {
@@ -92,8 +92,8 @@ export function generateDRUID(): IResult<string> {
  * Formats script data for "from" address creation
  *
  * @export
- * @param {Script} Script
  * @return {*}  {string}
+ * @param script - `Script` value
  */
 export function getFormattedScriptString(script: Script): string {
     return Object.values(script.stack)
@@ -105,8 +105,7 @@ export function getFormattedScriptString(script: Script): string {
  * Gets "from" address used in DDEValues
  *
  * @export
- * @param {ICreateTxIn[]} txIns
- * @param {StackEntry[]} stackEntries
+ * @param {ICreateTxIn[]} txIns - Transaction inputs
  * @return {*}  {string}
  */
 export function constructTxInsAddress(txIns: ICreateTxIn[]): IResult<string> {

@@ -3,7 +3,7 @@ import { IKeypair, IOutPoint, ICreateTxInScript, IErrorInternal } from '../../in
 import { ADDRESS_VERSION } from '../../mgmt';
 import * as txMgmt from '../../mgmt/txMgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
-import { initIAssetToken } from '../../utils/interfaceUtils';
+import { initIAssetToken } from '../../utils';
 
 test('create transaction for a token amount', () => {
     const keyPairMap = new Map<string, IKeypair>();

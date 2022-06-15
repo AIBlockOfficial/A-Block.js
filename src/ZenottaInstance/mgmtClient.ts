@@ -1,16 +1,20 @@
-import { bytesToBase64, base64ToBytes } from 'byte-base64';
+import { base64ToBytes, bytesToBase64 } from 'byte-base64';
 import nacl from 'tweetnacl';
-import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION, SEED_REGEN_THRES, generateDRUID } from '../mgmt';
-import { v4 as uuidv4 } from 'uuid';
-import * as bitcoreLib from 'bitcore-lib';
 import {
+    ADDRESS_VERSION,
     constructAddress,
+    generateDRUID,
     generateMasterKey,
     generateNewKeypairAndAddress,
     generateSeed,
+    getAddressVersion,
     getNextDerivedKeypair,
     getPassphraseBuffer,
-} from '../mgmt/keyMgmt';
+    SEED_REGEN_THRES,
+    TEMP_ADDRESS_VERSION,
+} from '../mgmt';
+import { v4 as uuidv4 } from 'uuid';
+import * as bitcoreLib from 'bitcore-lib';
 import {
     ICreateTransaction,
     ICreateTransactionEncrypted,
@@ -22,8 +26,7 @@ import {
     IResult,
 } from '../interfaces';
 import { err, ok } from 'neverthrow';
-import { getAddressVersion } from '../mgmt/keyMgmt';
-import { truncateByBytesUTF8, getStringBytes, getBytesString, concatTypedArrays } from '../utils';
+import { concatTypedArrays, getBytesString, getStringBytes, truncateByBytesUTF8 } from '../utils';
 
 export class mgmtClient {
     private passphraseKey: Uint8Array;
@@ -126,8 +129,7 @@ export class mgmtClient {
         );
         if (newKeyPairIResult.isErr()) return err(newKeyPairIResult.error);
         const keypair = newKeyPairIResult.value;
-        const saveIResult = this.encryptKeypair(keypair);
-        return saveIResult;
+        return this.encryptKeypair(keypair);
     }
 
     /**
@@ -297,7 +299,6 @@ export class mgmtClient {
     /**
      * Generate a new DRUID value
      *
-     * @param {boolean} [save=true]
      * @return {*}  {IResult<string>}
      * @memberof mgmtClient
      */
@@ -382,8 +383,9 @@ export class mgmtClient {
     }
 
     /**
-     * Regenerate addresses from master key and a given set of addresses from UTXO set
+     * Regenerate addresses from a seed phrase and a set of addresses from UTXO set
      *
+     * @param seedPhrase - Seed phrase
      * @param {string[]} addressList
      * @param {number} [seedRegenThreshold=SEED_REGEN_THRES]
      * @return {*}  {IResult<Set<string>>}
