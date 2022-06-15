@@ -66,7 +66,14 @@ export type IFetchBalanceResponse = {
 export type IFetchUtxoAddressesResponse = string[];
 
 // `/create_receipt_asset` endpoint response
-export type ICreateReceiptResponse = string;
+export type ICreateReceiptResponse = {
+    asset: {
+        asset: IAssetReceipt;
+        metadata: number[] | null;
+    };
+    to_address: string;
+    tx_hash: string;
+};
 
 // `/fetch_pending` endpoint response
 export type IFetchPendingDDEResponse = {
