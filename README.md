@@ -82,6 +82,8 @@ Install the module to your project:
   yarn add @zenotta/zenotta-js
   ```
 
+<p align="right">(<a href="#top">back to top</a>)</p>
+
 ## Getting Started
 
 * `initNew`
@@ -348,71 +350,114 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
   const balance: IFetchBalanceResponse = balanceResult.content.fetchBalanceResponse;
   ```
   
-<details>
-<summary>Response Content</summary>
-<br/>
+  <details>
+  <summary>Response Content</summary>
+  <br/>
 
-```json
-"total": {
-    "tokens": 60000,
-    "receipts": 500
-}
-"address_list": {
-    "d0e72...85b46": [
-        {
-            "out_point": {
-                "t_hash": "ga070...4df62",
-                "n": 0
-            },
-            "value": {
-                "Token": 60000
-            }
-        },
-        {
-            "out_point": {
-                "t_hash": "g11e3...c916c",
-                "n": 0
-            },
-            "value": {
-                "Receipt": {
-                  "amount": 500,
-                  "drs_tx_hash": "ae1e4...c887d"
-                }
-            }
-        },
-    ],
-}
-```
+  ```json
+  {
+      "total": {
+          "tokens": 0,
+          "receipts": {
+              "default_drs_tx_hash": 1000,
+              "g7d07...6704b": 1000
+          }
+      },
+      "address_list": {
+          "a0b08...c02e5": [
+              {
+                  "out_point": {
+                      "t_hash": "g3b13...3353f",
+                      "n": 0
+                  },
+                  "value": {
+                      "Receipt": {
+                          "amount": 1000,
+                          "drs_tx_hash": "default_drs_tx_hash"
+                      }
+                  }
+              },
+              {
+                  "out_point": {
+                      "t_hash": "g7d07...6704b",
+                      "n": 0
+                  },
+                  "value": {
+                      "Receipt": {
+                          "amount": 1000,
+                          "drs_tx_hash": "g7d07...6704b"
+                      }
+                  }
+              },
+              {
+                  "out_point": {
+                      "t_hash": "ga070...4df62",
+                      "n": 0
+                  },
+                  "value": {
+                      "Token": 60000
+                  }
+              }
+          ]
+      }
+  }
+  ```
 
-* `total`: The total balance of all addresses provided
-* `address_list`: A list of addresses and their previous out-points
-
-</details>
+  * `total`: The total balance of all addresses provided
+  * `address_list`: A list of addresses and their previous out-points along with their associated assets
+  
+  </details>
 
 ### Creating Receipt Assets
 
-``` typescript
-import { ZenottaInstance } from '@zenotta/zenotta-js';
+* `createReceipts`
 
-const client = new ZenottaInstance();
+  ``` typescript
+  import { ZenottaInstance } from '@zenotta/zenotta-js';
+  
+  const client = new ZenottaInstance();
+  
+  // Initialize the client correctly
+  ...
+  
+  // Address / key-pair to assign the `Receipt` assets to
+  const keyPair = getAllKeypairs()[0];
+  
+  // Create `Receipt` assets that have the default DRS identifier
+  const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
+  
+  <!-- --------------------------------- OR ---------------------------------- -->
+  
+  // Create `Receipt` assets that have a unique DRS identifier
+  const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+  
+  ```
 
-// Initialize the client correctly
-...
+  `Receipt` assets can either be assigned to the default digital rights signature (DRS) or a unique DRS. When assets have different DRS identifiers they are **not** mutually interchangeable with each other.
+  
+  <details>
+  <summary>Response Content</summary>
+  <br/>
 
-// Address / key-pair to assign the `Receipt` assets to
-const keyPair = getAllKeypairs()[0];
+  ```json
+  {
+      "asset": {
+          "asset": {
+              "Receipt": {
+                  "amount": 1000,
+                  "drs_tx_hash": "g7d07...6704b"
+              }
+          },
+          "metadata": null
+      },
+      "to_address": "a0b08...c02e5",
+      "tx_hash": "g7d07...6704b"
+  }
+  ```
 
-// Create `Receipt` assets that have the default DRS identifier
-client.createReceipts(keyPair)
-
-<!-- --------------------------------- OR ---------------------------------- -->
-
-// Create `Receipt` assets that have a unique DRS identifier
-client.createReceipts(keyPair, false)
-
-```
-
-`Receipt` assets can either be assigned to the default digital rights signature (DRS) or a unique DRS. When assets have different DRS identifiers they are **not** mutually interchangeable with each other.
+  * `drs_tx_hash`: The DRS identifier associated with the created `Receipt` assets.
+  
+</details>
 
 ### Spending Tokens
 
@@ -445,35 +490,37 @@ client.createReceipts(keyPair, false)
 
 ### Spending Receipts
 
-``` typescript
-import { ZenottaInstance } from '@zenotta/zenotta-js';
+* `makeReceiptPayment`
 
-const client = new ZenottaInstance();
-
-// Initialize the client correctly
-...
-
-// All key-pairs
-const keyPairs = getAllKeypairs();
-
-// Change/excess key-pair
-const changeKeyPair = keyPairs[0];
-
-// DRS identifier (the default DRS identifier or a unique DRS identifier)
-const drsTxHash = "default_drs_tx_hash";
-
-await makeReceiptPayment(
-        "d0e72...85b46", // Payment address
-        10,              // Payment amount
-        drsTxHash        // DRS identifier
-        allKeypairs,     // All key-pairs
-        changeKeyPair,   // Excess/change address
-    );
-
-```
-
-***NB***: *The `makeReceiptPayment` method is similar to the `makeTokenPayment` in many regards, one of which being the fact that this method will send `Receipt` assets to a payment address in a unidirectional fashion and does not expect any assets in return. It should not be confused with **receipt-based** payments!*
-
+  ``` typescript
+  import { ZenottaInstance } from '@zenotta/zenotta-js';
+  
+  const client = new ZenottaInstance();
+  
+  // Initialize the client correctly
+  ...
+  
+  // All key-pairs
+  const keyPairs = getAllKeypairs();
+  
+  // Change/excess key-pair
+  const changeKeyPair = keyPairs[0];
+  
+  // DRS identifier (the default DRS identifier or a unique DRS identifier)
+  const drsTxHash = "default_drs_tx_hash";
+  
+  await makeReceiptPayment(
+          "d0e72...85b46", // Payment address
+          10,              // Payment amount
+          drsTxHash        // DRS identifier
+          allKeypairs,     // All key-pairs
+          changeKeyPair,   // Excess/change address
+      );
+  
+  ```
+  
+  ***NB***: *The `makeReceiptPayment` method is similar to the `makeTokenPayment` in many regards, one of which being the fact that this method will send `Receipt` assets to a payment address in a unidirectional fashion and does not expect any assets in return. It should not be confused with **receipt-based** payments!*
+  
 ### Making Receipt-based Payments
 
 * `makeReceiptPayment`
@@ -548,76 +595,76 @@ await makeReceiptPayment(
 
   ```
 
-<details>
-<summary>Response Content</summary>
-<br/>
-
-```json
-{
-    "2a646...f8b98": {
-        "timestamp": 1655117144145,
-        "value": {
-            "druid": "DRUID0xd0f407436f7f1fc494d7aee22939090e",
-            "senderExpectation": {
-                "from": "",
-                "to": "2a646...f8b98",
-                "asset": {
-                    "Receipt": {
-                        "amount": 1,
-                        "drs_tx_hash": "default_drs_tx_hash"
-                    }
-                }
-            },
-            "receiverExpectation": {
-                "from": "295b2...8d4fa",
-                "to": "18f70...caeda",
-                "asset": {
-                    "Token": 25200
-                }
-            },
-            "status": "pending",
-            "computeHost": "http://127.0.0.1:3003"
-        }
-    }
-}
-```
-
-From this data structure we're able to obtain specific details about the receipt-based payment, such as the unique identifier `DRUID0xd0f407436f7f1fc494d7aee22939090e`, the status of the transaction `status`, the timestamp of the transaction `timestamp`, as well as the address that made the receipt-based payment request- `2a646...f8b98`.
-
-We are also able to see that in this specific request, the sender expects 1 `Receipt` asset in exchange for 25200 `Token` assets.
-</details>
-
+  <details>
+  <summary>Response Content</summary>
+  <br/>
+  
+  ```json
+  {
+      "2a646...f8b98": {
+          "timestamp": 1655117144145,
+          "value": {
+              "druid": "DRUID0xd0f407436f7f1fc494d7aee22939090e",
+              "senderExpectation": {
+                  "from": "",
+                  "to": "2a646...f8b98",
+                  "asset": {
+                      "Receipt": {
+                          "amount": 1,
+                          "drs_tx_hash": "default_drs_tx_hash"
+                      }
+                  }
+              },
+              "receiverExpectation": {
+                  "from": "295b2...8d4fa",
+                  "to": "18f70...caeda",
+                  "asset": {
+                      "Token": 25200
+                  }
+              },
+              "status": "pending",
+              "computeHost": "http://127.0.0.1:3003"
+          }
+      }
+  }
+  ```
+  
+  From this data structure we're able to obtain specific details about the receipt-based payment, such as the unique identifier `DRUID0xd0f407436f7f1fc494d7aee22939090e`, the status of the transaction `status`, the timestamp of the transaction `timestamp`, as well as the address that made the receipt-based payment request- `2a646...f8b98`.
+  
+  We are also able to see that in this specific request, the sender expects 1 `Receipt` asset in exchange for 25200 `Token` assets.
+  </details>
+  
 ### Responding to Pending Receipt-based Payments
 
 * `acceptRbTx` and `rejectRbTx`
 
-```typescript
-import { ZenottaInstance } from '@zenotta/zenotta-js';
+  ```typescript
+  import { ZenottaInstance } from '@zenotta/zenotta-js';
+  
+  const client = new ZenottaInstance();
+  
+  // Initialize the client correctly
+  ...
+  
+  // Fetch the pending receipt-based payments from the network
+  ...
+  const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+  
+  // Fetch all existing key-pairs
+  ...
+  const allKeypairs = getAllKeypairs();
+  
+  // Accept a receipt-based payment using its unique `DRUID` identifier
+  await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+  
+  <!-- --------------------------------- OR ---------------------------------- -->
+  
+  // Reject a receipt-based payment using its unique `DRUID` identifier
+  await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+  ```
 
-const client = new ZenottaInstance();
-
-// Initialize the client correctly
-...
-
-// Fetch the pending receipt-based payments from the network
-...
-const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
-
-// Fetch all existing key-pairs
-...
-const allKeypairs = getAllKeypairs();
-
-// Accept a receipt-based payment using its unique `DRUID` identifier
-await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
-
-<!-- --------------------------------- OR ---------------------------------- -->
-
-// Reject a receipt-based payment using its unique `DRUID` identifier
-await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
-```
-
-Receipt-based transactions are accepted **or** rejected by passing their unique DRUID identifier as an argument to the corresponding methods.
-
+  Receipt-based transactions are accepted **or** rejected by passing their unique DRUID identifier as an argument to the corresponding methods.
+  
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ## Client Response Type
@@ -642,3 +689,5 @@ export type IClientResponse = {
 * `reason`: Detailed feedback corresponding to the `status` field
 
 * `content`: Data structures or values returned from the client object
+
+<p align="right">(<a href="#top">back to top</a>)</p>
