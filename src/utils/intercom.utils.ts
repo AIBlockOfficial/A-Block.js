@@ -10,7 +10,7 @@ import {
     IResult,
 } from '../interfaces';
 import { createSignature } from '../mgmt';
-import { isOfTypeIPendingRbTxDetails } from './interfaceUtils';
+import { isOfTypeIPendingRbTxDetails } from './interface.utils';
 
 /**
  * Filter data received from the intercom server for a list of pre-defined predicates

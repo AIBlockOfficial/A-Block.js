@@ -1,8 +1,8 @@
 /* eslint-disable jest/no-conditional-expect */
 import nacl from 'tweetnacl';
 import { bytesToBase64 } from 'byte-base64';
-import * as keyMgmt from '../../mgmt/keyMgmt';
-import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION } from '../../mgmt';
+import * as keyMgmt from '../../mgmt/key.mgmt';
+import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION, ADDRESS_VERSION_OLD } from '../../mgmt';
 import { getHexStringBytes } from '../../utils';
 import { SEED } from '../constants';
 
@@ -95,7 +95,7 @@ test('derives deterministic signable keypairs through ed25519, via seed', () => 
 });
 
 // NOTE: This test corresponds with `test_construct_valid_addresses` in NAOM
-test('generates a valid payment address with the default version', () => {
+test('generates a valid payment address with the temporary address structure', () => {
     const actual = [
         keyMgmt
             .constructAddress(getHexStringBytes(PUBLIC_KEYS[0]), TEMP_ADDRESS_VERSION)
@@ -117,7 +117,7 @@ test('generates a valid payment address with the default version', () => {
     expect(actual).toEqual(expected);
 });
 
-test('generates a valid payment address with version 1', () => {
+test('generates a valid payment address with latest ZNP version', () => {
     const actual = [
         keyMgmt.constructAddress(getHexStringBytes(PUBLIC_KEYS[0]), ADDRESS_VERSION).unwrapOr(''),
         keyMgmt.constructAddress(getHexStringBytes(PUBLIC_KEYS[1]), ADDRESS_VERSION).unwrapOr(''),
@@ -133,10 +133,33 @@ test('generates a valid payment address with version 1', () => {
     expect(actual).toEqual(expected);
 });
 
+test('generates a valid payment address with the old address structure', () => {
+    const actual = [
+        keyMgmt
+            .constructAddress(getHexStringBytes(PUBLIC_KEYS[0]), ADDRESS_VERSION_OLD)
+            .unwrapOr(''),
+        keyMgmt
+            .constructAddress(getHexStringBytes(PUBLIC_KEYS[1]), ADDRESS_VERSION_OLD)
+            .unwrapOr(''),
+        keyMgmt
+            .constructAddress(getHexStringBytes(PUBLIC_KEYS[2]), ADDRESS_VERSION_OLD)
+            .unwrapOr(''),
+    ];
+
+    const expected = [
+        '13bd3351b78beb2d0dadf2058dcc926ce03e383cd751eff0',
+        'abc7c0448465c4507faf2ee58872882493175997d579556f',
+        '6ae52e3870884ab66ec49d3bb359c0bf2e0160ed1676db72',
+    ];
+
+    expect(actual).toEqual(expected);
+});
+
 test('can create a valid signature', () => {
     const mKey = keyMgmt.generateMasterKey(SEED);
     if (mKey.isOk()) {
         const genKeypair = keyMgmt.getNextDerivedKeypair(mKey.value, 0);
+
         if (genKeypair.isOk()) {
             const msg = Uint8Array.from([0, 1, 2]);
             const sig = keyMgmt.createSignature(genKeypair.value.secretKey, msg);
