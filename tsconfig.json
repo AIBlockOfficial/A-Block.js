@@ -37,8 +37,8 @@
       "@mgmt/*": [
         "src/mgmt/*"
       ],
-      "@schemas/*": [
-        "src/schemas/*"
+      "@services/*": [
+        "src/services/*"
       ]
     }
   },

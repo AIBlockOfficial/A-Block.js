@@ -35,6 +35,13 @@ import { constructSignature, constructTxInSignableData } from './script.mgmt';
 /*                          Transaction Construction                          */
 /* -------------------------------------------------------------------------- */
 
+export type IGetInputsResult = {
+    inputs: ICreateTxIn[];
+    totalAmountGathered: IAssetToken | IAssetReceipt;
+    usedAddresses: string[];
+    depletedAddresses: string[];
+};
+
 /**
  * Gather `TxIn` (input) values for a transaction
  *
@@ -48,7 +55,7 @@ export function getInputsForTx(
     paymentAsset: IAssetToken | IAssetReceipt,
     fetchBalanceResponse: IFetchBalanceResponse,
     allKeypairs: Map<string, IKeypair>,
-): IResult<[string[], IAssetToken | IAssetReceipt, ICreateTxIn[]]> {
+): IResult<IGetInputsResult> {
     // Check to see if there's enough funds
     const isOfTypeAssetToken = isOfTypeIAssetToken(paymentAsset);
     const enoughRunningTotal = isOfTypeAssetToken
@@ -63,13 +70,16 @@ export function getInputsForTx(
             : initIAssetReceipt({
                   Receipt: { amount: 0, drs_tx_hash: paymentAsset.Receipt.drs_tx_hash },
               });
-        // A list of all addresses which no longer contain usable assets after this transaction is created
+        // A list of all addresses used to gather inputs
         const usedAddresses: string[] = [];
+        // A list of all addresses which no longer contain usable assets after this transaction is created
+        const depletedAddresses: string[] = [];
         const inputs = Object.entries(fetchBalanceResponse.address_list).map(
             ([address, outPoints]) => {
                 const ICreateTxIn: ICreateTxIn[] = [];
                 const keyPair = allKeypairs.get(address);
                 if (!keyPair) return err(IErrorInternal.UnableToGetKeypair);
+                // Total amount of outpoints we've used that belong to this address
                 let usedOutpointsCount = 0;
                 outPoints.forEach(({ out_point, value }) => {
                     const lhsAssetIsLess = lhsAssetIsLessThanRhsAsset(
@@ -84,13 +94,17 @@ export function getInputsForTx(
                         const signableData = constructTxInSignableData(out_point);
                         if (signableData === null)
                             return err(IErrorInternal.UnableToConstructSignature);
+
+                        // Check correct signature
                         const signature = constructSignature(
                             getStringBytes(signableData),
                             keyPair.secretKey,
                         );
+                        if (signature.isErr()) return err(signature.error);
+
+                        // Check for correct address version
                         const addressVersion = getAddressVersion(keyPair.publicKey, address);
                         if (addressVersion.isErr()) return err(addressVersion.error);
-                        if (signature.isErr()) return err(signature.error);
 
                         // Create script value for outpoint
                         const ICreateTxInScript = {
@@ -112,11 +126,15 @@ export function getInputsForTx(
                         const assetAddition = addLhsAssetToRhsAsset(value, totalAmountGathered);
                         if (assetAddition.isErr()) return err(assetAddition.error);
                         totalAmountGathered = assetAddition.value;
+
+                        // Update addresses that have been used to gather inputs
+                        if (!usedAddresses.includes(address)) usedAddresses.push(address);
+
                         usedOutpointsCount++;
                         if (outPoints.length == usedOutpointsCount) {
                             // We have used all of the inputs this address has to offer,
                             // so we can add this address to the used addresses list
-                            usedAddresses.push(address);
+                            depletedAddresses.push(address);
                         }
                     }
                     return ok([]);
@@ -133,7 +151,12 @@ export function getInputsForTx(
                     [],
                 ) /* Flatten array */
                 .filter((input): input is ICreateTxIn => !!input); /* Filter array */
-            return ok([usedAddresses, totalAmountGathered, filteredInputs]);
+            return ok({
+                inputs: filteredInputs,
+                totalAmountGathered,
+                usedAddresses,
+                depletedAddresses,
+            } as IGetInputsResult);
         } else {
             //TODO: Change this to return an array of the errors that occured
             return err(IErrorInternal.InvalidInputs);
@@ -159,10 +182,11 @@ export function createTx(
     paymentAsset: IAssetToken | IAssetReceipt,
     excessAddress: string,
     druidInfo: IDdeValues | null,
-    txIns: [string[], IAssetToken | IAssetReceipt, ICreateTxIn[]],
+    txIns: IGetInputsResult,
 ): IResult<ICreateTxPayload> {
     // Inputs obtained for payment from fetching the balance from the network
-    const [usedAddresses, totalAmountGathered, inputs] = txIns;
+    // TODO: Do something with `depletedAddresses`
+    const { usedAddresses, totalAmountGathered, inputs } = txIns;
 
     // If there are no inputs, then we can't create a transaction
     if (inputs.length === 0) {
@@ -206,7 +230,7 @@ export function createTx(
     const returnValue: ICreateTxPayload = {
         createTx: createTransaction,
         excessAddressUsed: hasExcess.value,
-        usedAddresses: usedAddresses,
+        usedAddresses,
     };
 
     return ok(returnValue);
@@ -229,7 +253,7 @@ export function createPaymentTx(
     excessAddress: string,
     fetchBalanceResponse: IFetchBalanceResponse,
     allKeypairs: Map<string, IKeypair>,
-) {
+): IResult<ICreateTxPayload> {
     // Gather inputs for the transaction
     const txIns = getInputsForTx(paymentAsset, fetchBalanceResponse, allKeypairs);
     if (txIns.isErr()) return err(txIns.error);

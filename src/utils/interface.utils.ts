@@ -7,6 +7,8 @@ import {
     IPendingRbTxDetails,
     IResult,
     IErrorInternal,
+    IApiCreateTxResponse,
+    IMakePaymentResponse,
 } from '../interfaces';
 import { DEFAULT_DRS_TX_HASH } from '../mgmt';
 
@@ -317,4 +319,34 @@ export const assetsAreCompatible = (
     rhs: IAssetToken | IAssetReceipt,
 ): boolean => {
     return assetsAreBothTokens(lhs, rhs).isOk() || assetsAreBothCompatibleReceipts(lhs, rhs).isOk();
+};
+
+/**
+ * Create an `ICreateTransactionResponse` object from a response received by the network (network response is terrible to digest)
+ *
+ * @param {string[]} usedAddresses
+ * @param {IApiCreateTxResponse} networkResponse
+ * @return {*}  {IResult<IMakePaymentResponse>}
+ */
+export const transformCreateTxResponseFromNetwork = (
+    usedAddresses: string[],
+    networkResponse: IApiCreateTxResponse,
+): IResult<IMakePaymentResponse> => {
+    try {
+        const transactionHash = Object.keys(networkResponse).pop();
+        if (transactionHash === undefined) return err(IErrorInternal.InvalidNetworkResponse);
+        const [paymentAddress, asset] = [
+            networkResponse[transactionHash][0],
+            networkResponse[transactionHash][1],
+        ];
+        return ok({
+            transactionHash,
+            paymentAddress,
+            asset: asset.asset,
+            metadata: asset.metadata,
+            usedAddresses,
+        });
+    } catch (e) {
+        return err(IErrorInternal.InvalidNetworkResponse);
+    }
 };

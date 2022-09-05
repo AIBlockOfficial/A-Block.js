@@ -2305,10 +2305,10 @@ bip-schnorr@=0.6.4:
     randombytes "^2.1.0"
     safe-buffer "^5.2.1"
 
-bitcore-lib@^8.25.25:
-  version "8.25.25"
-  resolved "https://registry.npmjs.org/bitcore-lib/-/bitcore-lib-8.25.25.tgz"
-  integrity sha512-H6qNCVl4M8/MglXhvc04mmeus1d6nrmqTJGQ+xezJLvL7hs7R3dyBPtOqSP3YSw0iq/GWspMd8f5OOlyXVipJQ==
+bitcore-lib@^8.25.25, bitcore-lib@^8.25.36:
+  version "8.25.36"
+  resolved "https://registry.yarnpkg.com/bitcore-lib/-/bitcore-lib-8.25.36.tgz#2933e90dd268d58ba3af65d37c01f869b9799df8"
+  integrity sha512-am/XH25YzhNmY+nDt92z1OcWDBo//kFKHT3OTsguOlmd+0Bm7J34M2TIFj6hRBjCDONwqsfL//ebuIV+6ScHIQ==
   dependencies:
     bech32 "=2.0.0"
     bip-schnorr "=0.6.4"
@@ -2320,11 +2320,11 @@ bitcore-lib@^8.25.25:
     lodash "^4.17.20"
 
 bitcore-mnemonic@^8.25.25:
-  version "8.25.25"
-  resolved "https://registry.npmjs.org/bitcore-mnemonic/-/bitcore-mnemonic-8.25.25.tgz"
-  integrity sha512-7HvRxHrmd+Rh0Ohl0SEDMKQBAM+FoevXbCFnxGju6H+uZjtWMOToHA8vUg0+B91pfEMjdt9mQVB/wSA8GMqnCA==
+  version "8.25.36"
+  resolved "https://registry.yarnpkg.com/bitcore-mnemonic/-/bitcore-mnemonic-8.25.36.tgz#4d4e17dbfa82143bd5bc1e84a4a15eed67a04110"
+  integrity sha512-nWVLXsqF7qo1lR/pxGV8Z3NL1QnhpeJaOf0R1/7Y/bvx/aADSBBhW6rv/kOw1L9vKUURt0ieQC+avsIZMyebfg==
   dependencies:
-    bitcore-lib "^8.25.25"
+    bitcore-lib "^8.25.36"
     unorm "^1.4.1"
 
 bn.js@=4.11.8:
