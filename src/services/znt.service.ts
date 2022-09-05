@@ -20,6 +20,7 @@ import {
     initIAssetReceipt,
     initIAssetToken,
     throwIfErr,
+    transformCreateTxResponseFromNetwork,
 } from '../utils';
 import {
     IAPIRoute,
@@ -1160,6 +1161,8 @@ export class ZenottaInstance {
                 ),
             );
 
+            const { usedAddresses } = paymentBody;
+
             // Generate the needed headers
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 this.computeRoutesPoW,
@@ -1177,6 +1180,15 @@ export class ZenottaInstance {
                     return {
                         status: castAPIStatus(response.data.status),
                         reason: response.data.reason,
+                        content: {
+                            makePaymentResponse: throwIfErr(
+                                transformCreateTxResponseFromNetwork(
+                                    usedAddresses,
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    response.data.content as any,
+                                ),
+                            ),
+                        },
                     } as IClientResponse;
                 })
                 .catch(async (error) => {

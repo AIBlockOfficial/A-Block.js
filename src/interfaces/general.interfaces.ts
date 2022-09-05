@@ -13,6 +13,7 @@ import {
     IFetchTransactionsResponse,
     INotarySignatureResponse,
     IGetNotaryBurnAddressResponse,
+    IMakePaymentResponse,
 } from '.';
 
 // Config needed for initialization
@@ -64,6 +65,7 @@ export type IApiContentType = {
     fetchTransactionsResponse?: IFetchTransactionsResponse;
     getNotarySignatureResponse?: INotarySignatureResponse;
     getNotaryBurnAddressResponse?: IGetNotaryBurnAddressResponse;
+    makePaymentResponse?: IMakePaymentResponse;
 };
 
 /* -------------------------------------------------------------------------- */

@@ -53,6 +53,21 @@ export type INetworkResponse = {
     content?: IApiContentType;
 };
 
+export type IApiCreateTxResponse = IGenericKeyPair<[string, IApiAsset]>; // Transaction hash - (public key address, asset paid);
+
+export type IApiAsset = {
+    asset: IAssetToken | IAssetReceipt;
+    metadata: number[] | null;
+};
+
+export type IMakePaymentResponse = {
+    transactionHash: string;
+    paymentAddress: string;
+    asset: IAssetToken | IAssetReceipt;
+    metadata: number[] | null;
+    usedAddresses: string[];
+};
+
 export type IFetchTransactionsResponse = (ITransaction | string)[][];
 
 export type IGetNotaryBurnAddressResponse = {
