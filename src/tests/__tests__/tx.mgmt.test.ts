@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-conditional-expect */
 import { IKeypair, IOutPoint, ICreateTxInScript, IErrorInternal } from '../../interfaces';
 import { ADDRESS_VERSION } from '../../mgmt';
-import * as txMgmt from '../../mgmt/txMgmt';
+import * as txMgmt from '../../mgmt/tx.mgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
 import { initIAssetToken } from '../../utils';
 
@@ -39,8 +39,9 @@ test('create transaction for a token amount', () => {
         // From here we assume the create transaction struct is created correctly
         expect(createTx).toBeDefined();
         if (createTx) {
-            // Assert used addresses
+            // Assert depleted addresses
             expect(usedAddresses).toStrictEqual([
+                'cf0067d6c42463b2c1e4236e9669df546c74b16c0e2ef37114549b2944e05b7c',
                 'f226b92e6868e178f722e9cf71ad2a0c16d864c5d8fcadc70153bbd021f11ea0',
                 '9b28bf45e5e5285a8eb10003046f5ed48571903ea767915acf0fe77e257b43fa',
             ]);

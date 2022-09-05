@@ -95,54 +95,14 @@ export function getBytesHexString(bytes: Uint8Array): string {
  * @returns
  */
 export function formatBalance(balance: number, fraction?: number): string {
-    if (balance < 0) {
+    if (balance < 0 || balance > BAL_LIMIT) {
         return 'N/A';
-    }
-    if (balance === 0) {
+    } else if (balance === 0) {
         return balance.toFixed(6);
+    } else {
+        const formattedBalance = fraction !== undefined ? balance / fraction : balance;
+        return formattedBalance.toFixed(6).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     }
-
-    const formattedBalance = fraction !== undefined ? balance / fraction : balance;
-
-    if (formattedBalance < 1) {
-        return formattedBalance.toFixed(6);
-    }
-
-    if (formattedBalance < BAL_LIMIT) {
-        const balString = formattedBalance.toFixed(2);
-        const decimals = balString.slice(balString.length - 3);
-
-        let balListReverse = balString
-            .slice(0, balString.length - 3)
-            .split('')
-            .reverse()
-            .join('')
-            .match(/.{1,3}/g);
-
-        if (!balListReverse) {
-            return 'N/A';
-        }
-
-        balListReverse = balListReverse.reverse().map((e) => e.split('').reverse().join(''));
-
-        return balListReverse.join(',').concat('', decimals);
-    }
-
-    const balListReverse = formattedBalance
-        .toString()
-        .split('')
-        .reverse()
-        .join('')
-        .match(/.{1,3}/g);
-
-    if (!balListReverse) {
-        return 'N/A';
-    }
-
-    return balListReverse
-        .reverse()
-        .map((e) => e.split('').reverse().join(''))
-        .join(',');
 }
 
 /**

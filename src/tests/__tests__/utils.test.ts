@@ -1,3 +1,5 @@
+/* eslint-disable jest/expect-expect */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
     addLhsAssetToRhsAsset,
     assetsAreCompatible,

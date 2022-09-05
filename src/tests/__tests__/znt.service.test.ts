@@ -1,5 +1,5 @@
-import { ZenottaInstance } from '../../ZenottaInstance';
 import { SEED } from '../constants';
+import { ZenottaInstance } from '../../services/znt.service';
 
 let znpInstance = new ZenottaInstance();
 

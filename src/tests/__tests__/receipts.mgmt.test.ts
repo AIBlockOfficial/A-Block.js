@@ -8,7 +8,7 @@ import {
     generateDRUID,
     getInputsForTx,
 } from '../../mgmt';
-import * as receiptMgmt from '../../mgmt/receiptMgmt';
+import * as receiptMgmt from '../../mgmt/receipt.mgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
 import { initIAssetReceipt, initIAssetToken, initIDruidExpectation } from '../../utils';
 
@@ -91,6 +91,7 @@ test('create transaction for the SEND portion of a receipt-based payment', () =>
         if (createTx) {
             // Assert used addresses
             expect(usedAddresses).toStrictEqual([
+                'cf0067d6c42463b2c1e4236e9669df546c74b16c0e2ef37114549b2944e05b7c',
                 'f226b92e6868e178f722e9cf71ad2a0c16d864c5d8fcadc70153bbd021f11ea0',
                 '9b28bf45e5e5285a8eb10003046f5ed48571903ea767915acf0fe77e257b43fa',
             ]);
@@ -242,9 +243,9 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
         expect(createTx).toBeDefined();
         if (createTx) {
             // Assert used addresses
-            expect(usedAddresses).toStrictEqual(
-                [] /* All addresses still have something assigned to them */,
-            );
+            expect(usedAddresses).toStrictEqual([
+                'cf0067d6c42463b2c1e4236e9669df546c74b16c0e2ef37114549b2944e05b7c' /* Only one address was used */,
+            ]);
 
             // Assert TxOut values
             const txOuts = createTx?.outputs;
@@ -335,7 +336,7 @@ test('create TxIns address used as `from` value in DdeValues', () => {
     );
 
     if (txInputs.isOk()) {
-        const ourFromAddress = constructTxInsAddress(txInputs.value[2]).unwrapOr('');
+        const ourFromAddress = constructTxInsAddress(txInputs.value.inputs).unwrapOr('');
         expect(ourFromAddress).toStrictEqual(
             'a7b09a0ffc38e41318eb67c781279d4168f6e203810741284c2426b86ed28e3a',
         );

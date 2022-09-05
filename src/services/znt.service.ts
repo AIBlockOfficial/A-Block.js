@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { mgmtClient } from './mgmtClient';
 import {
     constructTxInsAddress,
     createPaymentTx,
@@ -21,6 +20,7 @@ import {
     initIAssetReceipt,
     initIAssetToken,
     throwIfErr,
+    transformCreateTxResponseFromNetwork,
 } from '../utils';
 import {
     IAPIRoute,
@@ -32,6 +32,7 @@ import {
     ICreateTransactionEncrypted,
     IDruidExpectation,
     IErrorInternal,
+    IGenericKeyPair,
     IKeypairEncrypted,
     IMasterKeyEncrypted,
     INetworkResponse,
@@ -40,6 +41,7 @@ import {
     IRequestIntercomGetBody,
     IResponseIntercom,
 } from '../interfaces';
+import { mgmtClient } from './mgmt.service';
 
 export class ZenottaInstance {
     /* -------------------------------------------------------------------------- */
@@ -47,18 +49,23 @@ export class ZenottaInstance {
     /* -------------------------------------------------------------------------- */
     private intercomHost: string | undefined;
     private computeHost: string | undefined;
+    private storageHost: string | undefined;
+    private notaryHost: string | undefined;
     private keyMgmt: mgmtClient | undefined;
-    private routesPoW: Map<string, number> | undefined;
+    private computeRoutesPoW: Map<string, number> | undefined;
+    private storageRoutesPoW: Map<string, number> | undefined;
 
     /* -------------------------------------------------------------------------- */
     /*                                 Constructor                                */
-
     /* -------------------------------------------------------------------------- */
     constructor() {
         this.intercomHost = undefined;
         this.computeHost = undefined;
+        this.storageHost = undefined;
+        this.notaryHost = undefined;
         this.keyMgmt = undefined;
-        this.routesPoW = undefined;
+        this.computeRoutesPoW = undefined;
+        this.storageRoutesPoW = undefined;
     }
 
     /**
@@ -171,19 +178,74 @@ export class ZenottaInstance {
     }
 
     /**
-     * Common network initialization (retrieval of PoW list)
+     * Common network initialization (retrieval of PoW list for compute as well as storage)
      *
      * @private
      * @param {IClientConfig} config - Additional configuration parameters
      * @memberof ZenottaInstance
      */
     public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
-        // TODO: Add check for IPv4 and IPv6 IP address validity
-        this.routesPoW = new Map();
         this.intercomHost = config.intercomHost;
         this.computeHost = config.computeHost;
+        this.storageHost = config.storageHost;
+        this.notaryHost = config.notaryHost;
         // Set routes proof-of-work requirements
-        const debugData = await this.getDebugData();
+
+        // Initialize routes proof-of-work for compute host
+        if (this.computeHost !== undefined) {
+            this.computeRoutesPoW = new Map();
+            const initComputeResult = await this.initNetworkForHost(
+                this.computeHost,
+                this.computeRoutesPoW,
+            );
+            if (initComputeResult.status == 'error') return initComputeResult;
+        }
+
+        // Initialize routes proof-of-work for storage host
+        if (this.storageHost !== undefined) {
+            this.storageRoutesPoW = new Map();
+            const initStorageResult = await this.initNetworkForHost(
+                this.storageHost,
+                this.storageRoutesPoW,
+            );
+            if (initStorageResult.status == 'error') return initStorageResult;
+        }
+
+        if (
+            this.storageHost === undefined &&
+            this.computeHost === undefined &&
+            this.notaryHost === undefined &&
+            this.intercomHost === undefined
+        )
+            return {
+                status: 'error',
+                reason: IErrorInternal.NoHostsProvided,
+            } as IClientResponse;
+
+        return {
+            status: 'success',
+        } as IClientResponse;
+    }
+
+    /**
+     * Common network initialization (retrieval of PoW list)
+     *
+     * @private
+     * @param {IClientConfig} config - Additional configuration parameters
+     * @memberof ZenottaInstance
+     */
+    public async initNetworkForHost(
+        host: string | undefined,
+        routesPow: Map<string, number>,
+    ): Promise<IClientResponse> {
+        if (!host) {
+            return {
+                status: 'error',
+                reason: IErrorInternal.NoHostsProvided,
+            } as IClientResponse;
+        }
+        // Set routes proof-of-work requirements
+        const debugData = await this.getDebugData(host);
         if (debugData.status === 'error')
             return {
                 status: 'error',
@@ -191,7 +253,7 @@ export class ZenottaInstance {
             } as IClientResponse;
         else if (debugData.status === 'success' && debugData.content?.debugDataResponse)
             for (const route in debugData.content.debugDataResponse.routes_pow) {
-                this.routesPoW.set(route, debugData.content.debugDataResponse.routes_pow[route]);
+                routesPow.set(route, debugData.content.debugDataResponse.routes_pow[route]);
             }
         return {
             status: 'success',
@@ -208,9 +270,12 @@ export class ZenottaInstance {
      */
     public async getUtxoAddressList(): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.GetUtxoAddressList);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.computeRoutesPoW,
+                IAPIRoute.GetUtxoAddressList,
+            );
             return await axios
                 .get<INetworkResponse>(
                     `${this.computeHost}${IAPIRoute.GetUtxoAddressList}`,
@@ -246,12 +311,15 @@ export class ZenottaInstance {
      */
     async fetchBalance(addressList: string[]): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const fetchBalanceBody = {
                 address_list: addressList,
             };
-            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.FetchBalance);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.computeRoutesPoW,
+                IAPIRoute.FetchBalance,
+            );
             return await axios
                 .post<INetworkResponse>(
                     `${this.computeHost}${IAPIRoute.FetchBalance}`,
@@ -280,6 +348,48 @@ export class ZenottaInstance {
     }
 
     /**
+     * Fetch transactions from the storage host
+     *
+     * @param {string[]} transactionHashes - An array of transaction hashes
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    public async fetchTransactions(transactionHashes: string[]): Promise<IClientResponse> {
+        try {
+            if (!this.storageHost || !this.keyMgmt || !this.storageRoutesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.computeRoutesPoW,
+                IAPIRoute.FetchBalance,
+            );
+            return await axios
+                .post<INetworkResponse>(
+                    `${this.storageHost}${IAPIRoute.Transactions}`,
+                    transactionHashes,
+                    headers,
+                )
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: {
+                            fetchTransactionsResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
      * Fetch pending DDE transaction from the compute node
      *
      * @deprecated due to security concerns.
@@ -290,12 +400,15 @@ export class ZenottaInstance {
      */
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const fetchPendingBody = {
                 druid_list: druids,
             };
-            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.FetchPending);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.computeRoutesPoW,
+                IAPIRoute.FetchPending,
+            );
             return await axios
                 .post<INetworkResponse>(
                     `${this.computeHost}${IAPIRoute.FetchPending}`,
@@ -338,7 +451,7 @@ export class ZenottaInstance {
         amount: number = RECEIPT_DEFAULT,
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const keyPair = throwIfErr(this.keyMgmt.decryptKeypair(address));
             // Create receipt-creation transaction
@@ -352,7 +465,10 @@ export class ZenottaInstance {
                 ),
             );
             // Generate needed headers
-            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.CreateReceiptAsset);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.computeRoutesPoW,
+                IAPIRoute.CreateReceiptAsset,
+            );
             return await axios
                 .post<INetworkResponse>(
                     `${this.computeHost}${IAPIRoute.CreateReceiptAsset}`,
@@ -372,6 +488,128 @@ export class ZenottaInstance {
                     if (error instanceof Error) throw new Error(error.message);
                     else throw new Error(`${error}`);
                 });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Get the notary service's burn address
+     *
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    async getNotaryBurnAddress(): Promise<IClientResponse> {
+        try {
+            if (!this.notaryHost || !this.keyMgmt)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                new Map(),
+                IAPIRoute.GetNotaryBurnAddress,
+            );
+            return await axios
+                .get<INetworkResponse>(
+                    `${this.notaryHost}${IAPIRoute.GetNotaryBurnAddress}`,
+                    headers,
+                )
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: response.data.content,
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Get the required signature from the notary to mint new Erc20 tokens
+     *
+     * @param {string} ethAddress - Ethereum address to mint tokens to
+     * @param {string} txHash - Transaction hash of the "burn" transaction
+     * @param {IGenericKeyPair<string>} signatures
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    async getNotarySignature(
+        ethAddress: string,
+        txHash: string,
+        signatures: IGenericKeyPair<string>,
+    ): Promise<IClientResponse> {
+        try {
+            if (!this.notaryHost || !this.keyMgmt)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                new Map(),
+                IAPIRoute.GetNotarySignature,
+            );
+            const body = {
+                ethAddress,
+                txHash,
+                signatures,
+            };
+            return await axios
+                .post<INetworkResponse>(
+                    `${this.notaryHost}${IAPIRoute.GetNotarySignature}`,
+                    body,
+                    headers,
+                )
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: {
+                            getNotarySignatureResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Sign a given message with an array of key-pairs
+     *
+     * @param {IKeypairEncrypted[]} keyPairsToSignWith - Key-pairs to use in the signing process
+     * @param {string} message - The message to sign
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ZenottaInstance
+     */
+    async signMessage(
+        keyPairsToSignWith: IKeypairEncrypted[],
+        message: string,
+    ): Promise<IClientResponse> {
+        try {
+            if (this.keyMgmt === undefined) throw new Error(IErrorInternal.ClientNotInitialized);
+            const keyPairs = throwIfErr(this.keyMgmt.decryptKeypairs(keyPairsToSignWith));
+            const signatures = throwIfErr(this.keyMgmt.signMessage(keyPairs, message));
+            return {
+                status: 'success',
+                reason: '',
+                content: {
+                    signMessageResponse: signatures,
+                },
+            } as IClientResponse;
         } catch (error) {
             return {
                 status: 'error',
@@ -443,7 +681,7 @@ export class ZenottaInstance {
         receiveAddress: IKeypairEncrypted,
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const senderKeypair = throwIfErr(this.keyMgmt.decryptKeypair(receiveAddress));
             const [allAddresses, keyPairMap] = throwIfErr(
@@ -455,7 +693,7 @@ export class ZenottaInstance {
             if (balance.status !== 'success' || !balance.content?.fetchBalanceResponse)
                 throw new Error(balance.reason);
 
-            if (allAddresses.length === 0) throw new Error('No existing key-pairs provided');
+            if (allAddresses.length === 0) throw new Error(IErrorInternal.NoKeypairsProvided);
 
             // Generate a DRUID value for this transaction
             const druid = throwIfErr(this.keyMgmt.getNewDRUID());
@@ -588,7 +826,7 @@ export class ZenottaInstance {
         allEncryptedTxs: ICreateTransactionEncrypted[],
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
 
             // Generate a key-pair map
@@ -672,6 +910,7 @@ export class ZenottaInstance {
 
                 // Generate the required headers
                 const headers = this.getRequestIdAndNonceHeadersForRoute(
+                    this.computeRoutesPoW,
                     IAPIRoute.CreateTransactions,
                 );
 
@@ -847,6 +1086,33 @@ export class ZenottaInstance {
         }
     }
 
+    /**
+     * Decrypt an encrypted key-pair
+     *
+     * @param {IKeypairEncrypted} encryptedKeypair - Encrypted key-pair to decrypt
+     * @return {*}  {IClientResponse}
+     * @memberof ZenottaInstance
+     */
+    decryptKeypair(encryptedKeypair: IKeypairEncrypted): IClientResponse {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            return {
+                status: 'success',
+                reason: 'Successfully decrypted keypair',
+                content: {
+                    decryptKeypairResponse: throwIfErr(
+                        this.keyMgmt.decryptKeypair(encryptedKeypair),
+                    ),
+                },
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            };
+        }
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                    Utils                                   */
 
@@ -870,7 +1136,7 @@ export class ZenottaInstance {
         excessKeypair: IKeypairEncrypted,
     ) {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
@@ -882,7 +1148,7 @@ export class ZenottaInstance {
                 throw new Error(balance.reason);
 
             // Get all existing addresses
-            if (allKeypairs.length === 0) throw new Error('No existing key-pairs provided');
+            if (allKeypairs.length === 0) throw new Error(IErrorInternal.NoKeypairsProvided);
 
             // Create transaction
             const paymentBody = throwIfErr(
@@ -895,8 +1161,13 @@ export class ZenottaInstance {
                 ),
             );
 
+            const { usedAddresses } = paymentBody;
+
             // Generate the needed headers
-            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.CreateTransactions);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.computeRoutesPoW,
+                IAPIRoute.CreateTransactions,
+            );
 
             // Send transaction to compute for processing
             return await axios
@@ -906,10 +1177,18 @@ export class ZenottaInstance {
                     headers,
                 )
                 .then((response) => {
-                    const responseData = response.data as INetworkResponse;
                     return {
-                        status: castAPIStatus(responseData.status),
-                        reason: responseData.reason,
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: {
+                            makePaymentResponse: throwIfErr(
+                                transformCreateTxResponseFromNetwork(
+                                    usedAddresses,
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    response.data.content as any,
+                                ),
+                            ),
+                        },
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
@@ -942,7 +1221,7 @@ export class ZenottaInstance {
         allKeypairs: IKeypairEncrypted[],
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
+            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.computeRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
@@ -966,7 +1245,7 @@ export class ZenottaInstance {
 
             // Get the key-pair assigned to this receiver address
             const receiverKeypair = keyPairMap.get(txInfo.receiverExpectation.to);
-            if (!receiverKeypair) throw new Error('Unable to retrieve key-pair from map');
+            if (!receiverKeypair) throw new Error(IErrorInternal.UnableToGetKeypair);
 
             // Set the status of the pending request
             txInfo.status = status;
@@ -993,6 +1272,7 @@ export class ZenottaInstance {
 
                 // Generate the required headers
                 const headers = this.getRequestIdAndNonceHeadersForRoute(
+                    this.computeRoutesPoW,
                     IAPIRoute.CreateTransactions,
                 );
 
@@ -1005,9 +1285,8 @@ export class ZenottaInstance {
                         headers,
                     )
                     .then((response) => {
-                        const responseData = response.data as INetworkResponse;
-                        if (castAPIStatus(responseData.status) !== 'success')
-                            throw new Error(responseData.reason);
+                        if (castAPIStatus(response.data.status) !== 'success')
+                            throw new Error(response.data.reason);
                     })
                     .catch(async (error) => {
                         if (error instanceof Error) throw new Error(error.message);
@@ -1049,16 +1328,21 @@ export class ZenottaInstance {
      * Get information regarding the PoW required for all routes
      *
      * @private
+     * @param {(string | undefined)} host - Host address to retrieve proof-of-work data from
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ZenottaInstance
      */
-    private async getDebugData(): Promise<IClientResponse> {
+    private async getDebugData(host: string | undefined): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.routesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            const headers = this.getRequestIdAndNonceHeadersForRoute(IAPIRoute.DebugData);
+            if (!host) throw new Error(IErrorInternal.ClientNotInitialized);
+            const routesPow =
+                host === this.computeHost ? this.computeRoutesPoW : this.storageRoutesPoW;
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                routesPow,
+                IAPIRoute.DebugData,
+            );
             return await axios
-                .get<INetworkResponse>(`${this.computeHost}${IAPIRoute.DebugData}`, headers)
+                .get<INetworkResponse>(`${host}${IAPIRoute.DebugData}`, headers)
                 .then(async (response) => {
                     return {
                         status: castAPIStatus(response.data.status),
@@ -1094,14 +1378,22 @@ export class ZenottaInstance {
      *     }}
      * @memberof ZenottaInstance
      */
-    private getRequestIdAndNonceHeadersForRoute(route: string): {
+    private getRequestIdAndNonceHeadersForRoute(
+        routesPow: Map<string, number> | undefined,
+        route: string,
+    ): {
         headers: {
             'x-request-id': string;
             'x-nonce': number;
         };
     } {
-        if (!this.routesPoW) throw new Error(IErrorInternal.ClientNotInitialized);
-        const routeDifficulty = this.routesPoW.get(route.slice(1)); // Slice removes the '/' prefix
-        return { ...DEFAULT_HEADERS, ...createIdAndNonceHeaders(routeDifficulty) };
+        if (!routesPow) throw new Error(IErrorInternal.ClientNotInitialized);
+        const routeDifficulty = routesPow.get(route.slice(1)); // Slice removes the '/' prefix: ;
+        return {
+            headers: {
+                ...DEFAULT_HEADERS.headers,
+                ...createIdAndNonceHeaders(routeDifficulty).headers,
+            },
+        };
     }
 }

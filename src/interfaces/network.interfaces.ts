@@ -2,6 +2,7 @@
 /*                                 API Routes                                 */
 /* -------------------------------------------------------------------------- */
 
+import { ethers } from 'ethers';
 import {
     IGenericKeyPair,
     IOutPoint,
@@ -11,10 +12,11 @@ import {
     IDruidExpectation,
     IApiContentType,
     ICreateTransaction,
+    ITransaction,
 } from '.';
 
 export enum IAPIRoute {
-    /* ------------------------------- ZNP Routes ------------------------------- */
+    /* ------------------------------- COMPUTE ZNP Routes ------------------------------- */
     DebugData = '/debug_data',
     FetchBalance = '/fetch_balance',
     SignableTransactions = '/signable_transactions' /* NOTE: No implementation */,
@@ -24,10 +26,16 @@ export enum IAPIRoute {
     GetUtxoAddressList = '/utxo_addresses',
     CreateReceiptAsset = '/create_receipt_asset',
     FetchPending = '/fetch_pending' /* NOTE: Currently not available */,
+    /* --------------------------- Storage ZNP Routes --------------------------- */
+    BlockchainEntry = '/blockchain_entry',
+    Transactions = '/transactions_by_key',
     /* ----------------------------- Intercom Routes ---------------------------- */
     IntercomSet = '/set_data',
     IntercomGet = '/get_data',
     IntercomDel = '/del_data',
+    /* -------------------------- Notary Service Routes ------------------------- */
+    GetNotarySignature = '/get_signature',
+    GetNotaryBurnAddress = '/get_burn_address',
 }
 
 /* -------------------------------------------------------------------------- */
@@ -43,6 +51,36 @@ export type INetworkResponse = {
     reason?: string;
     route?: string;
     content?: IApiContentType;
+};
+
+export type IApiCreateTxResponse = IGenericKeyPair<[string, IApiAsset]>; // Transaction hash - (public key address, asset paid);
+
+export type IApiAsset = {
+    asset: IAssetToken | IAssetReceipt;
+    metadata: number[] | null;
+};
+
+export type IMakePaymentResponse = {
+    transactionHash: string;
+    paymentAddress: string;
+    asset: IAssetToken | IAssetReceipt;
+    metadata: number[] | null;
+    usedAddresses: string[];
+};
+
+export type IFetchTransactionsResponse = (ITransaction | string)[][];
+
+export type IGetNotaryBurnAddressResponse = {
+    burnAddress: string;
+};
+
+export type INotarySignatureResponse = {
+    value: {
+        amount: ethers.BigNumberish;
+        burnId: ethers.utils.BytesLike;
+        to: string;
+    };
+    sig: ethers.Signature;
 };
 
 // `/debug_data` endpoint response

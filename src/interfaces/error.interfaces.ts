@@ -4,6 +4,7 @@
 
 import { Result } from 'neverthrow';
 
+// All internal error types
 export enum IErrorInternal {
     InsufficientFunds = 'Insufficient funds',
     NoInputs = 'No inputs for transaction',
@@ -11,8 +12,10 @@ export enum IErrorInternal {
     UnableToGenerateDruid = 'Unable to generate DRUID',
     UnableToConstructTxIns = 'Unable to construct tx ins',
     UnableToConstructSignature = 'Unable to construct signature',
+    UnableToGetKeypairFromMap = 'Unable to retrieve key-pair from map',
     InvalidAddressVersion = 'Unable to determine address version',
     InvalidParametersProvided = 'Invalid parameters provided',
+    UnableToConstructOldAddress = 'Unable to construct old address',
     UnableToConstructTempAddress = 'Unable to construct temp address',
     UnableToConstructDefaultAddress = 'Unable to construct default address',
     UnableToGenerateSeed = 'Unable to generate seed',
@@ -40,6 +43,10 @@ export enum IErrorInternal {
     AssetsIncompatible = 'Assets are incompatible',
     KeyValuePairNotSingle = 'Key-value pair does not only have one element',
     UnableToFindNonEmptyAddresses = 'Unable to find addresses that contain assets',
+    InvalidNetworkResponse = 'Invalid network response',
+    UnableToSignMessage = 'Unable to sign message',
+    NoHostsProvided = 'No hosts provided',
+    NoKeypairsProvided = 'No key-pairs provided',
     UnknownError = 'Unknown Error',
 }
 

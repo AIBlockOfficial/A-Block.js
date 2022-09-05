@@ -19,6 +19,7 @@ import {
     ICreateTransaction,
     ICreateTransactionEncrypted,
     IErrorInternal,
+    IGenericKeyPair,
     IKeypair,
     IKeypairEncrypted,
     IMasterKey,
@@ -27,6 +28,7 @@ import {
 } from '../interfaces';
 import { err, ok } from 'neverthrow';
 import { concatTypedArrays, getBytesString, getStringBytes, truncateByBytesUTF8 } from '../utils';
+import { getBytesHexString } from '../utils/general.utils';
 
 export class mgmtClient {
     private passphraseKey: Uint8Array;
@@ -253,6 +255,23 @@ export class mgmtClient {
     }
 
     /**
+     * Decrypt an array of encrypted key-pairs
+     *
+     * @param {IKeypairEncrypted[]} keypairs - Encrypted key-pair array
+     * @return {*}  {IResult<IKeypair[]>}
+     * @memberof mgmtClient
+     */
+    public decryptKeypairs(keypairs: IKeypairEncrypted[]): IResult<IKeypair[]> {
+        const decryptedKeypairs: IKeypair[] = [];
+        for (const keypair of keypairs) {
+            const decryptedKeypair = this.decryptKeypair(keypair);
+            if (decryptedKeypair.isErr()) return err(decryptedKeypair.error);
+            decryptedKeypairs.push(decryptedKeypair.value);
+        }
+        return ok(decryptedKeypairs);
+    }
+
+    /**
      * Decrypt a key-pair using the passphrase
      *
      * @param {IKeypairEncrypted} keypair
@@ -446,6 +465,27 @@ export class mgmtClient {
         }
         if (foundAddr.size === 0) return err(IErrorInternal.UnableToRegenAddresses);
         return ok(Array.from(foundAddr.values()));
+    }
+
+    /**
+     * Sign a given message with an array of keypairs
+     *
+     * @param {IKeypair[]} keypairs
+     * @param {string} message
+     * @return {*}  {IResult<IGenericKeyPair<string>>}
+     * @memberof mgmtClient
+     */
+    public signMessage(keypairs: IKeypair[], message: string): IResult<IGenericKeyPair<string>> {
+        try {
+            const signatures: IGenericKeyPair<string> = {};
+            for (const keypair of keypairs) {
+                const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
+                signatures[getBytesHexString(keypair.publicKey)] = getBytesHexString(signature);
+            }
+            return ok(signatures);
+        } catch {
+            return err(IErrorInternal.UnableToSignMessage);
+        }
     }
 
     /**

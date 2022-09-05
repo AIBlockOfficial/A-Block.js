@@ -1,4 +1,4 @@
-import { constructAddress } from './keyMgmt';
+import { constructAddress } from './key.mgmt';
 import { err, ok } from 'neverthrow';
 import { v4 as uuidv4 } from 'uuid';
 import { sha3_256 } from 'js-sha3';
