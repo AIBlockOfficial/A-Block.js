@@ -28,8 +28,8 @@ import {
     subRhsAssetFromLhsAsset,
 } from '../utils';
 import { ZNP_NETWORK_VERSION } from './constants';
-import { getAddressVersion } from './keyMgmt';
-import { constructSignature, constructTxInSignableData } from './scriptMgmt';
+import { getAddressVersion } from './key.mgmt';
+import { constructSignature, constructTxInSignableData } from './script.mgmt';
 
 /* -------------------------------------------------------------------------- */
 /*                          Transaction Construction                          */

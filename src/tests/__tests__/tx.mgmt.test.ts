@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-conditional-expect */
 import { IKeypair, IOutPoint, ICreateTxInScript, IErrorInternal } from '../../interfaces';
 import { ADDRESS_VERSION } from '../../mgmt';
-import * as txMgmt from '../../mgmt/txMgmt';
+import * as txMgmt from '../../mgmt/tx.mgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
 import { initIAssetToken } from '../../utils';
 

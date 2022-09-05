@@ -10,12 +10,17 @@ import {
     IResponseIntercom,
     IPendingRbTxDetails,
     IDebugDataResponse,
+    IFetchTransactionsResponse,
+    INotarySignatureResponse,
+    IGetNotaryBurnAddressResponse,
 } from '.';
 
 // Config needed for initialization
 export type IClientConfig = {
-    computeHost: string;
-    intercomHost: string;
+    computeHost?: string;
+    storageHost?: string;
+    intercomHost?: string;
+    notaryHost?: string;
     passPhrase: string;
 };
 
@@ -27,6 +32,7 @@ export type IClientResponse = {
     content?: IContentType;
 };
 
+// Make receipt-based payment response
 export type IMakeRbPaymentResponse = {
     druid: string;
     encryptedTx: ICreateTransactionEncrypted;
@@ -43,6 +49,8 @@ export type IContentType = {
     initNewResponse?: [string, IMasterKeyEncrypted];
     initFromSeedResponse?: IMasterKeyEncrypted;
     regenWalletResponse?: IKeypairEncrypted[];
+    signMessageResponse?: IGenericKeyPair<string>;
+    decryptKeypairResponse?: IKeypair;
 } & IApiContentType;
 
 // Content received from compute node / intercom server API endpoints
@@ -53,6 +61,9 @@ export type IApiContentType = {
     createReceiptResponse?: ICreateReceiptResponse;
     fetchPendingRbResponse?: IResponseIntercom<IPendingRbTxDetails>;
     debugDataResponse?: IDebugDataResponse;
+    fetchTransactionsResponse?: IFetchTransactionsResponse;
+    getNotarySignatureResponse?: INotarySignatureResponse;
+    getNotaryBurnAddressResponse?: IGetNotaryBurnAddressResponse;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -68,17 +79,20 @@ export type ICustomKeyPair<K extends string | number | symbol, T> = {
     [key in K]: T;
 };
 
+// Master key
 export type IMasterKey = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     secret: any;
     seed: string;
 };
 
+// Master key in an encrypted format
 export type IMasterKeyEncrypted = {
     nonce: string;
     save: string;
 };
 
+// Key-pair
 export type IKeypair = {
     address: string;
     secretKey: Uint8Array;
@@ -86,6 +100,7 @@ export type IKeypair = {
     version: number | null;
 };
 
+// Key-pair in an encrypted format
 export type IKeypairEncrypted = {
     address: string;
     nonce: string;
@@ -93,6 +108,7 @@ export type IKeypairEncrypted = {
     save: string;
 };
 
+// Transaction
 export type ITransaction = {
     inputs: ITxIn[];
     outputs: ITxOut[];
@@ -100,17 +116,20 @@ export type ITransaction = {
     druid_info: IDdeValues | null;
 };
 
+// Transaction input
 export type ITxIn = {
     previous_out: IOutPoint | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     script_signature: any | null;
 };
 
+// OutPoint
 export type IOutPoint = {
     t_hash: string;
     n: number;
 };
 
+// Transaction Output
 export type ITxOut = {
     value: IAssetToken | IAssetReceipt;
     locktime: number;
@@ -118,23 +137,27 @@ export type ITxOut = {
     script_public_key: string | null;
 };
 
+// Dual-double-entry data
 export type IDdeValues = {
     druid: string;
     participants: number;
     expectations: IDruidExpectation[];
 };
 
+// Dual-double-entry expectation
 export type IDruidExpectation = {
     from: string;
     to: string;
     asset: IAssetToken | IAssetReceipt;
 };
 
+// DDE/DRUID droplet value as stored on compute node
 export type IDruidDroplet = {
     participants: number;
     tx: { [key: string]: ITransaction };
 };
 
+// Receipt asset type
 export type IAssetReceipt = {
     Receipt: {
         amount: number;
@@ -142,10 +165,12 @@ export type IAssetReceipt = {
     };
 };
 
+// Token asset type
 export type IAssetToken = {
     Token: number;
 };
 
+// `Script` part of body sent to compute node for processing
 export type ICreateTxInScript = {
     Pay2PkH: {
         signable_data: string;
@@ -155,11 +180,13 @@ export type ICreateTxInScript = {
     };
 };
 
+// `Transaction inputs` part of body sent to compute node for processing
 export type ICreateTxIn = {
     previous_out: IOutPoint | null;
     script_signature: ICreateTxInScript | null;
 };
 
+// Entire request body sent to compute node for transaction processing
 export type ICreateTransaction = {
     inputs: ICreateTxIn[];
     outputs: ITxOut[];
@@ -167,6 +194,7 @@ export type ICreateTransaction = {
     druid_info: IDdeValues | null;
 };
 
+// Encrypted transaction
 export type ICreateTransactionEncrypted = {
     druid: string;
     nonce: string;
@@ -175,18 +203,23 @@ export type ICreateTransactionEncrypted = {
 
 /* ---------------------------- Script Interfaces --------------------------- */
 
+// `Script` interface
 export type Script = {
     stack: StackEntry[];
 };
 
+// Signature as expressed in hexidecimal form
 export type Signature = string;
 
+// Public key as expressed in hexidecimal form
 export type PubKey = string;
 
+// Public key hash | Sha256
 export type PubKeyHash = string;
 
 export type Num = number;
 
+// Bytes to sign
 export type Bytes = string;
 
 export class StackEntry {
@@ -204,6 +237,7 @@ export class StackEntry {
     }
 }
 
+// OPcodes represented as strings
 export type OpString =
     // push value
     | 'OP_0'
@@ -340,6 +374,7 @@ export type OpString =
     // Temporary address structure
     | 'OP_HASH256_TEMP';
 
+// OPcode values
 export enum Op {
     // push value
     OP_0 = 0x00,

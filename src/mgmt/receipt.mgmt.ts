@@ -1,8 +1,8 @@
-import { createTx, getInputsForTx } from './txMgmt';
+import { createTx, getInputsForTx } from './tx.mgmt';
 import { RECEIPT_DEFAULT } from './constants';
-import { constructAddress, createSignature } from './keyMgmt';
+import { constructAddress, createSignature } from './key.mgmt';
 import { err, ok } from 'neverthrow';
-import { constructTxInSignableAssetHash } from './scriptMgmt';
+import { constructTxInSignableAssetHash } from './script.mgmt';
 import {
     IResult,
     IReceiptCreationAPIPayload,

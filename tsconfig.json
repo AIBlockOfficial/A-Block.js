@@ -36,6 +36,9 @@
       ],
       "@mgmt/*": [
         "src/mgmt/*"
+      ],
+      "@schemas/*": [
+        "src/schemas/*"
       ]
     }
   },

@@ -8,7 +8,7 @@ import {
     generateDRUID,
     getInputsForTx,
 } from '../../mgmt';
-import * as receiptMgmt from '../../mgmt/receiptMgmt';
+import * as receiptMgmt from '../../mgmt/receipt.mgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
 import { initIAssetReceipt, initIAssetToken, initIDruidExpectation } from '../../utils';
 

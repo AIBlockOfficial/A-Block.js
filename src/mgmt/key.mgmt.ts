@@ -3,7 +3,7 @@ import { truncateByBytesUTF8, getStringBytes, getHexStringBytes } from '../utils
 import { bytesToBase64 } from 'byte-base64';
 import { sha3_256 } from 'js-sha3';
 import nacl from 'tweetnacl';
-import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION } from './constants';
+import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION, ADDRESS_VERSION_OLD } from './constants';
 import Mnemonic from 'bitcore-mnemonic';
 import { err, ok } from 'neverthrow';
 import { IResult, IErrorInternal, IMasterKey, IKeypair } from '../interfaces';
@@ -157,6 +157,8 @@ export function getNextDerivedKeypair(
  */
 export function constructAddress(publicKey: Uint8Array, version: number | null): IResult<string> {
     switch (version) {
+        case ADDRESS_VERSION_OLD:
+            return constructVersionOldAddress(publicKey);
         case TEMP_ADDRESS_VERSION:
             return constructVersionTempAddress(publicKey);
         case ADDRESS_VERSION:
@@ -165,6 +167,36 @@ export function constructAddress(publicKey: Uint8Array, version: number | null):
             return err(IErrorInternal.InvalidAddressVersion);
     }
 }
+
+/**
+ * Constructs the address from the provided public key given the old address version.
+ *
+ * @param publicKey {Uint8Array}- Public key as Uint8Array
+ * @returns
+ */
+export function constructVersionOldAddress(publicKey: Uint8Array): IResult<string> {
+    try {
+        const arrayOne = new Uint8Array([32, 0, 0, 0, 0, 0, 0, 0]);
+        const arrayTwo = publicKey;
+        const mergedArray = new Uint8Array(arrayOne.length + arrayTwo.length);
+        mergedArray.set(arrayOne);
+        mergedArray.set(arrayTwo, arrayOne.length);
+        const hash: string = sha3_256(mergedArray);
+        truncateString(hash, hash.length - 16);
+        return ok(truncateString(hash, hash.length - 16));
+    } catch {
+        return err(IErrorInternal.UnableToConstructDefaultAddress);
+    }
+}
+
+/**
+ * Truncate a string
+ *
+ * @param {string} [string='']
+ * @param {number} [maxLength=50]
+ */
+const truncateString = (string = '', maxLength = 50) =>
+    string.length > maxLength ? `${string.substring(0, maxLength)}` : string;
 
 /**
  * Constructs the address from the provided public key given the default version.
