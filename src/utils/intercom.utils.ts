@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { err, ok } from 'neverthrow';
+
 import {
     IErrorInternal,
     IKeypair,
@@ -9,7 +10,7 @@ import {
     IResponseIntercom,
     IResult,
 } from '../interfaces';
-import { createSignature } from '../mgmt';
+import { createSignature } from '../mgmt/key.mgmt';
 import { isOfTypeIPendingRbTxDetails } from './interface.utils';
 
 /**

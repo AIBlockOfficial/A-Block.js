@@ -3,17 +3,58 @@
 /* -------------------------------------------------------------------------- */
 
 import { ethers } from 'ethers';
+
 import {
-    IGenericKeyPair,
-    IOutPoint,
     IAssetReceipt,
     IAssetToken,
+    ICreateTransaction,
+    ICreateTransactionEncrypted,
     IDruidDroplet,
     IDruidExpectation,
-    IApiContentType,
-    ICreateTransaction,
+    IGenericKeyPair,
+    IKeypair,
+    IKeypairEncrypted,
+    IMasterKeyEncrypted,
+    IOutPoint,
     ITransaction,
-} from '.';
+} from './general.interfaces';
+
+// Response structure returned from `ZenottaInstance` methods
+export type IClientResponse = {
+    id?: string;
+    status: 'success' | 'error' | 'pending' | 'unknown';
+    reason?: string;
+    content?: IContentType;
+};
+
+// `content` field of `IClientResponse`
+export type IContentType = {
+    newDRUIDResponse?: string;
+    newSeedPhraseResponse?: string;
+    getSeedPhraseResponse?: string;
+    makeRbPaymentResponse?: IMakeRbPaymentResponse;
+    newKeypairResponse?: IKeypairEncrypted;
+    getMasterKeyResponse?: IMasterKeyEncrypted;
+    initNewResponse?: [string, IMasterKeyEncrypted];
+    initFromSeedResponse?: IMasterKeyEncrypted;
+    regenWalletResponse?: IKeypairEncrypted[];
+    signMessageResponse?: IGenericKeyPair<string>;
+    decryptKeypairResponse?: IKeypair;
+} & IApiContentType;
+
+// Content received from compute node / intercom server API endpoints
+export type IApiContentType = {
+    fetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
+    fetchBalanceResponse?: IFetchBalanceResponse;
+    fetchPendingDDEResponse?: IFetchPendingDDEResponse;
+    createReceiptResponse?: ICreateReceiptResponse;
+    fetchPendingRbResponse?: IResponseIntercom<IPendingRbTxDetails>;
+    debugDataResponse?: IDebugDataResponse;
+    fetchTransactionsResponse?: IFetchTransactionsResponse;
+    getNotarySignatureResponse?: INotarySignatureResponse;
+    getNotaryBurnAddressResponse?: IGetNotaryBurnAddressResponse;
+    makePaymentResponse?: IMakePaymentResponse;
+};
 
 export enum IAPIRoute {
     /* ------------------------------- COMPUTE ZNP Routes ------------------------------- */
@@ -183,4 +224,13 @@ export type IPendingRbTxDetails = {
     receiverExpectation: IDruidExpectation;
     status: 'pending' | 'rejected' | 'accepted'; // Status of the DDE transaction
     computeHost: string; // Correlation between clients; send txs to the same compute node; chosen by the sender
+};
+
+/* -------------------------------------------------------------------------- */
+/*                     ZenottaInstance Response Interfaces                    */
+/* -------------------------------------------------------------------------- */
+// Make receipt-based payment response
+export type IMakeRbPaymentResponse = {
+    druid: string;
+    encryptedTx: ICreateTransactionEncrypted;
 };

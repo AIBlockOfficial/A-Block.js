@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { err, ok } from 'neverthrow';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { IErrorInternal, IResult } from '@interfaces/error.interfaces';
+import { IAssetReceipt, IAssetToken, IDruidExpectation } from '@interfaces/general.interfaces';
 import {
-    IAssetToken,
-    IAssetReceipt,
-    IDruidExpectation,
-    IPendingRbTxDetails,
-    IResult,
-    IErrorInternal,
     IApiCreateTxResponse,
     IMakePaymentResponse,
-} from '../interfaces';
-import { DEFAULT_DRS_TX_HASH } from '../mgmt';
+    IPendingRbTxDetails,
+} from '@interfaces/network.interfaces';
+
+import { DEFAULT_DRS_TX_HASH } from '../mgmt/constants';
 
 /* -------------------------------------------------------------------------- */
 /*                      Utilities for Custom Type Guards                      */

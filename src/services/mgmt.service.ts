@@ -1,5 +1,20 @@
+import * as bitcoreLib from 'bitcore-lib';
 import { base64ToBytes, bytesToBase64 } from 'byte-base64';
+import { err, ok } from 'neverthrow';
 import nacl from 'tweetnacl';
+import { v4 as uuidv4 } from 'uuid';
+
+import {
+    ICreateTransaction,
+    ICreateTransactionEncrypted,
+    IErrorInternal,
+    IGenericKeyPair,
+    IKeypair,
+    IKeypairEncrypted,
+    IMasterKey,
+    IMasterKeyEncrypted,
+    IResult,
+} from '../interfaces';
 import {
     ADDRESS_VERSION,
     constructAddress,
@@ -13,20 +28,6 @@ import {
     SEED_REGEN_THRES,
     TEMP_ADDRESS_VERSION,
 } from '../mgmt';
-import { v4 as uuidv4 } from 'uuid';
-import * as bitcoreLib from 'bitcore-lib';
-import {
-    ICreateTransaction,
-    ICreateTransactionEncrypted,
-    IErrorInternal,
-    IGenericKeyPair,
-    IKeypair,
-    IKeypairEncrypted,
-    IMasterKey,
-    IMasterKeyEncrypted,
-    IResult,
-} from '../interfaces';
-import { err, ok } from 'neverthrow';
 import { concatTypedArrays, getBytesString, getStringBytes, truncateByBytesUTF8 } from '../utils';
 import { getBytesHexString } from '../utils/general.utils';
 

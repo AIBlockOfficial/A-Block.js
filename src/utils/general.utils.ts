@@ -1,8 +1,10 @@
-import { IClientResponse, ICustomKeyPair, IErrorInternal, IResult } from '../interfaces';
-import { BAL_LIMIT, generateMasterKey, generateSeed } from '../mgmt';
 import { sha3_256 } from 'js-sha3';
-import { v4 as uuidv4 } from 'uuid';
 import { err, ok } from 'neverthrow';
+import { v4 as uuidv4 } from 'uuid';
+
+import { BAL_LIMIT } from '../mgmt/constants';
+
+import { IClientResponse, ICustomKeyPair, IErrorInternal, IResult } from '../interfaces';
 
 /**
  * Cast `status` received from ZNP to lowercase string variant
@@ -26,27 +28,6 @@ export function castAPIStatus(
         default:
             return 'unknown';
     }
-}
-
-/**
- * Test a seed phrase
- *
- * @export
- * @param {string} seed
- * @return {*}  {boolean}
- */
-export function testSeedPhrase(seed: string): boolean {
-    return !generateMasterKey(seed).isErr();
-}
-
-/**
- * Generate a seed phrase
- *
- * @export
- * @return {*}  {string}
- */
-export function generateSeedPhrase(): string {
-    return generateSeed().unwrapOr('');
 }
 
 /**

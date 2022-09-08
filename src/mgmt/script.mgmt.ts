@@ -1,8 +1,8 @@
-import { constructAddress } from './key.mgmt';
-import { err, ok } from 'neverthrow';
-import { v4 as uuidv4 } from 'uuid';
 import { sha3_256 } from 'js-sha3';
+import { err, ok } from 'neverthrow';
 import nacl from 'tweetnacl';
+import { v4 as uuidv4 } from 'uuid';
+
 import {
     IAssetReceipt,
     IAssetToken,
@@ -19,6 +19,7 @@ import {
     isOfTypeIAssetToken,
     truncateByBytesUTF8,
 } from '../utils';
+import { constructAddress } from './key.mgmt';
 
 /* -------------------------------------------------------------------------- */
 /*                            Transaction Utilities                           */
