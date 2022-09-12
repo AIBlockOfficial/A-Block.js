@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES6", /* Modern browsers support all ES6 features */
+    "target": "ES6",
     "module": "ES6",
     "moduleResolution": "node",
     "declaration": true,
@@ -26,6 +26,7 @@
       "./node_modules/@types",
       "./src/declaration.d.ts"
     ],
+    "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
       "@interfaces/*": [

@@ -2,20 +2,6 @@
 /*                       Interfaces for ZenottaInstance                       */
 /* -------------------------------------------------------------------------- */
 
-import {
-    IFetchUtxoAddressesResponse,
-    IFetchBalanceResponse,
-    IFetchPendingDDEResponse,
-    ICreateReceiptResponse,
-    IResponseIntercom,
-    IPendingRbTxDetails,
-    IDebugDataResponse,
-    IFetchTransactionsResponse,
-    INotarySignatureResponse,
-    IGetNotaryBurnAddressResponse,
-    IMakePaymentResponse,
-} from '.';
-
 // Config needed for initialization
 export type IClientConfig = {
     computeHost?: string;
@@ -23,49 +9,6 @@ export type IClientConfig = {
     intercomHost?: string;
     notaryHost?: string;
     passPhrase: string;
-};
-
-// Response structure returned from `ZenottaInstance` methods
-export type IClientResponse = {
-    id?: string;
-    status: 'success' | 'error' | 'pending' | 'unknown';
-    reason?: string;
-    content?: IContentType;
-};
-
-// Make receipt-based payment response
-export type IMakeRbPaymentResponse = {
-    druid: string;
-    encryptedTx: ICreateTransactionEncrypted;
-};
-
-// `content` field of `IClientResponse`
-export type IContentType = {
-    newDRUIDResponse?: string;
-    newSeedPhraseResponse?: string;
-    getSeedPhraseResponse?: string;
-    makeRbPaymentResponse?: IMakeRbPaymentResponse;
-    newKeypairResponse?: IKeypairEncrypted;
-    getMasterKeyResponse?: IMasterKeyEncrypted;
-    initNewResponse?: [string, IMasterKeyEncrypted];
-    initFromSeedResponse?: IMasterKeyEncrypted;
-    regenWalletResponse?: IKeypairEncrypted[];
-    signMessageResponse?: IGenericKeyPair<string>;
-    decryptKeypairResponse?: IKeypair;
-} & IApiContentType;
-
-// Content received from compute node / intercom server API endpoints
-export type IApiContentType = {
-    fetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
-    fetchBalanceResponse?: IFetchBalanceResponse;
-    fetchPendingDDEResponse?: IFetchPendingDDEResponse;
-    createReceiptResponse?: ICreateReceiptResponse;
-    fetchPendingRbResponse?: IResponseIntercom<IPendingRbTxDetails>;
-    debugDataResponse?: IDebugDataResponse;
-    fetchTransactionsResponse?: IFetchTransactionsResponse;
-    getNotarySignatureResponse?: INotarySignatureResponse;
-    getNotaryBurnAddressResponse?: IGetNotaryBurnAddressResponse;
-    makePaymentResponse?: IMakePaymentResponse;
 };
 
 /* -------------------------------------------------------------------------- */

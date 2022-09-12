@@ -1,4 +1,24 @@
 import axios from 'axios';
+
+import {
+    IAPIRoute,
+    IAssetReceipt,
+    IAssetToken,
+    IClientConfig,
+    IClientResponse,
+    ICreateTransaction,
+    ICreateTransactionEncrypted,
+    IDruidExpectation,
+    IErrorInternal,
+    IGenericKeyPair,
+    IKeypairEncrypted,
+    IMasterKeyEncrypted,
+    INetworkResponse,
+    IPendingRbTxDetails,
+    IRequestIntercomDelBody,
+    IRequestIntercomGetBody,
+    IResponseIntercom,
+} from '../interfaces';
 import {
     constructTxInsAddress,
     createPaymentTx,
@@ -22,25 +42,6 @@ import {
     throwIfErr,
     transformCreateTxResponseFromNetwork,
 } from '../utils';
-import {
-    IAPIRoute,
-    IAssetReceipt,
-    IAssetToken,
-    IClientConfig,
-    IClientResponse,
-    ICreateTransaction,
-    ICreateTransactionEncrypted,
-    IDruidExpectation,
-    IErrorInternal,
-    IGenericKeyPair,
-    IKeypairEncrypted,
-    IMasterKeyEncrypted,
-    INetworkResponse,
-    IPendingRbTxDetails,
-    IRequestIntercomDelBody,
-    IRequestIntercomGetBody,
-    IResponseIntercom,
-} from '../interfaces';
 import { mgmtClient } from './mgmt.service';
 
 export class ZenottaInstance {
@@ -570,9 +571,7 @@ export class ZenottaInstance {
                     return {
                         status: castAPIStatus(response.data.status),
                         reason: response.data.reason,
-                        content: {
-                            getNotarySignatureResponse: response.data.content,
-                        },
+                        content: response.data.content,
                     } as IClientResponse;
                 })
                 .catch(async (error) => {

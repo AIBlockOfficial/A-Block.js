@@ -1,13 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { truncateByBytesUTF8, getStringBytes, getHexStringBytes } from '../utils';
+import Mnemonic from 'bitcore-mnemonic';
 import { bytesToBase64 } from 'byte-base64';
 import { sha3_256 } from 'js-sha3';
-import nacl from 'tweetnacl';
-import { TEMP_ADDRESS_VERSION, ADDRESS_VERSION, ADDRESS_VERSION_OLD } from './constants';
-import Mnemonic from 'bitcore-mnemonic';
 import { err, ok } from 'neverthrow';
-import { IResult, IErrorInternal, IMasterKey, IKeypair } from '../interfaces';
-import { throwIfErr } from '../utils';
+import nacl from 'tweetnacl';
+
+import { IErrorInternal, IKeypair, IMasterKey, IResult } from '../interfaces';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+    getHexStringBytes,
+    getStringBytes,
+    throwIfErr,
+    truncateByBytesUTF8,
+} from '../utils/general.utils';
+import { ADDRESS_VERSION, ADDRESS_VERSION_OLD, TEMP_ADDRESS_VERSION } from './constants';
 
 /**
  * Get the address version for either a given public key and address
@@ -277,4 +282,25 @@ export function generateNewKeypairAndAddress(
     } as IKeypair;
 
     return ok(keypair);
+}
+
+/**
+ * Test a seed phrase
+ *
+ * @export
+ * @param {string} seed
+ * @return {*}  {boolean}
+ */
+export function testSeedPhrase(seed: string): boolean {
+    return !generateMasterKey(seed).isErr();
+}
+
+/**
+ * Generate a seed phrase
+ *
+ * @export
+ * @return {*}  {string}
+ */
+export function generateSeedPhrase(): string {
+    return generateSeed().unwrapOr('');
 }

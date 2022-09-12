@@ -1,20 +1,21 @@
-import { createTx, getInputsForTx } from './tx.mgmt';
-import { RECEIPT_DEFAULT } from './constants';
-import { constructAddress, createSignature } from './key.mgmt';
 import { err, ok } from 'neverthrow';
-import { constructTxInSignableAssetHash } from './script.mgmt';
+
 import {
-    IResult,
-    IReceiptCreationAPIPayload,
+    IAssetReceipt,
+    ICreateTxPayload,
+    IDdeValues,
+    IDrsTxHashSpecification,
+    IDruidExpectation,
     IFetchBalanceResponse,
     IKeypair,
-    ICreateTxPayload,
-    IDruidExpectation,
-    IDdeValues,
-    IAssetReceipt,
-    IDrsTxHashSpecification,
+    IReceiptCreationAPIPayload,
+    IResult,
 } from '../interfaces';
 import { getStringBytes } from '../utils';
+import { RECEIPT_DEFAULT } from './constants';
+import { constructAddress, createSignature } from './key.mgmt';
+import { constructTxInSignableAssetHash } from './script.mgmt';
+import { createTx, getInputsForTx } from './tx.mgmt';
 
 /* -------------------------------------------------------------------------- */
 /*                            Transaction Creation                            */

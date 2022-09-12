@@ -3,28 +3,29 @@
 /* -------------------------------------------------------------------------- */
 
 import { err, Ok, ok } from 'neverthrow';
+
 import {
+    IAssetReceipt,
+    IAssetToken,
+    ICreateTransaction,
+    ICreateTxIn,
+    ICreateTxPayload,
+    IDdeValues,
+    IErrorInternal,
     IFetchBalanceResponse,
     IKeypair,
     IResult,
-    ICreateTxIn,
-    IErrorInternal,
-    IDdeValues,
-    ICreateTxPayload,
-    IAssetToken,
-    IAssetReceipt,
     ITxOut,
-    ICreateTransaction,
 } from '../interfaces';
 import {
-    isOfTypeIAssetToken,
-    initIAssetToken,
-    initIAssetReceipt,
-    lhsAssetIsLessThanRhsAsset,
+    addLhsAssetToRhsAsset,
     assetsAreCompatible,
     getStringBytes,
-    addLhsAssetToRhsAsset,
+    initIAssetReceipt,
+    initIAssetToken,
+    isOfTypeIAssetToken,
     lhsAssetIsGreaterThanRhsAsset,
+    lhsAssetIsLessThanRhsAsset,
     subRhsAssetFromLhsAsset,
 } from '../utils';
 import { ZNP_NETWORK_VERSION } from './constants';
