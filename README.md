@@ -5,10 +5,12 @@
 
 <div align="center">
   <a>
-    <img src="https://pbs.twimg.com/profile_images/1398876828295643146/I9HgKjhJ_400x400.jpg" alt="Logo" width="80" height="80">
+    <img src="https://gitlab.com/zenotta/zenotta-js/-/raw/readme_for_oss/assets/hero.jpg" alt="Logo">
   </a>
 
   <h3 align="center">Zenotta-JS</h3>
+
+  <div><img src="https://gitlab.com/zenotta/zenotta-js/badges/main/pipeline.svg" alt="Pipeline Status" /></div>
 
   <p align="center">
     A JavaScript module to help interact with the Zenotta blockchain network.
