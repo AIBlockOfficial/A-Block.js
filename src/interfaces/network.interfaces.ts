@@ -2,8 +2,6 @@
 /*                                 API Routes                                 */
 /* -------------------------------------------------------------------------- */
 
-import { ethers } from 'ethers';
-
 import {
     IAssetReceipt,
     IAssetToken,
@@ -116,12 +114,20 @@ export type IGetNotaryBurnAddressResponse = {
 };
 
 export type INotarySignatureResponse = {
-    value: {
-        amount: ethers.BigNumberish;
-        burnId: ethers.utils.BytesLike;
-        to: string;
-    };
-    sig: ethers.Signature;
+    // ethers.BigNumber amount hexed value
+    amount: string;
+    // Burn transaction ID
+    id: string;
+    // First ZNT address
+    from: string;
+    // Number of ZNT addresses that have participated
+    cnt: number;
+    // To Ethereum address
+    to: string;
+    // Values related to signature
+    v: number;
+    r: string;
+    s: string;
 };
 
 // `/debug_data` endpoint response
