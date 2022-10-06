@@ -415,7 +415,17 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
 
 ### Creating Receipt Assets
 
+Receipts are the NFTs of the Zenotta blockchain, but unlike NFTs don't require you to write any Smart Contracts 
+or complex logic to create.
+
 * `createReceipts`
+
+| **Argument**     | **Type**            | **Default** | **Required** | **Description**                                                                                                                                                                              |
+|------------------|---------------------|-------------|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| address          | `IKeypairEncrypted` |             | yes          | The keypair to generate the address that the Receipt assets will be sent to once generated                                                                                                   |
+| defaultDrsTxHash | `boolean`           | true        | no           | Setting this to `true` will create generic Receipts, while setting it to `false`  will generate a genesis transaction hash unique to these Receipts. Use `false` if  you want to create NFTs |
+| amount           | `number`            | 1000        | no           | The number of Receipt assets to mint                                                                                                                                                         |
+| metadata         | `string`            | null        | no           | Optional metadata that you can attach to the asset                                                                                                                                           |
 
   ``` typescript
   import { ZenottaInstance } from '@zenotta/zenotta-js';
@@ -435,6 +445,16 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
   
   // Create `Receipt` assets that have a unique DRS identifier
   const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+
+  <!-- --------------------------------- ALL ARGUMENTS VERSION ---------------------------------- -->
+
+  const createReceiptResponse = await client.createReceipts(
+    keyPair,
+    false,
+    10000,
+    "{ 'imageURL': '...', 'description': '...' }"
+  ).content
+  .createReceiptResponse;
   
   ```
 
@@ -468,6 +488,13 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
 
 * `makeTokenPayment`
 
+| **Argument**   | **Type**               | **Default** | **Required** | **Description**                                                                                                                  |
+|----------------|------------------------|-------------|--------------|----------------------------------------------------------------------------------------------------------------------------------|
+| paymentAddress | `string`               |             | yes          | Address to make the token payment to                                                                                             |
+| paymentAmount  | `number`               |             | yes          | Amount of tokens to pay                                                                                                          |
+| allKeypairs    | `IKeypairEncrypted []` |             | yes          | Keypairs to use to make the payment. Must have token balance associated  with these keypairs in order to process the transaction |
+| excessKeypair  | `IKeypairEncrypted`    |             | yes          | Excess keypair to send any remaining balance to                                                                                  |
+
   ```typescript
   import { ZenottaInstance } from '@zenotta/zenotta-js';
 
@@ -497,6 +524,14 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
 
 * `makeReceiptPayment`
 
+| **Argument**   | **Type**               | **Default** | **Required** | **Description**                                                                                                                  |
+|----------------|------------------------|-------------|--------------|----------------------------------------------------------------------------------------------------------------------------------|
+| paymentAddress | `string`               |             | yes          | Address to make the token payment to                                                                                             |
+| paymentAmount  | `number`               |             | yes          | Amount of tokens to pay                                                                                                          |
+| drsTxHash      | `string`               |             | yes          | The genesis transaction hash of the Receipt asset to spend. This is the unique  identifier of the Receipt asset                  |
+| allKeypairs    | `IKeypairEncrypted []` |             | yes          | Keypairs to use to make the payment. Must have token balance associated  with these keypairs in order to process the transaction |
+| excessKeypair  | `IKeypairEncrypted`    |             | yes          | Excess keypair to send any remaining balance to                                                                                  |
+
   ``` typescript
   import { ZenottaInstance } from '@zenotta/zenotta-js';
   
@@ -517,7 +552,7 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
   await makeReceiptPayment(
           "d0e72...85b46", // Payment address
           10,              // Payment amount
-          drsTxHash        // DRS identifier
+          drsTxHash,       // DRS identifier
           allKeypairs,     // All key-pairs
           changeKeyPair,   // Excess/change address
       );
@@ -528,7 +563,15 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
   
 ### Making Receipt-based Payments
 
-* `makeReceiptPayment`
+* `makeRbPayment`
+
+| **Argument**   | **Type**                       | **Default** | **Required** | **Description**                              |
+|----------------|--------------------------------|-------------|--------------|----------------------------------------------|
+| paymentAddress | `string`                       |             | yes          | Address to make the token payment to         |
+| sendingAsset   | `IAssetReceipt \| IAssetToken` |             | yes          | The asset to pay                             |
+| receivingAsset | `IAssetReceipt \| IAssetToken` |             | yes          | The asset to receive                         |
+| allKeypairs    | `IKeypairEncrypted[]`          |             | yes          | A list of all existing key-pairs (encrypted) |
+| receiveAddress | `IKeypairEncrypted`            |             | yes          | A keypair to assign the "receiving" asset to |
 
   ```typescript
   import { ZenottaInstance } from '@zenotta/zenotta-js';
