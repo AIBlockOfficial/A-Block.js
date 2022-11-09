@@ -39,7 +39,7 @@ export function createReceiptPayload(
     version: number | null,
     amount: number = RECEIPT_DEFAULT,
     default_drs_tx_hash = true,
-    metadata: string | null = null
+    metadata: string | null = null,
 ): IResult<IReceiptCreationAPIPayload> {
     const address = constructAddress(pubKey, version);
     if (address.isErr()) return err(address.error);
@@ -47,7 +47,7 @@ export function createReceiptPayload(
         Receipt: {
             amount,
             drs_tx_hash: '', // TODO: Change this if signable data for creating receipt assets changes; currently not used to create signable data
-            metadata
+            metadata,
         },
     };
     const signableAssetHash = constructTxInSignableAssetHash(asset);

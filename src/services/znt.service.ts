@@ -451,7 +451,7 @@ export class ZenottaInstance {
         address: IKeypairEncrypted,
         defaultDrsTxHash = true,
         amount: number = RECEIPT_DEFAULT,
-        metadata: string | null = null
+        metadata: string | null = null,
     ): Promise<IClientResponse> {
         try {
             if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
@@ -465,7 +465,7 @@ export class ZenottaInstance {
                     keyPair.version,
                     amount,
                     defaultDrsTxHash,
-                    metadata
+                    metadata,
                 ),
             );
             // Generate needed headers
@@ -656,7 +656,7 @@ export class ZenottaInstance {
         drsTxHash: string,
         allKeypairs: IKeypairEncrypted[],
         excessKeypair: IKeypairEncrypted,
-        metadata: string | null = null
+        metadata: string | null = null,
     ): Promise<IClientResponse> {
         const paymentAsset = initIAssetReceipt({
             Receipt: { amount: paymentAmount, drs_tx_hash: drsTxHash, metadata },
