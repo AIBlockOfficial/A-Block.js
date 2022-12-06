@@ -1023,7 +1023,10 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
-    getNewKeypair(allAddresses: string[], addressVersion = ADDRESS_VERSION): IClientResponse {
+    getNewKeypair(
+        allAddresses: string[],
+        addressVersion: null | number = ADDRESS_VERSION,
+    ): IClientResponse {
         try {
             if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
             return {
