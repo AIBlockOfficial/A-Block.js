@@ -123,11 +123,14 @@ export class mgmtClient {
      * @return {*}  {IResult<IKeypairEncrypted>}
      * @memberof mgmtClient
      */
-    public getNewKeypair(allAddresses: string[]): IResult<IKeypairEncrypted> {
+    public getNewKeypair(
+        allAddresses: string[],
+        addressVersion: null | number = ADDRESS_VERSION,
+    ): IResult<IKeypairEncrypted> {
         if (this.masterKey === undefined) return err(IErrorInternal.UnableToGetExistingMasterKey);
         const newKeyPairIResult = generateNewKeypairAndAddress(
             this.masterKey,
-            ADDRESS_VERSION,
+            addressVersion,
             allAddresses,
         );
         if (newKeyPairIResult.isErr()) return err(newKeyPairIResult.error);

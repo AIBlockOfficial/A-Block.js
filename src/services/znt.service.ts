@@ -44,6 +44,7 @@ import {
     transformCreateTxResponseFromNetwork,
 } from '../utils';
 import { mgmtClient } from './mgmt.service';
+import { ADDRESS_VERSION } from '../mgmt/constants';
 
 export class ZenottaInstance {
     /* -------------------------------------------------------------------------- */
@@ -1022,14 +1023,16 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @memberof ZenottaInstance
      */
-    getNewKeypair(allAddresses: string[]): IClientResponse {
+    getNewKeypair(allAddresses: string[], addressVersion = ADDRESS_VERSION): IClientResponse {
         try {
             if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
             return {
                 status: 'success',
                 reason: ISuccessInternal.NewAddressGenerated,
                 content: {
-                    newKeypairResponse: throwIfErr(this.keyMgmt.getNewKeypair(allAddresses)),
+                    newKeypairResponse: throwIfErr(
+                        this.keyMgmt.getNewKeypair(allAddresses, addressVersion),
+                    ),
                 },
             } as IClientResponse;
         } catch (error) {

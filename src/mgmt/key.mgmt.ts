@@ -255,7 +255,7 @@ export function createSignature(secretKey: Uint8Array, message: Uint8Array): Uin
  */
 export function generateNewKeypairAndAddress(
     masterKey: IMasterKey,
-    addressVersion: number | null,
+    addressVersion: number | null = ADDRESS_VERSION,
     addresses: string[],
 ): IResult<IKeypair> {
     let counter = addresses.length;
