@@ -11,7 +11,7 @@
   <h3 align="center">Zenotta-JS</h3>
 
   <div>
-  <img src="https://img.shields.io/github/actions/workflow/status/Zenotta/ZenottaJS/.github/codeql-analysis.yml?branch=main" alt="Pipeline Status" style="display:inline-block"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/Zenotta/ZenottaJS/.github/workflows/codeql-analysis.yml?branch=main" alt="Pipeline Status" style="display:inline-block"/>
   <img src="https://img.shields.io/npm/v/@zenotta/zenotta-js" alt="Pipeline Status" style="display:inline-block"/>
   </div>
 
