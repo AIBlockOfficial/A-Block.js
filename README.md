@@ -104,20 +104,19 @@ Install the module to your project:
   const client = new ZenottaInstance();
 
   // Initialize the client with the needed configuration
-  const initResult = client.initNew({
+  // NOTE: This is an async call
+  client.initNew({
       computeHost: COMPUTE_HOST,
       intercomHost: INTERCOM_HOST,
       passPhrase: PASSPHRASE,
     }
-  );
+  ).then((initResult) => {
+    // Display the seed phrase to the user for safe keeping
+    displaySeedPhrase(initResult.content.initNewResponse[0]);
 
-  const [seedPhrase, masterKeyEncrypted] = initResult.content.initNewResponse;
-
-  // Display the seed phrase to the user for safe keeping
-  displaySeedPhrase(seedPhrase);
-
-  // Store the encrypted master key safely
-  saveMasterKey(masterKeyEncrypted);
+    // Store the encrypted master key safely
+    saveMasterKey(initResult.content.initNewResponse[1]);
+  });
   ```
   
 When the client is initialized without a pre-generated seed phrase or existing master key, the `initNew` function is used to initialize the client. This type of initialization will in return provide a generated seed phrase as well as its corresponding master key in an encrypted format. It is then up to the developer to store this master key somewhere safe, and to display the seed phrase at least once to the user for safe-keeping. This seed phrase can be used to re-construct lost key-pairs if the need should arise.
@@ -166,18 +165,18 @@ When an existing master key exists, this type of initialization **should** be us
   const client = new ZenottaInstance();
 
   // Initialize the client with the needed configuration
-  const initResult = client.initFromSeed({
+  client.initFromSeed({
       computeHost: COMPUTE_HOST,
       intercomHost: INTERCOM_HOST,
       passPhrase: PASSPHRASE,
     },
     seedPhrase: SEED_PHRASE
-  );
-
-  const masterKey = initResult.content.initFromSeedResponse;
+  ).then((initResult) => {
+    const masterKey = initResult.content.initFromSeedResponse;
 
     // Store the encrypted master key safely
-  saveMasterKey(masterKeyEncrypted);
+    saveMasterKey(initResult.content.initFromSeedResponse);
+  });
   ```
 
 Initialization of the client through the use of an existing seed phrase may happen for one of two reasons:
@@ -214,15 +213,15 @@ import { ZenottaInstance } from '@zenotta/zenotta-js';
     };
 
   // Initialize the client with the needed configuration
-  const initResult = client.initNew(config, true);
+  const initResult = client.initNew(config, true).then((initResult) => {
+    const [seedPhrase, masterKeyEncrypted] = initResult.content.initNewResponse;
 
-  const [seedPhrase, masterKeyEncrypted] = initResult.content.initNewResponse;
+    // Display the seed phrase to the user for safe keeping
+    displaySeedPhrase(seedPhrase);
 
-  // Display the seed phrase to the user for safe keeping
-  displaySeedPhrase(seedPhrase);
-
-  // Store the encrypted master key safely
-  saveMasterKey(masterKeyEncrypted);
+    // Store the encrypted master key safely
+    saveMasterKey(masterKeyEncrypted);
+  });
 
   // Initialize network configuration when required
   const initNetworkResult = client.initNetwork(config);
