@@ -324,12 +324,16 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
   // Initialize the client correctly
   ...
 
-  const newKeypairResult = client.getNewKeypair();
+  // The array argument can contain existing keypairs to be used
+  const newKeypairResult = client.getNewKeypair([]);
 
   const newKeypair: IKeypairEncrypted = newKeypairResult.content.newKeypairResponse;
 
   // Save the key-pair safely
   saveKeypair(newKeypair);
+
+  // Get the associated address
+  const address = newKeypair.address;
   ```
 
 ### Updating the Balance
