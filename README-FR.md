@@ -30,29 +30,29 @@
   <summary>Table des matières</summary>
   <ol>
     <li>
-      <a href="#about-the-project">À propos du projet</a>
+      <a href="#à-propos-du-projet">À propos du projet</a>
     </li>
     <li>
       <a href="#installation">Installation</a>
     </li>
     <li>
-      <a href="#getting-started">Démarrage</a>
+      <a href="#premiers-pas">Premiers pas</a>
     </li>
      <li>
-      <a href="#usage">Utilisation</a>
+      <a href="#utilisation">Utilisation</a>
       <ul>
-        <li><a href="#generating-and-testing-seed-phrases">Génération et test de phrases de départ</a></li>
-        <li><a href="#generating-key-pairs">Génération de paires de clés</a></li>
-        <li><a href="#updating-the-balance">Mise à jour du solde</a></li>
-        <li><a href="#creating-receipt-assets">Création d'actifs de reçu</a></li>
-        <li><a href="#spending-tokens">Dépense de jetons</a></li>
-        <li><a href="#spending-receipts">Dépense de reçus</a></li>
-        <li><a href="#fetching-pending-receipt-based-payments">Récupération des paiements en attente basés sur les reçus</a></li>
-        <li><a href="#responding-to-pending-receipt-based-payments">Réponse aux paiements en attente basés sur les reçus</a></li>
+        <li><a href="#génération-et-test-de-phrases-de-départ">Génération et test de phrases de départ</a></li>
+        <li><a href="#génération-de-paires-de-clés">Génération de paires de clés</a></li>
+        <li><a href="#mise-à-jour-du-solde">Mise à jour du solde</a></li>
+        <li><a href="#création-d'actifs-de-reçu">Création d'actifs de reçu</a></li>
+        <li><a href="#dépense-de-jetons">Dépense de jetons</a></li>
+        <li><a href="#dépense-de-reçus">Dépense de reçus</a></li>
+        <li><a href="#récupération-des-paiements-en-attente-basés-sur-les-reçus">Récupération des paiements en attente basés sur les reçus</a></li>
+        <li><a href="#réponse-aux-paiements-en-attente-basés-sur-les-reçus">Réponse aux paiements en attente basés sur les reçus</a></li>
       </ul>
     </li>
     <li>
-      <a href="#client-response-type">Type de réponse du client</a>
+      <a href="#type-de-réponse-du-client">Type de réponse du client</a>
     </li>
   </ol>
 </details>
