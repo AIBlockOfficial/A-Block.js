@@ -643,7 +643,7 @@ saveEncryptedTx(druid, encryptedTx);
   ```
 
   <details>
-  <summary>Response Content</summary>
+  <summary>Contenu de la réponse</summary>
   <br/>
   
   ```json
