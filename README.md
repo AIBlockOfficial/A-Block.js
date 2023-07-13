@@ -23,6 +23,8 @@
     <br />
     <br />
   </p>
+
+  [Français](https://github.com/Zenotta/ZenottaJS/blob/main/README-FR.md) | [Deutsch](https://github.com/Zenotta/ZenottaJS/blob/main/README-DE.md)
 </div>
 
 <!-- TABLE OF CONTENTS -->
