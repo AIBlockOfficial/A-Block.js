@@ -5,21 +5,21 @@
 
 <div align="center">
   <a>
-    <img src="https://github.com/Zenotta/ZenottaJS/blob/develop/assets/hero.svg" alt="Logo" style="width: 350px">
+    <img src="https://github.com/ABlockOfficial/ABlockJS/blob/develop/assets/hero.svg" alt="Logo" style="width: 350px">
   </a>
 
-  <h3 align="center">Zenotta-JS</h3>
+  <h3 align="center">A-Block.js</h3>
 
   <div>
-  <img src="https://img.shields.io/github/actions/workflow/status/Zenotta/ZenottaJS/.github/workflows/codeql-analysis.yml?branch=main" alt="Pipeline Status" style="display:inline-block"/>
-  <img src="https://img.shields.io/npm/v/@zenotta/zenotta-js" alt="Pipeline Status" style="display:inline-block"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/ABlock/ABlockJS/.github/workflows/codeql-analysis.yml?branch=main" alt="Pipeline Status" style="display:inline-block"/>
+  <img src="https://img.shields.io/npm/v/@a-block/a-blockjs" alt="Pipeline Status" style="display:inline-block"/>
   </div>
 
   <p align="center">
-    Ein JavaScript-Modul, das die Interaktion mit dem Zenotta-Blockchain-Netzwerk erleichtert.
+    Ein JavaScript-Modul, das die Interaktion mit dem A-Block-Blockchain-Netzwerk erleichtert.
     <br />
     <br />
-    <a href="https://zenotta.io"><strong>Offizielle Dokumentation »</strong></a>
+    <a href="https://a-block.io"><strong>Offizielle Dokumentation »</strong></a>
     <br />
     <br />
   </p>
@@ -58,87 +58,91 @@
 </details>
 
 <!-- Über das Projekt -->
+
 ## Über das Projekt
 
-Dieses Modul zielt darauf ab, die Entwicklung von Wallet-Anwendungen zu erleichtern, die mit dem Zenotta-Netzwerk interagieren.
+Dieses Modul zielt darauf ab, die Entwicklung von Wallet-Anwendungen zu erleichtern, die mit dem ABlock-Netzwerk interagieren.
 
 Spezifische Schwerpunkte sind:
 
-* Generierung von Schlüsselpaaren durch die Verwendung der BIP39-Mnemonic-Implementierung.
-* Verschlüsselung und Entschlüsselung von Schlüsselpaaren während sicherer Operationen.
-* Vereinfachte Transaktionen und andere komplexe Netzwerkinteraktionen.
+-   Generierung von Schlüsselpaaren durch die Verwendung der BIP39-Mnemonic-Implementierung.
+-   Verschlüsselung und Entschlüsselung von Schlüsselpaaren während sicherer Operationen.
+-   Vereinfachte Transaktionen und andere komplexe Netzwerkinteraktionen.
 
 <p align="right">(<a href="#top">zurück zum Anfang</a>)</p>
 
 <!-- LOS GEHT'S -->
+
 ## Installation
 
 Installieren Sie das Modul in Ihr Projekt:
 
-* npm
+-   npm
 
-  ```sh
-  npm install @zenotta/zenotta-js
-  ```
+    ```sh
+    npm install @a-block/a-blockjs
+    ```
 
-* yarn
+-   yarn
 
-  ```sh
-  yarn add @zenotta/zenotta-js
-  ```
+    ```sh
+    yarn add @a-block/a-blockjs
+    ```
 
 <p align="right">(<a href="#top">zurück zum Anfang</a>)</p>
 
 ## Erste Schritte
 
-* `initNew`
+-   `initNew`
 
-  ```typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
+    ```typescript
+    import { ABlockWallet } from '@a-block/a-blockjs';
 
-  const COMPUTE_HOST = 'beispiel.berechnung.host.com'
-  const INTERCOM_HOST = 'beispiel.intercom.host.com'
-  const PASSPHRASE = 'ein sicheres Passwort'
+    const COMPUTE_HOST = 'beispiel.berechnung.host.com';
+    const INTERCOM_HOST = 'beispiel.intercom.host.com';
+    const PASSPHRASE = 'ein sicheres Passwort';
 
-  // Erstellen Sie das Client-Objekt
-  const client = new ZenottaInstance();
+    // Erstellen Sie das Client-Objekt
+    const client = new ABlockWallet();
 
-  // Initialisieren Sie den Client mit der benötigten Konfiguration
-  // HINWEIS: Dies ist ein asynchroner Aufruf
-  client.initNew({
-      computeHost: COMPUTE_HOST,
-      intercomHost: INTERCOM_HOST,
-      passPhrase: PASSPHRASE,
-    }
-  ).then((initResult) => {
-    // Zeigen Sie dem Benutzer die Seed-Phrase zur sicheren Aufbewahrung an
-    displaySeedPhrase(initResult.content.initNewResponse[0]);
+    // Initialisieren Sie den Client mit der benötigten Konfiguration
+    // HINWEIS: Dies ist ein asynchroner Aufruf
+    client
+        .initNew({
+            computeHost: COMPUTE_HOST,
+            intercomHost: INTERCOM_HOST,
+            passPhrase: PASSPHRASE,
+        })
+        .then((initResult) => {
+            // Zeigen Sie dem Benutzer die Seed-Phrase zur sicheren Aufbewahrung an
+            displaySeedPhrase(initResult.content.initNewResponse[0]);
 
-    // Speichern Sie den verschlüsselten Master-Key sicher
-    saveMasterKey(initResult.content.initNewResponse[1]);
-  });
-  ```
-  
+            // Speichern Sie den verschlüsselten Master-Key sicher
+            saveMasterKey(initResult.content.initNewResponse[1]);
+        });
+    ```
+
 Wenn der Client ohne vorab generierte Seed-Phrase oder vorhandenen Master-Key initialisiert wird, wird die Funktion `initNew` verwendet, um den Client zu initialisieren. Diese Art der Initialisierung liefert eine generierte Seed-Phrase sowie den entsprechenden Master-Key in verschlüsselter Form zurück. Es liegt dann in der Verantwortung des Entwicklers, diesen Master-Key an einem sicheren Ort zu speichern und die Seed-Phrase mindestens einmal dem Benutzer zur sicheren Aufbewahrung anzuzeigen. Diese Seed-Phrase kann verwendet werden, um verlorene Schlüsselpaare bei Bedarf wiederherzustellen.
 
 Einige Argumente während der Initialisierung sind optional, wie z.B. `initOffline`, das verwendet wird, um den Client im Offline-Modus zu initialisieren.
 
-Die Schnittstellen-Elemente `computeHost` und `intercomHost` werden verwendet, um die API-Endpunkte für den Compute-Knoten bzw. den Zenotta Intercom-Server festzulegen, mit denen der Client verbunden werden soll.
+Die Schnittstellen-Elemente `computeHost` und `intercomHost` werden verwendet, um die API-Endpunkte für den Compute-Knoten bzw. den ABlock Intercom-Server festzulegen, mit denen der Client verbunden werden soll.
 
 Während der Initialisierung muss dem Client ein benutzerdefiniertes `passPhrase` übergeben werden, da dieses Passwort zur Verschlüsselung/Entschlüsselung von Daten während der Operationen verwendet wird.
 
-* `initFromMasterKey`
+-   `initFromMasterKey`
 
-  ```typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
+    ```typescript
+    import { ABlockWallet } from '@a-block/a-blockjs';
 
-  const COMPUTE_HOST = 'beispiel.berechnung.host.com'
-  const INTERCOM_HOST = 'beispiel.intercom.host.com'
-  const PASSPHRASE = 'ein sicheres Passwort'
+    const COMPUTE_HOST = 'beispiel.berechnung.host.com';
+    const INTERCOM_HOST = 'beispiel.intercom.host.com';
+    const PASSPHRASE = 'ein sicheres Passwort';
+    ```
 
 ```typescript
 // Erstellen Sie das Client-Objekt
-const client = new ZenottaInstance();
+const client = new ABlockWallet();
 
 // Initialisieren Sie den Client mit der benötigten Konfiguration
 client.initFromMasterKey({
@@ -152,10 +156,10 @@ client.initFromMasterKey({
 
 Wenn bereits ein vorhandener Master-Schlüssel vorhanden ist, sollte diese Art der Initialisierung verwendet werden. Dies tritt in der Regel auf, wenn der Client zuvor mit `initNew` initialisiert wurde und der verschlüsselte Master-Schlüssel sicher gespeichert wurde. Die Verwendung eines vorhandenen Master-Schlüssels gewährleistet eine konsistente BIP39-Schlüsselpaarableitung. Diese Art der Initialisierung hat keinen Rückgabewert.
 
-* `initFromSeed`
+-   `initFromSeed`
 
 ```typescript
-import { ZenottaInstance } from '@zenotta/zenotta-js';
+import { ABlockWallet } from '@a-block/a-blockjs';
 
 const COMPUTE_HOST = 'beispiel.compute.host.com'
 const INTERCOM_HOST = 'beispiel.intercom.host.com'
@@ -163,7 +167,7 @@ const PASSPHRASE = 'ein sicheres Passwort'
 const SEED_PHRASE = 'eine Seed-Phrase, die wie eine Ansammlung zufälliger Wörter aussehen sollte'
 
 // Erstellen Sie das Client-Objekt
-const client = new ZenottaInstance();
+const client = new ABlockWallet();
 
 // Initialisieren Sie den Client mit der benötigten Konfiguration
 client.initFromSeed({
@@ -181,6 +185,7 @@ client.initFromSeed({
 ```
 
 Die Initialisierung des Clients durch Verwendung einer vorhandenen Seed-Phrase kann aus einem der folgenden Gründe erfolgen:
+
 <ol>
 <li>
 Der Benutzer hat seine Schlüsselpaare verloren und eine Neugenerierung ist erforderlich, indem die Seed-Phrase bereitgestellt wird.
@@ -197,24 +202,24 @@ Diese Art der Initialisierung gibt den entsprechenden Master-Schlüssel (in vers
 <br/>
 
 ```typescript
-import { ZenottaInstance } from '@zenotta/zenotta-js';
+import { ABlockWallet } from '@a-block/a-blockjs';
 
-  const COMPUTE_HOST = 'example.compute.host.com'
-  const INTERCOM_HOST = 'example.intercom.host.com'
-  const PASSPHRASE = 'a secure passphrase'
+const COMPUTE_HOST = 'example.compute.host.com';
+const INTERCOM_HOST = 'example.intercom.host.com';
+const PASSPHRASE = 'a secure passphrase';
 
-  // Erstellen Sie das Client-Objekt
-  const client = new ZenottaInstance();
+// Erstellen Sie das Client-Objekt
+const client = new ABlockWallet();
 
-  // Konfiguration
-  const config = {
-      computeHost: COMPUTE_HOST,
-      intercomHost: INTERCOM_HOST,
-      passPhrase: PASSPHRASE,
-    };
+// Konfiguration
+const config = {
+    computeHost: COMPUTE_HOST,
+    intercomHost: INTERCOM_HOST,
+    passPhrase: PASSPHRASE,
+};
 
-  // Initialisieren Sie den Client mit der benötigten Konfiguration
-  const initResult = client.initNew(config, true).then((initResult) => {
+// Initialisieren Sie den Client mit der benötigten Konfiguration
+const initResult = client.initNew(config, true).then((initResult) => {
     const [seedPhrase, masterKeyEncrypted] = initResult.content.initNewResponse;
 
     // Zeigen Sie dem Benutzer die Seed-Phrase zur sicheren Aufbewahrung an
@@ -222,19 +227,18 @@ import { ZenottaInstance } from '@zenotta/zenotta-js';
 
     // Speichern Sie den verschlüsselten Master-Schlüssel sicher
     saveMasterKey(masterKeyEncrypted);
-  });
+});
 
-  // Initialisieren Sie die Netzwerkkonfiguration bei Bedarf
-  const initNetworkResult = client.initNetwork(config);
-
+// Initialisieren Sie die Netzwerkkonfiguration bei Bedarf
+const initNetworkResult = client.initNetwork(config);
 ```
 
-In einigen Fällen kann es wünschenswert sein, den Client ohne Netzwerkverbindung zu initialisieren. Dadurch kann der Client offline verwendet werden, verhindert jedoch gleichzeitig, dass der Client Operationen durchführen kann, die eine Interaktion mit dem Zenotta-Netzwerk erfordern. Mit einer Offline-Konfiguration stehen die folgenden Funktionen zur Verfügung:
+In einigen Fällen kann es wünschenswert sein, den Client ohne Netzwerkverbindung zu initialisieren. Dadurch kann der Client offline verwendet werden, verhindert jedoch gleichzeitig, dass der Client Operationen durchführen kann, die eine Interaktion mit dem ABlock-Netzwerk erfordern. Mit einer Offline-Konfiguration stehen die folgenden Funktionen zur Verfügung:
 
-* `regenAddresses` - Verlorene Schlüsselpaare aus einer Liste von gegebenen Adressen neu generieren.
-* `getNewKeypair` - Ein neues Schlüsselpaar generieren.
-* `getSeedPhrase` - Die vorhandene Seed-Phrase aus dem Speicher abrufen (erfordert eine Initialisierung mit der Seed-Phrase).
-* `getMasterKey` - Den vorhandenen Master-Schlüssel aus dem Speicher abrufen.
+-   `regenAddresses` - Verlorene Schlüsselpaare aus einer Liste von gegebenen Adressen neu generieren.
+-   `getNewKeypair` - Ein neues Schlüsselpaar generieren.
+-   `getSeedPhrase` - Die vorhandene Seed-Phrase aus dem Speicher abrufen (erfordert eine Initialisierung mit der Seed-Phrase).
+-   `getMasterKey` - Den vorhandenen Master-Schlüssel aus dem Speicher abrufen.
 
 </details>
 
@@ -276,32 +280,34 @@ In einigen Fällen kann es wünschenswert sein, den Client ohne Netzwerkverbindu
 ```
 
 Viele Methoden erfordern oder liefern je nach Operation unterschiedliche Arten von Daten. Es liegt vollständig in der Verantwortung des Entwicklers, Daten sicher zu speichern und abzurufen.
+
 </details>
 <p align="right">(<a href="#top">zurück zum Anfang</a>)</p>
 
 ## Verwendung
 
-Nachdem der Client korrekt initialisiert wurde, ermöglichen die vom Client bereitgestellten Methoden dem Entwickler die Interaktion mit dem Zenotta-Blockchain-Netzwerk.
+Nachdem der Client korrekt initialisiert wurde, ermöglichen die vom Client bereitgestellten Methoden dem Entwickler die Interaktion mit dem ABlock-Blockchain-Netzwerk.
 
 ### Generieren und Testen von Seed-Phrasen
 
-* `generateSeedPhrase`
+-   `generateSeedPhrase`
 
-  ```typescript
-  import { generateSeedPhrase } from '@zenotta/zenotta-js';
+    ```typescript
+    import { generateSeedPhrase } from '@a-block/a-blockjs';
 
-  const seedPhrase = generateSeedPhrase();
-  ```
+    const seedPhrase = generateSeedPhrase();
+    ```
 
-* `testSeedPhrase`
+-   `testSeedPhrase`
 
-  ```typescript
-  import { testSeedPhrase } from '@zenotta/zenotta-js';
+    ```typescript
+    import { testSeedPhrase } from '@a-block/a-blockjs';
 
-  const seedPhrase = 'eine vom Benutzer bereitgestellte Seed-Phrase, die wie eine Ansammlung zufälliger Wörter aussieht';
+    const seedPhrase =
+        'eine vom Benutzer bereitgestellte Seed-Phrase, die wie eine Ansammlung zufälliger Wörter aussieht';
 
-  const testResult = testSeedPhrase(seedPhrase);
-  ```
+    const testResult = testSeedPhrase(seedPhrase);
+    ```
 
 Wie bereits erwähnt, kann der Client je nach Szenario auf verschiedene Arten initialisiert werden. Wenn der Client mit `initNew` initialisiert wird, wird automatisch eine neue Seed-Phrase generiert. In einigen Fällen muss der Client jedoch mit einer vorab generierten oder bereitgestellten Seed-Phrase initialisiert werden.
 
@@ -311,231 +317,231 @@ Da eine Seed-Phrase verwendet werden kann, um verlorene/fehlende Schlüsselpaare
 
 ### Generieren von Schlüsselpaaren
 
-* `getNewKeypair`
+-   `getNewKeypair`
 
-  ```typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
+    ```typescript
+    import { ABlockWallet } from '@a-block/a-blockjs';
 
-  const client = new ZenottaInstance();
+    const client = new ABlockWallet();
 
-  // Initialisiere den Client korrekt
-  ...
+    // Initialisiere den Client korrekt
+    ...
 
-  // Das Array-Argument kann vorhandene Schlüsselpaare enthalten, die verwendet werden sollen
-  const newKeypairResult = client.getNewKeypair([]);
+    // Das Array-Argument kann vorhandene Schlüsselpaare enthalten, die verwendet werden sollen
+    const newKeypairResult = client.getNewKeypair([]);
 
-  const newKeypair: IKeypairEncrypted = newKeypairResult.content.newKeypairResponse;
+    const newKeypair: IKeypairEncrypted = newKeypairResult.content.newKeypairResponse;
 
-  // Speichere das Schlüsselpaar sicher
-  saveKeypair(newKeypair);
+    // Speichere das Schlüsselpaar sicher
+    saveKeypair(newKeypair);
 
-  // Erhalte die zugehörige Adresse
-  const address = newKeypair.address;
-  ```
+    // Erhalte die zugehörige Adresse
+    const address = newKeypair.address;
+    ```
 
 ### Aktualisieren des Kontostands
 
-* `fetchBalance`
+-   `fetchBalance`
 
-  ```typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
+    ```typescript
+    import { ABlockWallet } from '@a-block/a-blockjs';
 
-  const client = new ZenottaInstance();
+    const client = new ABlockWallet();
 
-  // Initialisiere den Client korrekt
-  ...
+    // Initialisiere den Client korrekt
+    ...
 
-  const allKeypairs = getAllKeypairs();
+    const allKeypairs = getAllKeypairs();
 
-  // Wir benötigen nur das 'address'-Feld der Schlüsselpaare
-  const addressList = allKeypairs.map(keypair => keypair.address);
+    // Wir benötigen nur das 'address'-Feld der Schlüsselpaare
+    const addressList = allKeypairs.map(keypair => keypair.address);
 
-  const balanceResult = await client.fetchBalance(addressList);
+    const balanceResult = await client.fetchBalance(addressList);
 
-  const balance: IFetchBalanceResponse = balanceResult.content.fetchBalanceResponse;
-  ```
-  
-  <details>
-  <summary>Inhalt der Antwort</summary>
-  <br/>
+    const balance: IFetchBalanceResponse = balanceResult.content.fetchBalanceResponse;
+    ```
 
-  ```json
-  {
-      "total": {
-          "tokens": 0,
-          "receipts": {
-              "default_drs_tx_hash": 1000,
-              "g7d07...6704b": 1000
-          }
-      },
-      "address_list": {
-          "a0b08...c02e5": [
-              {
-                  "out_point": {
-                      "t_hash": "g3b13...3353f",
-                      "n": 0
-                  },
-                  "value": {
-                      "Receipt": {
-                          "amount": 1000,
-                          "drs_tx_hash": "default_drs_tx_hash"
-                      }
-                  }
-              },
-              {
-                  "out_point": {
-                      "t_hash": "g7d07...6704b",
-                      "n": 0
-                  },
-                  "value": {
-                      "Receipt": {
-                          "amount": 1000,
-                          "drs_tx_hash": "g7d07...6704b"
-                      }
-                  }
-              },
-              {
-                  "out_point": {
-                      "t_hash": "ga070...4df62",
-                      "n": 0
-                  },
-                  "value": {
-                      "Token": 60000
-                  }
-              }
-          ]
-      }
-  }
-  ```
+    <details>
+    <summary>Inhalt der Antwort</summary>
+    <br/>
 
-  * `total`: Der Gesamtsaldo aller angegebenen Adressen
-  * `address_list`: Eine Liste von Adressen und ihren vorherigen Ausgabepunkten sowie den zugehörigen Assets
-  
-  </details>
+    ```json
+    {
+        "total": {
+            "tokens": 0,
+            "receipts": {
+                "default_drs_tx_hash": 1000,
+                "g7d07...6704b": 1000
+            }
+        },
+        "address_list": {
+            "a0b08...c02e5": [
+                {
+                    "out_point": {
+                        "t_hash": "g3b13...3353f",
+                        "n": 0
+                    },
+                    "value": {
+                        "Receipt": {
+                            "amount": 1000,
+                            "drs_tx_hash": "default_drs_tx_hash"
+                        }
+                    }
+                },
+                {
+                    "out_point": {
+                        "t_hash": "g7d07...6704b",
+                        "n": 0
+                    },
+                    "value": {
+                        "Receipt": {
+                            "amount": 1000,
+                            "drs_tx_hash": "g7d07...6704b"
+                        }
+                    }
+                },
+                {
+                    "out_point": {
+                        "t_hash": "ga070...4df62",
+                        "n": 0
+                    },
+                    "value": {
+                        "Token": 60000
+                    }
+                }
+            ]
+        }
+    }
+    ```
+
+    -   `total`: Der Gesamtsaldo aller angegebenen Adressen
+    -   `address_list`: Eine Liste von Adressen und ihren vorherigen Ausgabepunkten sowie den zugehörigen Assets
+
+    </details>
 
 ### Erstellen von Empfangsassets
 
-Empfangsassets sind die NFTs der Zenotta-Blockchain, erfordern jedoch im Gegensatz zu NFTs keine Smart Contracts oder komplexe Logik zum Erstellen.
+Empfangsassets sind die NFTs der ABlock-Blockchain, erfordern jedoch im Gegensatz zu NFTs keine Smart Contracts oder komplexe Logik zum Erstellen.
 
-* `createReceipts`
+-   `createReceipts`
 
-| **Argument**     | **Typ**              | **Standardwert** | **Erforderlich** | **Beschreibung**                                                                                                                                                                              |
-|------------------|----------------------|-----------------|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| address          | `IKeypairEncrypted`  |                 | ja               | Das Schlüsselpaar, um die Adresse zu generieren, an die die Empfangsassets gesendet werden, sobald sie generiert wurden                                                                     |
-| defaultDrsTxHash | `boolean`            | true            | nein             | Wenn dies auf `true` gesetzt ist, werden generische Empfangsassets erstellt. Wenn es auf `false` gesetzt ist, wird ein eindeutiger Genesis-Transaktionshash für diese Empfangsassets generiert. Verwenden Sie `false`, wenn Sie NFTs erstellen möchten |
-| amount           | `number`             | 1000            | nein             | Die Anzahl der zu erstellenden Empfangsassets                                                                                                                                                 |
-| metadata         | `string`             | null            | nein             | Optionale Metadaten, die Sie dem Asset anhängen können                                                                                                                                         |
+| **Argument**     | **Typ**             | **Standardwert** | **Erforderlich** | **Beschreibung**                                                                                                                                                                                                                                       |
+| ---------------- | ------------------- | ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| address          | `IKeypairEncrypted` |                  | ja               | Das Schlüsselpaar, um die Adresse zu generieren, an die die Empfangsassets gesendet werden, sobald sie generiert wurden                                                                                                                                |
+| defaultDrsTxHash | `boolean`           | true             | nein             | Wenn dies auf `true` gesetzt ist, werden generische Empfangsassets erstellt. Wenn es auf `false` gesetzt ist, wird ein eindeutiger Genesis-Transaktionshash für diese Empfangsassets generiert. Verwenden Sie `false`, wenn Sie NFTs erstellen möchten |
+| amount           | `number`            | 1000             | nein             | Die Anzahl der zu erstellenden Empfangsassets                                                                                                                                                                                                          |
+| metadata         | `string`            | null             | nein             | Optionale Metadaten, die Sie dem Asset anhängen können                                                                                                                                                                                                 |
 
-  ``` typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
-  
-  const client = new ZenottaInstance();
+```typescript
+import { ABlockWallet } from '@a-block/a-blockjs';
 
-  
-  // Initialisieren Sie den Client korrekt
-  ...
-  
-  // Adresse / Schlüsselpaar, um die `Receipt`-Vermögenswerte zuzuweisen
-  const keyPair = getAllKeypairs()[0];
-  
-  // Erstellen Sie `Receipt`-Vermögenswerte mit dem Standard-DRS-Identifier
-  const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
-  
-  <!-- --------------------------------- ODER ---------------------------------- -->
-  
-  // Erstellen Sie `Receipt`-Vermögenswerte mit einem eindeutigen DRS-Identifier
-  const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+const client = new ABlockWallet();
 
-  <!-- --------------------------------- VERSION MIT ALLEN ARGUMENTEN ---------------------------------- -->
 
-  const createReceiptResponse = await client.createReceipts(
-    keyPair,
-    false,
-    10000,
-    "{ 'imageURL': '...', 'description': '...' }"
-  ).content
-  .createReceiptResponse;
-  
-  ```
+// Initialisieren Sie den Client korrekt
+...
 
-  `Receipt`-Vermögenswerte können entweder dem Standard-Digital Rights Signature (DRS) oder einem eindeutigen DRS zugeordnet werden. Wenn Vermögenswerte unterschiedliche DRS-Identifier haben, sind sie **nicht** gegenseitig austauschbar.
-  
+// Adresse / Schlüsselpaar, um die `Receipt`-Vermögenswerte zuzuweisen
+const keyPair = getAllKeypairs()[0];
+
+// Erstellen Sie `Receipt`-Vermögenswerte mit dem Standard-DRS-Identifier
+const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
+
+<!-- --------------------------------- ODER ---------------------------------- -->
+
+// Erstellen Sie `Receipt`-Vermögenswerte mit einem eindeutigen DRS-Identifier
+const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+
+<!-- --------------------------------- VERSION MIT ALLEN ARGUMENTEN ---------------------------------- -->
+
+const createReceiptResponse = await client.createReceipts(
+  keyPair,
+  false,
+  10000,
+  "{ 'imageURL': '...', 'description': '...' }"
+).content
+.createReceiptResponse;
+
+```
+
+`Receipt`-Vermögenswerte können entweder dem Standard-Digital Rights Signature (DRS) oder einem eindeutigen DRS zugeordnet werden. Wenn Vermögenswerte unterschiedliche DRS-Identifier haben, sind sie **nicht** gegenseitig austauschbar.
+
   <details>
   <summary>Inhalt der Antwort</summary>
   <br/>
 
-  ```json
-  {
-      "asset": {
-          "asset": {
-              "Receipt": {
-                  "amount": 1000,
-                  "drs_tx_hash": "g7d07...6704b"
-              }
-          },
-          "metadata": null
-      },
-      "to_address": "a0b08...c02e5",
-      "tx_hash": "g7d07...6704b"
-  }
-  ```
+```json
+{
+    "asset": {
+        "asset": {
+            "Receipt": {
+                "amount": 1000,
+                "drs_tx_hash": "g7d07...6704b"
+            }
+        },
+        "metadata": null
+    },
+    "to_address": "a0b08...c02e5",
+    "tx_hash": "g7d07...6704b"
+}
+```
 
-  * `drs_tx_hash`: Der DRS-Identifier, der den erstellten `Receipt`-Vermögenswerten zugeordnet ist.
-  
+-   `drs_tx_hash`: Der DRS-Identifier, der den erstellten `Receipt`-Vermögenswerten zugeordnet ist.
+
 </details>
 
 ### Ausgeben von Tokens
 
-* `makeTokenPayment`
+-   `makeTokenPayment`
 
-| **Argument**   | **Typ**                 | **Standard** | **Erforderlich** | **Beschreibung**                                                                                                                 |
-|----------------|------------------------|--------------|------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| paymentAddress | `string`               |              | ja               | Adresse, an die die Token-Zahlung erfolgen soll                                                                                   |
-| paymentAmount  | `number`               |              | ja               | Anzahl der zu zahlenden Tokens                                                                                                   |
+| **Argument**   | **Typ**                | **Standard** | **Erforderlich** | **Beschreibung**                                                                                                                                   |
+| -------------- | ---------------------- | ------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| paymentAddress | `string`               |              | ja               | Adresse, an die die Token-Zahlung erfolgen soll                                                                                                    |
+| paymentAmount  | `number`               |              | ja               | Anzahl der zu zahlenden Tokens                                                                                                                     |
 | allKeypairs    | `IKeypairEncrypted []` |              | ja               | Schlüsselpaare, die zur Zahlung verwendet werden sollen. Diese Schlüsselpaare müssen einen Token-Guthaben haben, um die Transaktion zu verarbeiten |
-| excessKeypair  | `IKeypairEncrypted`    |              | ja               | Überschüssiges Schlüsselpaar, an das ein eventueller Restbetrag gesendet werden soll                                             |
+| excessKeypair  | `IKeypairEncrypted`    |              | ja               | Überschüssiges Schlüsselpaar, an das ein eventueller Restbetrag gesendet werden soll                                                               |
 
-  ```typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
+```typescript
+import { ABlockWallet } from '@a-block/a-blockjs';
 
-  const client = new ZenottaInstance();
+const client = new ABlockWallet();
 
-  // Initialisiere den Client korrekt
-  ...
+// Initialisiere den Client korrekt
+...
 
-  // Alle Schlüsselpaare
-  const allKeypairs = getAllKeypairs();
+// Alle Schlüsselpaare
+const allKeypairs = getAllKeypairs();
 
-  // Änderungs-/Überschuss-Schlüsselpaar
-  const changeKeyPair = allKeypairs[0];
+// Änderungs-/Überschuss-Schlüsselpaar
+const changeKeyPair = allKeypairs[0];
 
-  await makeTokenPayment(
-        "d0e72...85b46", // Zahlungsadresse
-        10,              // Zahlungsbetrag
-        allKeypairs,     // Alle Schlüsselpaare
-        changeKeyPair,   // Änderungsadresse
-    );
+await makeTokenPayment(
+      "d0e72...85b46", // Zahlungsadresse
+      10,              // Zahlungsbetrag
+      allKeypairs,     // Alle Schlüsselpaare
+      changeKeyPair,   // Änderungsadresse
+  );
 
-  ```
+```
 
-  ***NB***: *Die Methode `makeTokenPayment` überprüft nicht die Gültigkeit der Zahlungsadresse. Es ist daher wichtig, eine gültige Zahlungsadresse zu verwenden, bevor die Zahlung erfolgt.*
+**_NB_**: _Die Methode `makeTokenPayment` überprüft nicht die Gültigkeit der Zahlungsadresse. Es ist daher wichtig, eine gültige Zahlungsadresse zu verwenden, bevor die Zahlung erfolgt._
 
 ### Ausgeben von Quittungen
 
-* `makeReceiptPayment`
+-   `makeReceiptPayment`
 
-| **Argument**   | **Typ**                 | **Standard** | **Erforderlich** | **Beschreibung**                                                                                                                 |
-|----------------|------------------------|--------------|------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| paymentAddress | `string`               |              | ja               | Adresse, an die die Token-Zahlung erfolgen soll                                                                                   |
-| paymentAmount  | `number`               |              | ja               | Anzahl der zu zahlenden Tokens                                                                                                   |
-| drsTxHash      | `string`               |              | ja               | Der Genesis-Transaktionshash des Quittungs-Assets, das ausgegeben werden soll. Dies ist der eindeutige Bezeichner des Quittungs-Assets |
+| **Argument**   | **Typ**                | **Standard** | **Erforderlich** | **Beschreibung**                                                                                                                                   |
+| -------------- | ---------------------- | ------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| paymentAddress | `string`               |              | ja               | Adresse, an die die Token-Zahlung erfolgen soll                                                                                                    |
+| paymentAmount  | `number`               |              | ja               | Anzahl der zu zahlenden Tokens                                                                                                                     |
+| drsTxHash      | `string`               |              | ja               | Der Genesis-Transaktionshash des Quittungs-Assets, das ausgegeben werden soll. Dies ist der eindeutige Bezeichner des Quittungs-Assets             |
 | allKeypairs    | `IKeypairEncrypted []` |              | ja               | Schlüsselpaare, die zur Zahlung verwendet werden sollen. Diese Schlüsselpaare müssen einen Token-Guthaben haben, um die Transaktion zu verarbeiten |
-| excessKeypair  | `IKeypairEncrypted`    |              | ja               | Überschüssiges Schlüsselpaar, an das ein eventueller Restbetrag gesendet werden soll                                             |
+| excessKeypair  | `IKeypairEncrypted`    |              | ja               | Überschüssiges Schlüsselpaar, an das ein eventueller Restbetrag gesendet werden soll                                                               |
 
-``` typescript
-import { ZenottaInstance } from '@zenotta/zenotta-js';
+```typescript
+import { ABlockWallet } from '@a-block/a-blockjs';
 
-const client = new ZenottaInstance();
+const client = new ABlockWallet();
 
 // Initialisiere den Client korrekt
 ...
@@ -559,24 +565,24 @@ await makeReceiptPayment(
 
 ```
 
-***NB***: *Die Methode `makeReceiptPayment` ist in vielerlei Hinsicht ähnlich der Methode `makeTokenPayment`, unter anderem darin, dass diese Methode `Receipt`-Vermögenswerte in unidirektionaler Weise an eine Zahlungsadresse sendet und keine Vermögenswerte als Gegenleistung erwartet. Sie sollte nicht mit **quittungsbasierten** Zahlungen verwechselt werden!*
+**_NB_**: _Die Methode `makeReceiptPayment` ist in vielerlei Hinsicht ähnlich der Methode `makeTokenPayment`, unter anderem darin, dass diese Methode `Receipt`-Vermögenswerte in unidirektionaler Weise an eine Zahlungsadresse sendet und keine Vermögenswerte als Gegenleistung erwartet. Sie sollte nicht mit **quittungsbasierten** Zahlungen verwechselt werden!_
 
 ### Quittungsbasierte Zahlungen durchführen
 
-* `makeRbPayment`
+-   `makeRbPayment`
 
-| **Argument**   | **Typ**                        | **Standard** | **Erforderlich** | **Beschreibung**                              |
-|----------------|--------------------------------|--------------|------------------|-----------------------------------------------|
-| paymentAddress | `string`                       |              | ja               | Adresse, an die die Token-Zahlung erfolgen soll |
-| sendingAsset   | `IAssetReceipt \| IAssetToken` |              | ja               | Das zu zahlende Vermögen                       |
-| receivingAsset | `IAssetReceipt \| IAssetToken` |              | ja               | Das zu empfangende Vermögen                    |
-| allKeypairs    | `IKeypairEncrypted[]`          |              | ja               | Eine Liste aller vorhandenen Schlüsselpaare (verschlüsselt) |
+| **Argument**   | **Typ**                        | **Standard** | **Erforderlich** | **Beschreibung**                                                         |
+| -------------- | ------------------------------ | ------------ | ---------------- | ------------------------------------------------------------------------ |
+| paymentAddress | `string`                       |              | ja               | Adresse, an die die Token-Zahlung erfolgen soll                          |
+| sendingAsset   | `IAssetReceipt \| IAssetToken` |              | ja               | Das zu zahlende Vermögen                                                 |
+| receivingAsset | `IAssetReceipt \| IAssetToken` |              | ja               | Das zu empfangende Vermögen                                              |
+| allKeypairs    | `IKeypairEncrypted[]`          |              | ja               | Eine Liste aller vorhandenen Schlüsselpaare (verschlüsselt)              |
 | receiveAddress | `IKeypairEncrypted`            |              | ja               | Ein Schlüsselpaar, dem das "empfangende" Vermögen zugewiesen werden soll |
 
 ```typescript
-import { ZenottaInstance } from '@zenotta/zenotta-js';
+import { ABlockWallet } from '@a-block/a-blockjs';
 
-const client = new ZenottaInstance();
+const client = new ABlockWallet();
 
 // Initialisiere den Client korrekt
 ...
@@ -607,112 +613,112 @@ const zahlungsergebnis = await makeRbPayment(
 
   const { druid, encryptedTx } = zahlungsergebnis.content.makeRbPaymentResponse;
 
-  // Speichern der verschlüsselten Transaktion zusammen 
+  // Speichern der verschlüsselten Transaktion zusammen
   // mit dem entsprechenden DRUID-Wert
   saveEncryptedTx(druid, encryptedTx);
 
 ```
 
-***NB***: *Diese Art von Transaktion ist eine Dual-Double-Entry (DDE) Transaktion und erfordert, dass alle Parteien eine gemeinsame Zustimmung erreichen, bevor ihre jeweiligen Transaktionen zur Verarbeitung an den Berechnungsknoten gesendet werden.*
+**_NB_**: _Diese Art von Transaktion ist eine Dual-Double-Entry (DDE) Transaktion und erfordert, dass alle Parteien eine gemeinsame Zustimmung erreichen, bevor ihre jeweiligen Transaktionen zur Verarbeitung an den Berechnungsknoten gesendet werden._
 
 ### Abrufen ausstehender Zahlungen basierend auf Quittungen
 
-* `fetchPendingRbTransactions`
-  
-  ```typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
+-   `fetchPendingRbTransactions`
 
-  const client = new ZenottaInstance();
+    ```typescript
+    import { ABlockWallet } from '@a-block/a-blockjs';
 
-  // Initialisieren Sie den Client korrekt
-  ...
+    const client = new ABlockWallet();
 
-  // Alle Schlüsselpaare
-  const allKeypairs = getAllKeypairs();
+    // Initialisieren Sie den Client korrekt
+    ...
 
-  // Alle verschlüsselten Transaktionen
-  const allEncryptedTxs = getAllEncryptedTxs();
+    // Alle Schlüsselpaare
+    const allKeypairs = getAllKeypairs();
 
-  // FAusstehende Zahlungen basierend auf Quittungen abrufen
-  const pendingRbTransactionsResult = await client.fetchPendingRbTransactions(
-        allKeypairs,
-        allEncryptedTxs:,
-    )
+    // Alle verschlüsselten Transaktionen
+    const allEncryptedTxs = getAllEncryptedTxs();
 
-  const pendingRbTransactions: IResponseIntercom<IPendingRbTxDetails> = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    // FAusstehende Zahlungen basierend auf Quittungen abrufen
+    const pendingRbTransactionsResult = await client.fetchPendingRbTransactions(
+          allKeypairs,
+          allEncryptedTxs:,
+      )
 
-  ```
+    const pendingRbTransactions: IResponseIntercom<IPendingRbTxDetails> = pendingRbTransactionsResult.content.fetchPendingRbResponse;
 
-  <details>
-  <summary>Antwortinhalt</summary>
-  <br/>
-  
-  ```json
-  {
-      "2a646...f8b98": {
-          "timestamp": 1655117144145,
-          "value": {
-              "druid": "DRUID0xd0f407436f7f1fc494d7aee22939090e",
-              "senderExpectation": {
-                  "from": "",
-                  "to": "2a646...f8b98",
-                  "asset": {
-                      "Receipt": {
-                          "amount": 1,
-                          "drs_tx_hash": "default_drs_tx_hash"
-                      }
-                  }
-              },
-              "receiverExpectation": {
-                  "from": "295b2...8d4fa",
-                  "to": "18f70...caeda",
-                  "asset": {
-                      "Token": 25200
-                  }
-              },
-              "status": "pending",
-              "computeHost": "http://127.0.0.1:3003"
-          }
-      }
-  }
-  ```
-  
+    ```
+
+    <details>
+    <summary>Antwortinhalt</summary>
+    <br/>
+
+    ```json
+    {
+        "2a646...f8b98": {
+            "timestamp": 1655117144145,
+            "value": {
+                "druid": "DRUID0xd0f407436f7f1fc494d7aee22939090e",
+                "senderExpectation": {
+                    "from": "",
+                    "to": "2a646...f8b98",
+                    "asset": {
+                        "Receipt": {
+                            "amount": 1,
+                            "drs_tx_hash": "default_drs_tx_hash"
+                        }
+                    }
+                },
+                "receiverExpectation": {
+                    "from": "295b2...8d4fa",
+                    "to": "18f70...caeda",
+                    "asset": {
+                        "Token": 25200
+                    }
+                },
+                "status": "pending",
+                "computeHost": "http://127.0.0.1:3003"
+            }
+        }
+    }
+    ```
+
     Aus dieser Datenstruktur können wir spezifische Details über die Zahlung auf Basis des Belegs erhalten, wie beispielsweise die eindeutige Kennung `DRUID0xd0f407436f7f1fc494d7aee22939090e`, den Status der Transaktion `status`, den Zeitstempel der Transaktion `timestamp` sowie die Adresse, die den Zahlungsanforderung auf Basis des Belegs gestellt hat - `2a646...f8b98`.
-  
-  Wir können auch sehen, dass in dieser spezifischen Anfrage der Absender 1 `Receipt`-Asset im Austausch gegen 25200 `Token`-Assets erwartet.
-  </details>
-  
+
+    Wir können auch sehen, dass in dieser spezifischen Anfrage der Absender 1 `Receipt`-Asset im Austausch gegen 25200 `Token`-Assets erwartet.
+    </details>
+
 ### Reaktion auf ausstehende Zahlungen auf Basis des Belegs
 
-* `acceptRbTx` und `rejectRbTx`
+-   `acceptRbTx` und `rejectRbTx`
 
-  ```typescript
-  import { ZenottaInstance } from '@zenotta/zenotta-js';
-  
-  const client = new ZenottaInstance();
-  
-  // Initialisiere den Client korrekt
-  ...
-  
-  // Hole die ausstehenden Zahlungen basierend auf Belegen vom Netzwerk ab
-  ...
-  const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
-  
-  // Hole alle vorhandenen Schlüsselpaare
-  ...
-  const allKeypairs = getAllKeypairs();
-  
-  // Akzeptiere eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung
-  await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
-  
-  <!-- --------------------------------- OR ---------------------------------- -->
-  
-  // Lehne eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung ab
-  await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
-  ```
+    ```typescript
+    import { ABlockWallet } from '@a-block/a-blockjs';
 
-  Belegbasierte Transaktionen werden akzeptiert **oder** abgelehnt, indem ihre eindeutige DRUID-Kennung als Argument an die entsprechenden Methoden übergeben wird.
-  
+    const client = new ABlockWallet();
+
+    // Initialisiere den Client korrekt
+    ...
+
+    // Hole die ausstehenden Zahlungen basierend auf Belegen vom Netzwerk ab
+    ...
+    const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+
+    // Hole alle vorhandenen Schlüsselpaare
+    ...
+    const allKeypairs = getAllKeypairs();
+
+    // Akzeptiere eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung
+    await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+
+    <!-- --------------------------------- OR ---------------------------------- -->
+
+    // Lehne eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung ab
+    await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    ```
+
+    Belegbasierte Transaktionen werden akzeptiert **oder** abgelehnt, indem ihre eindeutige DRUID-Kennung als Argument an die entsprechenden Methoden übergeben wird.
+
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ## Client-Antworttyp
@@ -730,12 +736,12 @@ export type IClientResponse = {
 
 , wobei jedes Feld Folgendes repräsentiert:
 
-* `status`: Eine allgemeine Angabe über den Erfolg oder Misserfolg der verwendeten Methode
+-   `status`: Eine allgemeine Angabe über den Erfolg oder Misserfolg der verwendeten Methode
 
-* `id`: Ein eindeutiger Bezeichner, der für Netzwerkvorgänge verwendet wird
+-   `id`: Ein eindeutiger Bezeichner, der für Netzwerkvorgänge verwendet wird
 
-* `reason`: Detailliertes Feedback, das dem `status`-Feld entspricht
+-   `reason`: Detailliertes Feedback, das dem `status`-Feld entspricht
 
-* `content`: Datenstrukturen oder Werte, die vom Client-Objekt zurückgegeben werden
+-   `content`: Datenstrukturen oder Werte, die vom Client-Objekt zurückgegeben werden
 
 <p align="right">(<a href="#top">Zurück zum Anfang</a>)</p>

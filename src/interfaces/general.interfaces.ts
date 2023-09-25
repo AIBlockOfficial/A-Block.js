@@ -1,5 +1,5 @@
 /* -------------------------------------------------------------------------- */
-/*                       Interfaces for ZenottaInstance                       */
+/*                       Interfaces for ABlockWallet                       */
 /* -------------------------------------------------------------------------- */
 
 // Config needed for initialization

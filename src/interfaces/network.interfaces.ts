@@ -17,7 +17,7 @@ import {
     ITransaction,
 } from './general.interfaces';
 
-// Response structure returned from `ZenottaInstance` methods
+// Response structure returned from `ABlockWallet` methods
 export type IClientResponse = {
     id?: string;
     status: 'success' | 'error' | 'pending' | 'unknown';
@@ -189,7 +189,7 @@ export type ICreateTxPayload = {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                         Zenotta Intercom Interfaces                        */
+/*                         ABlock Intercom Interfaces                        */
 /* -------------------------------------------------------------------------- */
 
 export type IResponseIntercom<T> = {
@@ -233,7 +233,7 @@ export type IPendingRbTxDetails = {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                     ZenottaInstance Response Interfaces                    */
+/*                     ABlockWallet Response Interfaces                    */
 /* -------------------------------------------------------------------------- */
 // Make receipt-based payment response
 export type IMakeRbPaymentResponse = {

@@ -46,7 +46,7 @@ import {
 import { mgmtClient } from './mgmt.service';
 import { ADDRESS_VERSION } from '../mgmt/constants';
 
-export class ZenottaInstance {
+export class ABlockWallet {
     /* -------------------------------------------------------------------------- */
     /*                              Member Variables                              */
     /* -------------------------------------------------------------------------- */
@@ -77,7 +77,7 @@ export class ZenottaInstance {
      * @param {IClientConfig} config - Additional configuration parameters
      * @param initOffline - Optionally initialize the client without initializing network settings
      * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async initNew(config: IClientConfig, initOffline = false): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
@@ -112,7 +112,7 @@ export class ZenottaInstance {
      * @param initOffline - Optionally initialize the client without initializing network settings
      *
      * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async initFromMasterKey(
         config: IClientConfig,
@@ -149,7 +149,7 @@ export class ZenottaInstance {
      * @return {*}  {IClientResponse}
      * @param initOffline - Optionally initialize the client without initializing network settings
      *
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async initFromSeed(
         config: IClientConfig,
@@ -185,7 +185,7 @@ export class ZenottaInstance {
      *
      * @private
      * @param {IClientConfig} config - Additional configuration parameters
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
         this.intercomHost = config.intercomHost;
@@ -235,7 +235,7 @@ export class ZenottaInstance {
      *
      * @private
      * @param {IClientConfig} config - Additional configuration parameters
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async initNetworkForHost(
         host: string | undefined,
@@ -269,7 +269,7 @@ export class ZenottaInstance {
      * Get all the addresses present on the ZNP UTXO set
      *
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async getUtxoAddressList(): Promise<IClientResponse> {
         try {
@@ -310,7 +310,7 @@ export class ZenottaInstance {
      *
      * @param {string[]} addressList - A list of public addresses
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     async fetchBalance(addressList: string[]): Promise<IClientResponse> {
         try {
@@ -355,7 +355,7 @@ export class ZenottaInstance {
      *
      * @param {string[]} transactionHashes - An array of transaction hashes
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async fetchTransactions(transactionHashes: string[]): Promise<IClientResponse> {
         try {
@@ -399,7 +399,7 @@ export class ZenottaInstance {
      *
      * @param {string[]} druids - A list of DRUID values
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
         try {
@@ -446,7 +446,7 @@ export class ZenottaInstance {
      * @param {boolean} [defaultDrsTxHash=true] - Whether to create `Receipt` assets that contain the default DRS identifier
      * @param {number} [amount=RECEIPT_DEFAULT] - The amount of `Receipt` assets to create
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async createReceipts(
         address: IKeypairEncrypted,
@@ -505,7 +505,7 @@ export class ZenottaInstance {
      * Get the notary service's burn address
      *
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     async getNotaryBurnAddress(): Promise<IClientResponse> {
         try {
@@ -546,7 +546,7 @@ export class ZenottaInstance {
      * @param {string} txHash - Transaction hash of the "burn" transaction
      * @param {IGenericKeyPair<string>} signatures
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     async getNotarySignature(
         ethAddress: string,
@@ -595,7 +595,7 @@ export class ZenottaInstance {
      * @param {IKeypairEncrypted[]} keyPairsToSignWith - Key-pairs to use in the signing process
      * @param {string} message - The message to sign
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     async signMessage(
         keyPairsToSignWith: IKeypairEncrypted[],
@@ -628,7 +628,7 @@ export class ZenottaInstance {
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @param {IKeypairEncrypted} excessKeypair - A key-pair provided to assign excess `Token` assets to (encrypted)
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     async makeTokenPayment(
         paymentAddress: string,
@@ -649,7 +649,7 @@ export class ZenottaInstance {
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @param {IKeypairEncrypted} excessKeypair - Key-pair (encrypted) to assign excess funds to
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     async makeReceiptPayment(
         paymentAddress: string,
@@ -674,7 +674,7 @@ export class ZenottaInstance {
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @param {IKeypairEncrypted} receiveAddress - A key-pair to assign the "receiving" asset to
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async makeRbPayment(
         paymentAddress: string,
@@ -788,7 +788,7 @@ export class ZenottaInstance {
      * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async acceptRbTx(
         druid: string,
@@ -805,7 +805,7 @@ export class ZenottaInstance {
      * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
 
     public async rejectRbTx(
@@ -817,12 +817,12 @@ export class ZenottaInstance {
     }
 
     /**
-     * Fetch pending receipt-based payments from the Zenotta Intercom server
+     * Fetch pending receipt-based payments from the ABlock Intercom server
      *
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @param {ICreateTransactionEncrypted[]} allEncryptedTxs - A list of all existing saved transactions (encrypted)
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     public async fetchPendingRbTransactions(
         allKeypairs: IKeypairEncrypted[],
@@ -982,7 +982,7 @@ export class ZenottaInstance {
      * @param {string[]} addressList - A list of addresses to regenerate
      * @param {number} [seedRegenThreshold=SEED_REGEN_THRES] - Regeneration threshold
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     async regenAddresses(
         seedPhrase: string,
@@ -1021,7 +1021,7 @@ export class ZenottaInstance {
      *
      * @param {string[]} allAddresses - A list of all public addresses (used to avoid re-generating the same key-pair)
      * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     getNewKeypair(
         allAddresses: string[],
@@ -1050,7 +1050,7 @@ export class ZenottaInstance {
      * Get the existing seed phrase, or generate a new one
      *
      * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     getSeedPhrase(): IClientResponse {
         try {
@@ -1074,7 +1074,7 @@ export class ZenottaInstance {
      * Get the existing master key in an encrypted format
      *
      * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     getMasterKey(): IClientResponse {
         try {
@@ -1099,7 +1099,7 @@ export class ZenottaInstance {
      *
      * @param {IKeypairEncrypted} encryptedKeypair - Encrypted key-pair to decrypt
      * @return {*}  {IClientResponse}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     decryptKeypair(encryptedKeypair: IKeypairEncrypted): IClientResponse {
         try {
@@ -1135,7 +1135,7 @@ export class ZenottaInstance {
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @param {IKeypairEncrypted} excessKeypair - A key-pair (encrypted) to assign excess funds to
      * @return {*}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     private async makePayment(
         paymentAddress: string,
@@ -1220,7 +1220,7 @@ export class ZenottaInstance {
      * @param {('accepted' | 'rejected')} status - Status to se the payment to
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     private async handleRbTxResponse(
         druid: string,
@@ -1338,7 +1338,7 @@ export class ZenottaInstance {
      * @private
      * @param {(string | undefined)} host - Host address to retrieve proof-of-work data from
      * @return {*}  {Promise<IClientResponse>}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     private async getDebugData(host: string | undefined): Promise<IClientResponse> {
         try {
@@ -1387,7 +1387,7 @@ export class ZenottaInstance {
      *             'x-nonce': number;
      *         };
      *     }}
-     * @memberof ZenottaInstance
+     * @memberof ABlockWallet
      */
     private getRequestIdAndNonceHeadersForRoute(
         routesPow: Map<string, number> | undefined,

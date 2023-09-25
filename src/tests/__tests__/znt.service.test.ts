@@ -1,10 +1,10 @@
 import { SEED } from '../constants';
-import { ZenottaInstance } from '../../services/znt.service';
+import { ABlockWallet } from '../../services/znt.service';
 
-let znpInstance = new ZenottaInstance();
+let znpInstance = new ABlockWallet();
 
 beforeEach(() => {
-    znpInstance = new ZenottaInstance();
+    znpInstance = new ABlockWallet();
 });
 
 test('handles key-pair re-generation from wallet seed phrase', async () => {
