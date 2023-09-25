@@ -5,13 +5,13 @@
 
 <div align="center">
   <a>
-    <img src="https://github.com/ABlockOfficial/ABlockJS/blob/develop/assets/hero.svg" alt="Logo" style="width: 350px">
+    <img src="https://github.com/ABlockOfficial/A-Block.js/blob/main/assets/hero.svg" alt="Logo" style="width: 350px">
   </a>
 
   <h3 align="center">A-Block.js</h3>
 
   <div>
-  <img src="https://img.shields.io/github/actions/workflow/status/ABlockOfficial/ABlockJS/.github/workflows/codeql-analysis.yml?branch=main" alt="Pipeline Status" style="display:inline-block"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/ABlockOfficial/A-Block.js/.github/workflows/codeql-analysis.yml?branch=main" alt="Pipeline Status" style="display:inline-block"/>
   <img src="https://img.shields.io/npm/v/@a-block/a-blockjs" alt="Pipeline Status" style="display:inline-block"/>
   </div>
 
@@ -24,7 +24,7 @@
     <br />
   </p>
 
-[Français](https://github.com/ABlockOfficial/ABlockJS/blob/main/README-FR.md) | [Deutsch](https://github.com/ABlockOfficial/ABlockJS/blob/main/README-DE.md)
+[Français](https://github.com/ABlockOfficial/A-Block.js/blob/main/README-FR.md) | [Deutsch](https://github.com/ABlockOfficial/A-Block.js/blob/main/README-DE.md)
 
 </div>
 

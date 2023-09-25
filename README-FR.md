@@ -5,7 +5,7 @@
 
 <div align="center">
   <a>
-    <img src="https://github.com/ABlockOfficial/ABlockJS/blob/develop/assets/hero.svg" alt="Logo" style="width: 350px">
+    <img src="https://github.com/ABlockOfficial/A-Block.js/blob/develop/assets/hero.svg" alt="Logo" style="width: 350px">
   </a>
 
   <h3 align="center">A-Block.js</h3>
