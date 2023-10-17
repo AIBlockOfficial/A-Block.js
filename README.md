@@ -16,7 +16,7 @@
   </div>
 
   <p align="center">
-    A JavaScript module to help interact with the A-Block blockchain network.
+    JavaScript/TypeScript API wrapper to help interact with the A-Block blockchain network.
     <br />
     <br />
     <a href="https://a-block.io"><strong>Official documentation »</strong></a>
