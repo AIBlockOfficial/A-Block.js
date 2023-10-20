@@ -118,9 +118,9 @@ export type INotarySignatureResponse = {
     amount: string;
     // Burn transaction ID
     id: string;
-    // First ZNT address
+    // First ABlock address
     from: string;
-    // Number of ZNT addresses that have participated
+    // Number of ABlock addresses that have participated
     cnt: number;
     // To Ethereum address
     to: string;

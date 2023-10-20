@@ -355,7 +355,7 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
     }
 });
 
-// NOTE: This test corresponds with `test_construct_valid_tx_ins_address` in NAOM
+// NOTE: This test corresponds with `test_construct_valid_tx_ins_address` in Chain
 test('create TxIns address used as `from` value in DdeValues', () => {
     const keyPairMap = new Map<string, IKeypair>();
     for (const addr of Object.keys(ADDRESS_LIST_TEST)) {
@@ -380,7 +380,7 @@ test('create TxIns address used as `from` value in DdeValues', () => {
     }
 });
 
-//NOTE: This test corresponds with `test_construct_valid_tx_in_signable_asset_hash` in NAOM
+//NOTE: This test corresponds with `test_construct_valid_tx_in_signable_asset_hash` in Chain
 //TODO: Add test for `DataAsset` variant
 test('creates a valid signable asset hash value', () => {
     const signableTxInAssetHashes: string[] = [
