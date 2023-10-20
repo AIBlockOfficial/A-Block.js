@@ -7,7 +7,7 @@ import { BAL_LIMIT } from '../mgmt/constants';
 import { IClientResponse, ICustomKeyPair, IErrorInternal, IResult } from '../interfaces';
 
 /**
- * Cast `status` received from ZNP to lowercase string variant
+ * Cast `status` received from ABlock network to lowercase string variant
  *
  * TODO: There's probably already a built-in function for this?
  *
@@ -113,7 +113,7 @@ export function truncateByBytesUTF8(chars: string, n: number): string {
         try {
             return fromBytesUTF8(bytes);
             // eslint-disable-next-line no-empty
-        } catch (e) {}
+        } catch (e) { }
         bytes = bytes.substring(0, bytes.length - 1);
     }
 }

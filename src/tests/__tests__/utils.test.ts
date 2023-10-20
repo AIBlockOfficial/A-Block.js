@@ -320,7 +320,7 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_1',
                 senderExpectation: initIDruidExpectation(),
                 receiverExpectation: initIDruidExpectation(),
-                computeHost: 'computeHost_1',
+                mempoolHost: 'mempoolHost_1',
                 status: 'pending',
             },
         },
@@ -330,7 +330,7 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_2',
                 senderExpectation: initIDruidExpectation(),
                 receiverExpectation: initIDruidExpectation(),
-                computeHost: 'computeHost_2',
+                mempoolHost: 'mempoolHost_2',
                 status: 'accepted',
             },
         },
@@ -340,7 +340,7 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_3',
                 senderExpectation: initIDruidExpectation(),
                 receiverExpectation: initIDruidExpectation(),
-                computeHost: 'computeHost_2', // Same compute host as data from "sender_address_2"
+                mempoolHost: 'mempoolHost_2', // Same mempool host as data from "sender_address_2"
                 status: 'accepted',
             },
         },
@@ -368,7 +368,7 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_1', // Filtered out intercom data with unique DRUID value
                 senderExpectation: { from: '', to: '', asset: { Token: 0 } },
                 receiverExpectation: { from: '', to: '', asset: { Token: 0 } },
-                computeHost: 'computeHost_1',
+                mempoolHost: 'mempoolHost_1',
                 status: 'pending',
             },
         },
@@ -393,7 +393,7 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_2', // Filtered out intercom data with unique DRUID value
                 senderExpectation: { from: '', to: '', asset: { Token: 0 } },
                 receiverExpectation: { from: '', to: '', asset: { Token: 0 } },
-                computeHost: 'computeHost_2',
+                mempoolHost: 'mempoolHost_2',
                 status: 'accepted',
             },
         },
@@ -412,7 +412,7 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_2',
                 senderExpectation: { from: '', to: '', asset: { Token: 0 } },
                 receiverExpectation: { from: '', to: '', asset: { Token: 0 } },
-                computeHost: 'computeHost_2',
+                mempoolHost: 'mempoolHost_2',
                 status: 'accepted', // Filtered out intercom data with status set to 'accepted'
             },
         },
@@ -422,27 +422,27 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_3',
                 senderExpectation: { from: '', to: '', asset: { Token: 0 } },
                 receiverExpectation: { from: '', to: '', asset: { Token: 0 } },
-                computeHost: 'computeHost_2',
+                mempoolHost: 'mempoolHost_2',
                 status: 'accepted', // Filtered out intercom data with status set to 'accepted'
             },
         },
     });
 
-    const filterForStatusAndComputeHost = throwIfErr(
+    const filterForStatusAndMempoolHost = throwIfErr(
         filterIntercomDataForPredicates(intercomData, {
             status: 'accepted',
-            computeHost: 'computeHost_2',
+            mempoolHost: 'mempoolHost_2',
         }),
     );
 
-    expect(filterForStatusAndComputeHost).toStrictEqual({
+    expect(filterForStatusAndMempoolHost).toStrictEqual({
         sender_address_2: {
             timestamp: 0,
             value: {
                 druid: 'unique_druid_value_2',
                 senderExpectation: { from: '', to: '', asset: { Token: 0 } },
                 receiverExpectation: { from: '', to: '', asset: { Token: 0 } },
-                computeHost: 'computeHost_2',
+                mempoolHost: 'mempoolHost_2',
                 status: 'accepted',
             },
         },
@@ -452,7 +452,7 @@ test('filter intercom data for predicate', () => {
                 druid: 'unique_druid_value_3',
                 senderExpectation: { from: '', to: '', asset: { Token: 0 } },
                 receiverExpectation: { from: '', to: '', asset: { Token: 0 } },
-                computeHost: 'computeHost_2',
+                mempoolHost: 'mempoolHost_2',
                 status: 'accepted',
             },
         },

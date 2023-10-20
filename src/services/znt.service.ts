@@ -51,11 +51,11 @@ export class ABlockWallet {
     /*                              Member Variables                              */
     /* -------------------------------------------------------------------------- */
     private intercomHost: string | undefined;
-    private computeHost: string | undefined;
+    private mempoolHost: string | undefined;
     private storageHost: string | undefined;
     private notaryHost: string | undefined;
     private keyMgmt: mgmtClient | undefined;
-    private computeRoutesPoW: Map<string, number> | undefined;
+    private mempoolRoutesPoW: Map<string, number> | undefined;
     private storageRoutesPoW: Map<string, number> | undefined;
 
     /* -------------------------------------------------------------------------- */
@@ -63,11 +63,11 @@ export class ABlockWallet {
     /* -------------------------------------------------------------------------- */
     constructor() {
         this.intercomHost = undefined;
-        this.computeHost = undefined;
+        this.mempoolHost = undefined;
         this.storageHost = undefined;
         this.notaryHost = undefined;
         this.keyMgmt = undefined;
-        this.computeRoutesPoW = undefined;
+        this.mempoolRoutesPoW = undefined;
         this.storageRoutesPoW = undefined;
     }
 
@@ -181,7 +181,7 @@ export class ABlockWallet {
     }
 
     /**
-     * Common network initialization (retrieval of PoW list for compute as well as storage)
+     * Common network initialization (retrieval of PoW list for mempool as well as storage)
      *
      * @private
      * @param {IClientConfig} config - Additional configuration parameters
@@ -189,19 +189,19 @@ export class ABlockWallet {
      */
     public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
         this.intercomHost = config.intercomHost;
-        this.computeHost = config.computeHost;
+        this.mempoolHost = config.mempoolHost;
         this.storageHost = config.storageHost;
         this.notaryHost = config.notaryHost;
         // Set routes proof-of-work requirements
 
-        // Initialize routes proof-of-work for compute host
-        if (this.computeHost !== undefined) {
-            this.computeRoutesPoW = new Map();
-            const initComputeResult = await this.initNetworkForHost(
-                this.computeHost,
-                this.computeRoutesPoW,
+        // Initialize routes proof-of-work for mempool host
+        if (this.mempoolHost !== undefined) {
+            this.mempoolRoutesPoW = new Map();
+            const initMempoolResult = await this.initNetworkForHost(
+                this.mempoolHost,
+                this.mempoolRoutesPoW,
             );
-            if (initComputeResult.status == 'error') return initComputeResult;
+            if (initMempoolResult.status == 'error') return initMempoolResult;
         }
 
         // Initialize routes proof-of-work for storage host
@@ -216,7 +216,7 @@ export class ABlockWallet {
 
         if (
             this.storageHost === undefined &&
-            this.computeHost === undefined &&
+            this.mempoolHost === undefined &&
             this.notaryHost === undefined &&
             this.intercomHost === undefined
         )
@@ -266,21 +266,21 @@ export class ABlockWallet {
     /**
      * @deprecated due to instability.
      *
-     * Get all the addresses present on the ZNP UTXO set
+     * Get all the addresses present on the ABlock network UTXO set
      *
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
     public async getUtxoAddressList(): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.computeRoutesPoW,
+                this.mempoolRoutesPoW,
                 IAPIRoute.GetUtxoAddressList,
             );
             return await axios
-                .get<INetworkResponse>(`${this.computeHost}${IAPIRoute.GetUtxoAddressList}`, {
+                .get<INetworkResponse>(`${this.mempoolHost}${IAPIRoute.GetUtxoAddressList}`, {
                     ...headers,
                     validateStatus: () => true,
                 })
@@ -314,18 +314,18 @@ export class ABlockWallet {
      */
     async fetchBalance(addressList: string[]): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const fetchBalanceBody = {
                 address_list: addressList,
             };
             const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.computeRoutesPoW,
+                this.mempoolRoutesPoW,
                 IAPIRoute.FetchBalance,
             );
             return await axios
                 .post<INetworkResponse>(
-                    `${this.computeHost}${IAPIRoute.FetchBalance}`,
+                    `${this.mempoolHost}${IAPIRoute.FetchBalance}`,
                     fetchBalanceBody,
                     { ...headers, validateStatus: () => true },
                 )
@@ -362,7 +362,7 @@ export class ABlockWallet {
             if (!this.storageHost || !this.keyMgmt || !this.storageRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.computeRoutesPoW,
+                this.mempoolRoutesPoW,
                 IAPIRoute.FetchBalance,
             );
             return await axios
@@ -393,7 +393,7 @@ export class ABlockWallet {
     }
 
     /**
-     * Fetch pending DDE transaction from the compute node
+     * Fetch pending DDE transaction from the mempool node
      *
      * @deprecated due to security concerns.
      *
@@ -403,18 +403,18 @@ export class ABlockWallet {
      */
     public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const fetchPendingBody = {
                 druid_list: druids,
             };
             const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.computeRoutesPoW,
+                this.mempoolRoutesPoW,
                 IAPIRoute.FetchPending,
             );
             return await axios
                 .post<INetworkResponse>(
-                    `${this.computeHost}${IAPIRoute.FetchPending}`,
+                    `${this.mempoolHost}${IAPIRoute.FetchPending}`,
                     fetchPendingBody,
                     { ...headers, validateStatus: () => true },
                 )
@@ -455,7 +455,7 @@ export class ABlockWallet {
         metadata: string | null = null,
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const keyPair = throwIfErr(this.keyMgmt.decryptKeypair(address));
             // Create receipt-creation transaction
@@ -471,12 +471,12 @@ export class ABlockWallet {
             );
             // Generate needed headers
             const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.computeRoutesPoW,
+                this.mempoolRoutesPoW,
                 IAPIRoute.CreateReceiptAsset,
             );
             return await axios
                 .post<INetworkResponse>(
-                    `${this.computeHost}${IAPIRoute.CreateReceiptAsset}`,
+                    `${this.mempoolHost}${IAPIRoute.CreateReceiptAsset}`,
                     createReceiptBody,
                     { ...headers, validateStatus: () => true },
                 )
@@ -684,7 +684,7 @@ export class ABlockWallet {
         receiveAddress: IKeypairEncrypted,
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.intercomHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const senderKeypair = throwIfErr(this.keyMgmt.decryptKeypair(receiveAddress));
             const [allAddresses, keyPairMap] = throwIfErr(
@@ -742,7 +742,7 @@ export class ABlockWallet {
                 senderExpectation,
                 receiverExpectation,
                 status: 'pending', // Status of the DDE transaction
-                computeHost: this.computeHost,
+                mempoolHost: this.mempoolHost,
             };
             const sendBody = [
                 generateIntercomSetBody(
@@ -829,7 +829,7 @@ export class ABlockWallet {
         allEncryptedTxs: ICreateTransactionEncrypted[],
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.intercomHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
 
             // Generate a key-pair map
@@ -878,7 +878,7 @@ export class ABlockWallet {
                 ),
             ];
 
-            // We have accepted receipt-based payments to send to compute
+            // We have accepted receipt-based payments to send to mempool
             if (Object.entries(acceptedRbTxs).length > 0) {
                 const transactionsToSend: ICreateTransaction[] = [];
                 for (const acceptedTx of Object.values(acceptedRbTxs)) {
@@ -897,7 +897,7 @@ export class ABlockWallet {
                     decryptedTransaction.druid_info.expectations[0] =
                         acceptedTx.value.senderExpectation; /* There should be only one expectation in a receipt-based payment */
 
-                    // Add to list of transactions to send to compute node
+                    // Add to list of transactions to send to mempool node
                     transactionsToSend.push(decryptedTransaction);
                     const keyPair = keyPairMap.get(acceptedTx.value.senderExpectation.to);
                     if (!keyPair) throw new Error(IErrorInternal.UnableToGetKeypair);
@@ -913,15 +913,15 @@ export class ABlockWallet {
 
                 // Generate the required headers
                 const headers = this.getRequestIdAndNonceHeadersForRoute(
-                    this.computeRoutesPoW,
+                    this.mempoolRoutesPoW,
                     IAPIRoute.CreateTransactions,
                 );
 
-                // Send transactions to compute for processing
+                // Send transactions to mempool for processing
                 await axios
                     .post<INetworkResponse>(
-                        // NB: Make sure we use the same compute host when initializing all receipt-based payments
-                        `${this.computeHost}${IAPIRoute.CreateTransactions}`,
+                        // NB: Make sure we use the same mempool host when initializing all receipt-based payments
+                        `${this.mempoolHost}${IAPIRoute.CreateTransactions}`,
                         transactionsToSend,
                         { ...headers, validateStatus: () => true },
                     )
@@ -1144,7 +1144,7 @@ export class ABlockWallet {
         excessKeypair: IKeypairEncrypted,
     ) {
         try {
-            if (!this.computeHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
@@ -1173,14 +1173,14 @@ export class ABlockWallet {
 
             // Generate the needed headers
             const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.computeRoutesPoW,
+                this.mempoolRoutesPoW,
                 IAPIRoute.CreateTransactions,
             );
 
-            // Send transaction to compute for processing
+            // Send transaction to mempool for processing
             return await axios
                 .post<INetworkResponse>(
-                    `${this.computeHost}${IAPIRoute.CreateTransactions}`,
+                    `${this.mempoolHost}${IAPIRoute.CreateTransactions}`,
                     [paymentBody.createTx],
                     { ...headers, validateStatus: () => true },
                 )
@@ -1229,7 +1229,7 @@ export class ABlockWallet {
         allKeypairs: IKeypairEncrypted[],
     ): Promise<IClientResponse> {
         try {
-            if (!this.computeHost || !this.intercomHost || !this.keyMgmt || !this.computeRoutesPoW)
+            if (!this.mempoolHost || !this.intercomHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
@@ -1258,7 +1258,7 @@ export class ABlockWallet {
             // Set the status of the pending request
             txInfo.status = status;
 
-            // Handle case for 'accepted'; create and send transaction to compute node
+            // Handle case for 'accepted'; create and send transaction to mempool node
             if (status === 'accepted') {
                 const sendRbTxHalf = throwIfErr(
                     // Sender expectation and receiver expectation context is switched
@@ -1280,15 +1280,15 @@ export class ABlockWallet {
 
                 // Generate the required headers
                 const headers = this.getRequestIdAndNonceHeadersForRoute(
-                    this.computeRoutesPoW,
+                    this.mempoolRoutesPoW,
                     IAPIRoute.CreateTransactions,
                 );
 
-                // Send transaction to compute to be added to the current DRUID pool
+                // Send transaction to mempool to be added to the current DRUID pool
                 await axios
                     .post<INetworkResponse>(
-                        // We send this transaction to the compute node specified by the sending party
-                        `${txInfo.computeHost}${IAPIRoute.CreateTransactions}`,
+                        // We send this transaction to the mempool node specified by the sending party
+                        `${txInfo.mempoolHost}${IAPIRoute.CreateTransactions}`,
                         [sendRbTxHalf.createTx],
                         { ...headers, validateStatus: () => true },
                     )
@@ -1344,7 +1344,7 @@ export class ABlockWallet {
         try {
             if (!host) throw new Error(IErrorInternal.ClientNotInitialized);
             const routesPow =
-                host === this.computeHost ? this.computeRoutesPoW : this.storageRoutesPoW;
+                host === this.mempoolHost ? this.mempoolRoutesPoW : this.storageRoutesPoW;
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 routesPow,
                 IAPIRoute.DebugData,

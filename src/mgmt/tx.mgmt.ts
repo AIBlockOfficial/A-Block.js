@@ -28,7 +28,7 @@ import {
     lhsAssetIsLessThanRhsAsset,
     subRhsAssetFromLhsAsset,
 } from '../utils';
-import { ZNP_NETWORK_VERSION } from './constants';
+import { ABLOCK_NETWORK_VERSION } from './constants';
 import { getAddressVersion } from './key.mgmt';
 import { constructSignature, constructTxInSignableData } from './script.mgmt';
 
@@ -62,19 +62,19 @@ export function getInputsForTx(
     const enoughRunningTotal = isOfTypeAssetToken
         ? paymentAsset.Token <= fetchBalanceResponse.total.tokens
         : paymentAsset.Receipt.amount <=
-          fetchBalanceResponse.total.receipts[paymentAsset.Receipt.drs_tx_hash];
+        fetchBalanceResponse.total.receipts[paymentAsset.Receipt.drs_tx_hash];
 
     if (enoughRunningTotal) {
         // Initialize the total amount gathered; apply DRS transaction hash where required
         let totalAmountGathered: IAssetToken | IAssetReceipt = isOfTypeAssetToken
             ? initIAssetToken()
             : initIAssetReceipt({
-                  Receipt: {
-                      amount: 0,
-                      drs_tx_hash: paymentAsset.Receipt.drs_tx_hash,
-                      metadata: paymentAsset.Receipt.metadata,
-                  },
-              });
+                Receipt: {
+                    amount: 0,
+                    drs_tx_hash: paymentAsset.Receipt.drs_tx_hash,
+                    metadata: paymentAsset.Receipt.metadata,
+                },
+            });
         // A list of all addresses used to gather inputs
         const usedAddresses: string[] = [];
         // A list of all addresses which no longer contain usable assets after this transaction is created
@@ -172,7 +172,7 @@ export function getInputsForTx(
 }
 
 /**
- * Base function used to create a transaction suitable for processing by a compute node
+ * Base function used to create a transaction suitable for processing by a mempool node
  *
  * @export
  * @param {string} paymentAddress - Address to make the payment to
@@ -227,7 +227,7 @@ export function createTx(
     const createTransaction: ICreateTransaction = {
         inputs: inputs,
         outputs: outputs,
-        version: ZNP_NETWORK_VERSION /* Always keep up to date with ZNP! */,
+        version: ABLOCK_NETWORK_VERSION /* Always keep up to date with ABlock network version! */,
         druid_info: druidInfo,
     };
 
