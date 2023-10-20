@@ -28,7 +28,7 @@ import {
     lhsAssetIsLessThanRhsAsset,
     subRhsAssetFromLhsAsset,
 } from '../utils';
-import { ZNP_NETWORK_VERSION } from './constants';
+import { ABLOCK_NETWORK_VERSION } from './constants';
 import { getAddressVersion } from './key.mgmt';
 import { constructSignature, constructTxInSignableData } from './script.mgmt';
 
@@ -227,7 +227,7 @@ export function createTx(
     const createTransaction: ICreateTransaction = {
         inputs: inputs,
         outputs: outputs,
-        version: ZNP_NETWORK_VERSION /* Always keep up to date with ZNP! */,
+        version: ABLOCK_NETWORK_VERSION /* Always keep up to date with ABlock network version! */,
         druid_info: druidInfo,
     };
 

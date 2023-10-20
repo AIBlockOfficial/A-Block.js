@@ -7,11 +7,11 @@ import { Result } from 'neverthrow';
 export enum IErrorAll {
     IErrorInternal,
     IErrorNotary,
-    IErrorZNP,
+    IErrorNetwork,
 }
 
-// ZNP Error Types
-export enum IErrorZNP {
+// Network Error Types
+export enum IErrorNetwork {
     InternalServerError = 'Internal Server Error',
     InvalidPassphrase = 'Invalid passphrase',
     BlankPassphrase = 'New passphrase cannot be blank',
@@ -40,11 +40,11 @@ export enum IErrorNotary {
     InternalServerError = 'Internal Server Error',
     NotaryNotAuthorized = 'Notary not authorized for operation',
     AddressConstructionFailed = 'Address construction from public keys failed',
-    TransactionOutputsHaveNoZeno = 'Transaction outputs do not contain Zeno tokens',
+    TransactionOutputsHaveNoTokens = 'Transaction outputs do not contain tokens',
     InputsDoNotBelongToPk = 'Previous inputs do not belong to the provided public keys',
     InvalidSignatures = 'Invalid signatures provided',
-    InvalidBurnTransaction = 'Transaction outputs to burn address do not contain Zeno tokens',
-    TransactionOutputsEmpty = 'Transaction outputs contain no Zeno tokens assigned to provided burn address',
+    InvalidBurnTransaction = 'Transaction outputs to burn address do not contain tokens',
+    TransactionOutputsEmpty = 'Transaction outputs contain no tokens assigned to provided burn address',
     KeypairUndefined = 'Key-pair undefined',
 }
 

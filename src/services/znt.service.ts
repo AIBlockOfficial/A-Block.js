@@ -266,7 +266,7 @@ export class ABlockWallet {
     /**
      * @deprecated due to instability.
      *
-     * Get all the addresses present on the ZNP UTXO set
+     * Get all the addresses present on the ABlock network UTXO set
      *
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet

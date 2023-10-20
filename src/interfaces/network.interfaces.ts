@@ -55,7 +55,7 @@ export type IApiContentType = {
 };
 
 export enum IAPIRoute {
-    /* ------------------------------- MEMPOOL ZNP Routes ------------------------------- */
+    /* ------------------------------- MEMPOOL Network Routes ------------------------------- */
     DebugData = '/debug_data',
     FetchBalance = '/fetch_balance',
     SignableTransactions = '/signable_transactions' /* NOTE: No implementation */,
@@ -65,7 +65,7 @@ export enum IAPIRoute {
     GetUtxoAddressList = '/utxo_addresses',
     CreateReceiptAsset = '/create_receipt_asset',
     FetchPending = '/fetch_pending' /* NOTE: Currently not available */,
-    /* --------------------------- Storage ZNP Routes --------------------------- */
+    /* --------------------------- Storage Network Routes --------------------------- */
     BlockchainEntry = '/blockchain_entry',
     Transactions = '/transactions_by_key',
     /* ----------------------------- Intercom Routes ---------------------------- */
@@ -78,7 +78,7 @@ export enum IAPIRoute {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                               ZNP Interfaces                               */
+/*                               Network Interfaces                               */
 /* -------------------------------------------------------------------------- */
 
 /* --------------------------- Response Structures -------------------------- */
