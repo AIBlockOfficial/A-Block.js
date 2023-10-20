@@ -91,7 +91,7 @@ export function initIPendingRbTxDetails(
         senderExpectation: initIDruidExpectation(),
         receiverExpectation: initIDruidExpectation(),
         status: 'pending',
-        computeHost: '',
+        mempoolHost: '',
     };
 
     return {

@@ -19,7 +19,7 @@ export enum IErrorZNP {
     CannotParseAddress = 'Cannot parse address',
     CannotAccessWallet = 'Cannot access wallet',
     CannotAccessUserNode = 'Cannot access user node',
-    CannotAccessComputeNode = 'Cannot access compute node',
+    CannotAccessMempoolNode = 'Cannot access mempool node',
     CannotAccessPeerUserNode = 'Cannot access peer user node',
     CannotSaveAddressesToWallet = 'Cannot save address to wallet',
     CannotFetchBalance = 'Cannot fetch balance',

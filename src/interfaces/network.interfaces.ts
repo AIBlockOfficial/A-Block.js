@@ -40,7 +40,7 @@ export type IContentType = {
     decryptKeypairResponse?: IKeypair;
 } & IApiContentType;
 
-// Content received from compute node / intercom server API endpoints
+// Content received from mempool node / intercom server API endpoints
 export type IApiContentType = {
     fetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
     fetchBalanceResponse?: IFetchBalanceResponse;
@@ -55,7 +55,7 @@ export type IApiContentType = {
 };
 
 export enum IAPIRoute {
-    /* ------------------------------- COMPUTE ZNP Routes ------------------------------- */
+    /* ------------------------------- MEMPOOL ZNP Routes ------------------------------- */
     DebugData = '/debug_data',
     FetchBalance = '/fetch_balance',
     SignableTransactions = '/signable_transactions' /* NOTE: No implementation */,
@@ -83,7 +83,7 @@ export enum IAPIRoute {
 
 /* --------------------------- Response Structures -------------------------- */
 
-// Response structure received from compute API endpoints
+// Response structure received from mempool API endpoints
 export type INetworkResponse = {
     id?: string;
     status: 'Success' | 'Error' | 'InProgress' | 'Unknown';
@@ -229,7 +229,7 @@ export type IPendingRbTxDetails = {
     senderExpectation: IDruidExpectation;
     receiverExpectation: IDruidExpectation;
     status: 'pending' | 'rejected' | 'accepted'; // Status of the DDE transaction
-    computeHost: string; // Correlation between clients; send txs to the same compute node; chosen by the sender
+    mempoolHost: string; // Correlation between clients; send txs to the same mempool node; chosen by the sender
 };
 
 /* -------------------------------------------------------------------------- */
