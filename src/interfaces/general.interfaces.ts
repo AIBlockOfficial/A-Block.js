@@ -4,11 +4,11 @@
 
 // Config needed for initialization
 export type IClientConfig = {
-    computeHost?: string;
+    computeHost: string; /* Required */
     storageHost?: string;
     intercomHost?: string;
     notaryHost?: string;
-    passPhrase: string;
+    passPhrase: string; /* Required */
 };
 
 /* -------------------------------------------------------------------------- */
