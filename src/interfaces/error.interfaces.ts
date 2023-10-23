@@ -82,6 +82,9 @@ export enum IErrorInternal {
     InvalidDRUIDProvided = 'Invalid DRUID value provided',
     UnableToFilterIntercomData = 'Unable to filter intercom data',
     ClientNotInitialized = 'Client not initialized',
+    StorageNotInitialized = 'Storage host not initialized',
+    IntercomNotInitialized = 'Intercom host not initialized',
+    NotaryNotInitialized = 'Notary host not initialized',
     FetchBalanceResponseEmpty = 'Balance object is empty',
     NoDRUIDValues = 'DRUID values are null',
     AssetsIncompatible = 'Assets are incompatible',
@@ -91,7 +94,9 @@ export enum IErrorInternal {
     UnableToSignMessage = 'Unable to sign message',
     NoHostsProvided = 'No hosts provided',
     NoKeypairsProvided = 'No key-pairs provided',
-    UnknownError = 'Unknown Error',
+    NoPassPhraseProvided = 'No passphrase provided',
+    NoComputeHostProvided = 'No compute host provided',
+    UnknownError = 'Unknown Error'
 }
 
 // Custom `Result` wrapper with string error

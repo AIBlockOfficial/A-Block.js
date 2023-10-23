@@ -8,7 +8,7 @@ export type IClientConfig = {
     storageHost?: string;
     intercomHost?: string;
     notaryHost?: string;
-    passPhrase: string;
+    passPhrase: string; /* Required */
 };
 
 /* -------------------------------------------------------------------------- */

@@ -65,6 +65,7 @@ export class ABlockWallet {
         this.intercomHost = undefined;
         this.mempoolHost = undefined;
         this.storageHost = undefined;
+        this.intercomHost = undefined;
         this.notaryHost = undefined;
         this.keyMgmt = undefined;
         this.mempoolRoutesPoW = undefined;
@@ -184,15 +185,21 @@ export class ABlockWallet {
      * Common network initialization (retrieval of PoW list for mempool as well as storage)
      *
      * @private
-     * @param {IClientConfig} config - Additional configuration parameters
+     * @param {IClientConfig} config - Configuration parameters
      * @memberof ABlockWallet
      */
     public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
         this.intercomHost = config.intercomHost;
         this.mempoolHost = config.mempoolHost;
         this.storageHost = config.storageHost;
+        this.intercomHost = config.intercomHost;
         this.notaryHost = config.notaryHost;
-        // Set routes proof-of-work requirements
+
+        if (this.mempoolHost == undefined)
+            return {
+                status: 'error',
+                reason: IErrorInternal.NoComputeHostProvided
+            } as IClientResponse;
 
         // Initialize routes proof-of-work for mempool host
         if (this.mempoolHost !== undefined) {
@@ -204,7 +211,8 @@ export class ABlockWallet {
             if (initMempoolResult.status == 'error') return initMempoolResult;
         }
 
-        // Initialize routes proof-of-work for storage host
+
+        // Optional - Initialize routes proof-of-work for storage host
         if (this.storageHost !== undefined) {
             this.storageRoutesPoW = new Map();
             const initStorageResult = await this.initNetworkForHost(
@@ -237,16 +245,10 @@ export class ABlockWallet {
      * @param {IClientConfig} config - Additional configuration parameters
      * @memberof ABlockWallet
      */
-    public async initNetworkForHost(
-        host: string | undefined,
+    private async initNetworkForHost(
+        host: string,
         routesPow: Map<string, number>,
     ): Promise<IClientResponse> {
-        if (!host) {
-            return {
-                status: 'error',
-                reason: IErrorInternal.NoHostsProvided,
-            } as IClientResponse;
-        }
         // Set routes proof-of-work requirements
         const debugData = await this.getDebugData(host);
         if (debugData.status === 'error')
@@ -359,8 +361,10 @@ export class ABlockWallet {
      */
     public async fetchTransactions(transactionHashes: string[]): Promise<IClientResponse> {
         try {
-            if (!this.storageHost || !this.keyMgmt || !this.storageRoutesPoW)
+            if (!this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.storageHost || !this.storageRoutesPoW) /* Storage is optional on wallet init, but must be initialized here */
+                throw new Error(IErrorInternal.StorageNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 this.mempoolRoutesPoW,
                 IAPIRoute.FetchBalance,
@@ -509,8 +513,10 @@ export class ABlockWallet {
      */
     async getNotaryBurnAddress(): Promise<IClientResponse> {
         try {
-            if (!this.notaryHost || !this.keyMgmt)
+            if (!this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.notaryHost)
+                throw new Error(IErrorInternal.NotaryNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 new Map(),
                 IAPIRoute.GetNotaryBurnAddress,
@@ -554,8 +560,10 @@ export class ABlockWallet {
         signatures: IGenericKeyPair<string>,
     ): Promise<IClientResponse> {
         try {
-            if (!this.notaryHost || !this.keyMgmt)
+            if (!this.keyMgmt)
                 throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.notaryHost)
+                throw new Error(IErrorInternal.NotaryNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 new Map(),
                 IAPIRoute.GetNotarySignature,
@@ -686,6 +694,8 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.intercomHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.intercomHost)
+                throw new Error(IErrorInternal.IntercomNotInitialized);
             const senderKeypair = throwIfErr(this.keyMgmt.decryptKeypair(receiveAddress));
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
@@ -831,6 +841,8 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.intercomHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.intercomHost)
+                throw new Error(IErrorInternal.IntercomNotInitialized);
 
             // Generate a key-pair map
             const [allAddresses, keyPairMap] = throwIfErr(
@@ -1231,6 +1243,8 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.intercomHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.intercomHost)
+                throw new Error(IErrorInternal.IntercomNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
             );
@@ -1336,13 +1350,12 @@ export class ABlockWallet {
      * Get information regarding the PoW required for all routes
      *
      * @private
-     * @param {(string | undefined)} host - Host address to retrieve proof-of-work data from
+     * @param {(string)} host - Host address to retrieve proof-of-work data from
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    private async getDebugData(host: string | undefined): Promise<IClientResponse> {
+    private async getDebugData(host: string): Promise<IClientResponse> {
         try {
-            if (!host) throw new Error(IErrorInternal.ClientNotInitialized);
             const routesPow =
                 host === this.mempoolHost ? this.mempoolRoutesPoW : this.storageRoutesPoW;
             const headers = this.getRequestIdAndNonceHeadersForRoute(
