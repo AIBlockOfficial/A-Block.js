@@ -34,7 +34,7 @@ export type IContentType = {
     newKeypairResponse?: IKeypairEncrypted;
     getMasterKeyResponse?: IMasterKeyEncrypted;
     initNewResponse?: [string, IMasterKeyEncrypted];
-    initFromSeedResponse?: IMasterKeyEncrypted;
+    fromSeedResponse?: IMasterKeyEncrypted;
     regenWalletResponse?: IKeypairEncrypted[];
     signMessageResponse?: IGenericKeyPair<string>;
     decryptKeypairResponse?: IKeypair;

@@ -84,7 +84,7 @@ export class mgmtClient {
      * @return {*}  {IResult<void>}
      * @memberof mgmtClient
      */
-    public initFromMasterKey(passphraseKey: string, masterKey: IMasterKeyEncrypted): IResult<void> {
+    public fromMasterKey(masterKey: IMasterKeyEncrypted, passphraseKey: string): IResult<void> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
@@ -103,7 +103,7 @@ export class mgmtClient {
      * @return {*}  {IResult<IMasterKeyEncrypted>}
      * @memberof mgmtClient
      */
-    public initFromSeed(passphraseKey: string, seedPhrase: string): IResult<IMasterKeyEncrypted> {
+    public fromSeed(passphraseKey: string, seedPhrase: string): IResult<IMasterKeyEncrypted> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;

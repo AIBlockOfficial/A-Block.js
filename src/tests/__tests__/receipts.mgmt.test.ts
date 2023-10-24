@@ -41,8 +41,6 @@ test('creates a valid payload to create receipts', () => {
         "{'test': 'test'}",
     );
 
-    console.log('metadataPayload', metadataPayload);
-
     if (payload.isOk()) {
         expect(payload.value).toEqual({
             receipt_amount: 1000,
