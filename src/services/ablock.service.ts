@@ -98,7 +98,7 @@ export class ABlockWallet {
                 status: 'success',
                 reason: ISuccessInternal.ClientInitialized,
                 content: {
-                    ...initIResult.value,
+                    initNewResponse: initIResult.value,
                 },
             } as IClientResponse;
         }

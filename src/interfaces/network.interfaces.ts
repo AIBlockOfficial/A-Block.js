@@ -13,6 +13,7 @@ import {
     IKeypair,
     IKeypairEncrypted,
     IMasterKeyEncrypted,
+    INewWalletResponse,
     IOutPoint,
     ITransaction,
 } from './general.interfaces';
@@ -33,7 +34,7 @@ export type IContentType = {
     makeRbPaymentResponse?: IMakeRbPaymentResponse;
     newKeypairResponse?: IKeypairEncrypted;
     getMasterKeyResponse?: IMasterKeyEncrypted;
-    initNewResponse?: [string, IMasterKeyEncrypted];
+    initNewResponse?: INewWalletResponse;
     fromSeedResponse?: IMasterKeyEncrypted;
     regenWalletResponse?: IKeypairEncrypted[];
     signMessageResponse?: IGenericKeyPair<string>;
