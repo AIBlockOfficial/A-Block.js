@@ -104,7 +104,7 @@ export class mgmtClient {
      * @return {*}  {IResult<IMasterKeyEncrypted>}
      * @memberof mgmtClient
      */
-    public fromSeed(passphraseKey: string, seedPhrase: string): IResult<IMasterKeyEncrypted> {
+    public fromSeed(seedPhrase: string, passphraseKey: string): IResult<IMasterKeyEncrypted> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
