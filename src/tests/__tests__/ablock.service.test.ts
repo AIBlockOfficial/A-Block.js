@@ -7,6 +7,48 @@ beforeEach(() => {
     ablockInstance = new ABlockWallet();
 });
 
+test('init wallet without optional config fields', async () => {
+
+    const config = {
+        mempoolHost: 'http://49.12.234.10:3003',
+        passphrase: '',
+    };
+
+    await ablockInstance.initNew(config).then((res) => {
+        expect(res.status).toBe('success');
+    });
+
+    await ablockInstance.fetchTransactions([]).then((res) => {
+        expect(res.reason).toBe('Error: Storage host not initialized');
+    });
+
+    await ablockInstance.fetchPendingRbTransactions([], []).then((res) => {
+        expect(res.reason).toBe('Error: Intercom host not initialized');
+    });
+
+    await ablockInstance.getNotaryBurnAddress().then((res) => {
+        expect(res.reason).toBe('Error: Notary host not initialized');
+    });
+});
+
+test('init wallet locally and then connect', async () => {
+    await ablockInstance.initNew({ passphrase: '' }, true).then((res) => {
+        console.log(res)
+        expect(res.status).toBe('success');
+    });
+
+    const config = {
+        mempoolHost: 'http://49.12.234.10:3003',
+        storageHost: 'http://49.12.234.10:3001',
+        passphrase: '',
+    };
+
+    await ablockInstance.initNetwork(config).then((res) => {
+        console.log(res)
+        expect(res.status).toBe('success');
+    });
+});
+
 test('handles key-pair re-generation from wallet seed phrase', async () => {
     const utxoAddressList = [
         /* TEMP_ADDRESS_VERSION = 99999 */
@@ -20,7 +62,7 @@ test('handles key-pair re-generation from wallet seed phrase', async () => {
         '28a7de5c30f8271be690db7a979e1be33d31f6b6aebaa3c82888354ba214c24d',
     ];
 
-    await ablockInstance.fromSeed(SEED, { pass }, true,);
+    await ablockInstance.fromSeed(SEED, { passphrase: '' }, true,);
 
     const foundAddresses = await ablockInstance.regenAddresses(SEED, utxoAddressList, 6);
 
