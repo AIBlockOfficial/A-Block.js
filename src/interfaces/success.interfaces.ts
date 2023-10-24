@@ -2,7 +2,7 @@ export enum ISuccessAll {
     IErrorInternal,
 }
 
-export enum ISuccessZNP {
+export enum ISuccessNetwork {
     FetchWalletInfo = 'Wallet info successfully fetched',
     ExportKeypairs = 'Key-pairs successfully exported',
     ImportKeypairs = 'Key-pairs successfully imported',

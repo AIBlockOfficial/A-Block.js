@@ -98,7 +98,7 @@ Installieren Sie das Modul in Ihr Projekt:
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
 
-    const COMPUTE_HOST = 'beispiel.berechnung.host.com';
+    const MEMPOOL_HOST = 'beispiel.berechnung.host.com';
     const INTERCOM_HOST = 'beispiel.intercom.host.com';
     const PASSPHRASE = 'ein sicheres Passwort';
 
@@ -109,7 +109,7 @@ Installieren Sie das Modul in Ihr Projekt:
     // HINWEIS: Dies ist ein asynchroner Aufruf
     client
         .initNew({
-            computeHost: COMPUTE_HOST,
+            mempoolHost: MEMPOOL_HOST,
             intercomHost: INTERCOM_HOST,
             passPhrase: PASSPHRASE,
         })
@@ -126,7 +126,7 @@ Wenn der Client ohne vorab generierte Seed-Phrase oder vorhandenen Master-Key in
 
 Einige Argumente während der Initialisierung sind optional, wie z.B. `initOffline`, das verwendet wird, um den Client im Offline-Modus zu initialisieren.
 
-Die Schnittstellen-Elemente `computeHost` und `intercomHost` werden verwendet, um die API-Endpunkte für den Compute-Knoten bzw. den ABlock Intercom-Server festzulegen, mit denen der Client verbunden werden soll.
+Die Schnittstellen-Elemente `mempoolHost` und `intercomHost` werden verwendet, um die API-Endpunkte für den Mempool-Knoten bzw. den ABlock Intercom-Server festzulegen, mit denen der Client verbunden werden soll.
 
 Während der Initialisierung muss dem Client ein benutzerdefiniertes `passPhrase` übergeben werden, da dieses Passwort zur Verschlüsselung/Entschlüsselung von Daten während der Operationen verwendet wird.
 
@@ -135,7 +135,7 @@ Während der Initialisierung muss dem Client ein benutzerdefiniertes `passPhrase
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
 
-    const COMPUTE_HOST = 'beispiel.berechnung.host.com';
+    const MEMPOOL_HOST = 'beispiel.berechnung.host.com';
     const INTERCOM_HOST = 'beispiel.intercom.host.com';
     const PASSPHRASE = 'ein sicheres Passwort';
     ```
@@ -146,7 +146,7 @@ const client = new ABlockWallet();
 
 // Initialisieren Sie den Client mit der benötigten Konfiguration
 client.initFromMasterKey({
-    computeHost: COMPUTE_HOST,
+    mempoolHost: MEMPOOL_HOST,
     intercomHost: INTERCOM_HOST,
     passPhrase: PASSPHRASE,
   },
@@ -161,7 +161,7 @@ Wenn bereits ein vorhandener Master-Schlüssel vorhanden ist, sollte diese Art d
 ```typescript
 import { ABlockWallet } from '@a-block/a-blockjs';
 
-const COMPUTE_HOST = 'beispiel.compute.host.com'
+const MEMPOOL_HOST = 'beispiel.mempool.host.com'
 const INTERCOM_HOST = 'beispiel.intercom.host.com'
 const PASSPHRASE = 'ein sicheres Passwort'
 const SEED_PHRASE = 'eine Seed-Phrase, die wie eine Ansammlung zufälliger Wörter aussehen sollte'
@@ -171,7 +171,7 @@ const client = new ABlockWallet();
 
 // Initialisieren Sie den Client mit der benötigten Konfiguration
 client.initFromSeed({
-    computeHost: COMPUTE_HOST,
+    mempoolHost: MEMPOOL_HOST,
     intercomHost: INTERCOM_HOST,
     passPhrase: PASSPHRASE,
   },
@@ -204,7 +204,7 @@ Diese Art der Initialisierung gibt den entsprechenden Master-Schlüssel (in vers
 ```typescript
 import { ABlockWallet } from '@a-block/a-blockjs';
 
-const COMPUTE_HOST = 'example.compute.host.com';
+const MEMPOOL_HOST = 'example.mempool.host.com';
 const INTERCOM_HOST = 'example.intercom.host.com';
 const PASSPHRASE = 'a secure passphrase';
 
@@ -213,7 +213,7 @@ const client = new ABlockWallet();
 
 // Konfiguration
 const config = {
-    computeHost: COMPUTE_HOST,
+    mempoolHost: MEMPOOL_HOST,
     intercomHost: INTERCOM_HOST,
     passPhrase: PASSPHRASE,
 };
@@ -677,7 +677,7 @@ const zahlungsergebnis = await makeRbPayment(
                     }
                 },
                 "status": "pending",
-                "computeHost": "http://127.0.0.1:3003"
+                "mempoolHost": "http://127.0.0.1:3003"
             }
         }
     }

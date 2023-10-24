@@ -1,10 +1,10 @@
 import { SEED } from '../constants';
-import { ABlockWallet } from '../../services/znt.service';
+import { ABlockWallet } from '../../services/ablock.service';
 
-let znpInstance = new ABlockWallet();
+let ablockInstance = new ABlockWallet();
 
 beforeEach(() => {
-    znpInstance = new ABlockWallet();
+    ablockInstance = new ABlockWallet();
 });
 
 test('handles key-pair re-generation from wallet seed phrase', async () => {
@@ -20,13 +20,13 @@ test('handles key-pair re-generation from wallet seed phrase', async () => {
         '28a7de5c30f8271be690db7a979e1be33d31f6b6aebaa3c82888354ba214c24d',
     ];
 
-    await znpInstance.initFromSeed(
-        { computeHost: '', intercomHost: '', passPhrase: 'passphrase' },
+    await ablockInstance.fromSeed(
+        { mempoolHost: '', intercomHost: '', passPhrase: 'passphrase' },
         SEED,
         true,
     );
 
-    const foundAddresses = await znpInstance.regenAddresses(SEED, utxoAddressList, 6);
+    const foundAddresses = await ablockInstance.regenAddresses(SEED, utxoAddressList, 6);
 
     // Test to see if we have a success response from the client
     expect(foundAddresses.status).toBe('success');

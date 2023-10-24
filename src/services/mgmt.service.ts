@@ -13,6 +13,7 @@ import {
     IKeypairEncrypted,
     IMasterKey,
     IMasterKeyEncrypted,
+    INewWalletResponse,
     IResult,
 } from '../interfaces';
 import {
@@ -60,7 +61,7 @@ export class mgmtClient {
      * @return {*}  {IResult<[string, IMasterKeyEncrypted]>}
      * @memberof mgmtClient
      */
-    public initNew(passphraseKey: string): IResult<[string, IMasterKeyEncrypted]> {
+    public initNew(passphraseKey: string): IResult<INewWalletResponse> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
@@ -73,7 +74,7 @@ export class mgmtClient {
         const saveIResult = this.encryptMasterKey(newMasterKey.value, passphrase.value);
         if (saveIResult && saveIResult.isErr()) return err(saveIResult.error);
         this.seedPhrase = generatedSeed.value;
-        return ok([generatedSeed.value, saveIResult.value]);
+        return ok({ seedphrase: generatedSeed.value, masterKey: saveIResult.value });
     }
 
     /**
@@ -84,7 +85,7 @@ export class mgmtClient {
      * @return {*}  {IResult<void>}
      * @memberof mgmtClient
      */
-    public initFromMasterKey(passphraseKey: string, masterKey: IMasterKeyEncrypted): IResult<void> {
+    public fromMasterKey(masterKey: IMasterKeyEncrypted, passphraseKey: string): IResult<void> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
@@ -103,7 +104,7 @@ export class mgmtClient {
      * @return {*}  {IResult<IMasterKeyEncrypted>}
      * @memberof mgmtClient
      */
-    public initFromSeed(passphraseKey: string, seedPhrase: string): IResult<IMasterKeyEncrypted> {
+    public fromSeed(seedPhrase: string, passphraseKey: string): IResult<IMasterKeyEncrypted> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
