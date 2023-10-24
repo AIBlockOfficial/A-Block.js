@@ -181,13 +181,13 @@ export class ABlockWallet {
     }
 
     /**
-     * Common network initialization (retrieval of PoW list for compute as well as storage)
+     * Common network initialization (retrieval of PoW list for compute and storage)
      *
-     * @private
      * @param {IClientConfig} config - Configuration parameters
+     * 
      * @memberof ABlockWallet
      */
-    private async initNetwork(config: IClientConfig): Promise<IClientResponse> {
+    public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
         this.computeHost = config.computeHost;
         this.storageHost = config.storageHost;
         this.intercomHost = config.intercomHost;
