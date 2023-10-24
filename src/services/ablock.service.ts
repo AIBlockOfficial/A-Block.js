@@ -152,8 +152,8 @@ export class ABlockWallet {
      * @memberof ABlockWallet
      */
     public async fromSeed(
-        config: IClientConfig,
         seedPhrase: string,
+        config: IClientConfig,
         initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
