@@ -81,7 +81,7 @@ export class ABlockWallet {
      */
     public async initNew(config: IClientConfig, initOffline = false): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
-        const initIResult = this.keyMgmt.initNew(config.passPhrase);
+        const initIResult = this.keyMgmt.initNew(config.passphrase);
         if (!initOffline) {
             const initNetworkIResult = await this.initNetwork(config);
             if (initNetworkIResult.status === 'error') {
@@ -120,7 +120,7 @@ export class ABlockWallet {
         initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
-        const initIResult = this.keyMgmt.fromMasterKey(masterKey, config.passPhrase);
+        const initIResult = this.keyMgmt.fromMasterKey(masterKey, config.passphrase);
         if (!initOffline) {
             const initNetworkIResult = await this.initNetwork(config);
             if (initNetworkIResult.status === 'error') {
@@ -157,7 +157,7 @@ export class ABlockWallet {
         initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
-        const initIResult = this.keyMgmt.fromSeed(config.passPhrase, seedPhrase);
+        const initIResult = this.keyMgmt.fromSeed(config.passphrase, seedPhrase);
         if (!initOffline) {
             const initNetworkIResult = await this.initNetwork(config);
             if (initNetworkIResult.status === 'error') {
