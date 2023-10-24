@@ -20,11 +20,7 @@ test('handles key-pair re-generation from wallet seed phrase', async () => {
         '28a7de5c30f8271be690db7a979e1be33d31f6b6aebaa3c82888354ba214c24d',
     ];
 
-    await ablockInstance.fromSeed(
-        { mempoolHost: '', intercomHost: '', passPhrase: 'passphrase' },
-        SEED,
-        true,
-    );
+    await ablockInstance.fromSeed(SEED, { pass }, true,);
 
     const foundAddresses = await ablockInstance.regenAddresses(SEED, utxoAddressList, 6);
 
