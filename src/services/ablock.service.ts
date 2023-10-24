@@ -114,13 +114,13 @@ export class ABlockWallet {
      * @return {*}  {IClientResponse}
      * @memberof ABlockWallet
      */
-    public async initFromMasterKey(
-        config: IClientConfig,
+    public async fromMasterKey(
         masterKey: IMasterKeyEncrypted,
+        config: IClientConfig,
         initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
-        const initIResult = this.keyMgmt.initFromMasterKey(config.passPhrase, masterKey);
+        const initIResult = this.keyMgmt.fromMasterKey(masterKey, config.passPhrase);
         if (!initOffline) {
             const initNetworkIResult = await this.initNetwork(config);
             if (initNetworkIResult.status === 'error') {
@@ -151,13 +151,13 @@ export class ABlockWallet {
      *
      * @memberof ABlockWallet
      */
-    public async initFromSeed(
+    public async fromSeed(
         config: IClientConfig,
         seedPhrase: string,
         initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
-        const initIResult = this.keyMgmt.initFromSeed(config.passPhrase, seedPhrase);
+        const initIResult = this.keyMgmt.fromSeed(config.passPhrase, seedPhrase);
         if (!initOffline) {
             const initNetworkIResult = await this.initNetwork(config);
             if (initNetworkIResult.status === 'error') {
@@ -174,7 +174,7 @@ export class ABlockWallet {
                 status: 'success',
                 reason: ISuccessInternal.ClientInitialized,
                 content: {
-                    initFromSeedResponse: initIResult.value,
+                    fromSeedResponse: initIResult.value,
                 },
             } as IClientResponse;
         }
