@@ -11,6 +11,12 @@ export type IClientConfig = {
     passPhrase: string; /* Required */
 };
 
+// Init
+export type INewWalletResponse = {
+    seedphrase: string,
+    masterKey: IMasterKeyEncrypted,
+}
+
 /* -------------------------------------------------------------------------- */
 /*                             Internal Interfaces                            */
 /* -------------------------------------------------------------------------- */
