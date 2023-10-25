@@ -107,10 +107,9 @@ export class ABlockWallet {
     /**
      * Initialize an instance of the client with a provided master key
      *
-     * @param {IClientConfig} config - Additional configuration parameters
      * @param {IMasterKeyEncrypted} masterKey - Master key
+     * @param {IClientConfig} config - Additional configuration parameters
      * @param initOffline - Optionally initialize the client without initializing network settings
-     *
      * @return {*}  {IClientResponse}
      * @memberof ABlockWallet
      */
@@ -144,11 +143,10 @@ export class ABlockWallet {
     /**
      * Initialize an instance of the wallet with a provided seed phrase
      *
-     * @param {IClientConfig} config - Additional configuration parameters
      * @param {string} seedPhrase - Seed phrase
+     * @param {IClientConfig} config - Additional configuration parameters
+     * @param initOffline - Optionally initialize the client without initializing network settings 
      * @return {*}  {IClientResponse}
-     * @param initOffline - Optionally initialize the client without initializing network settings
-     *
      * @memberof ABlockWallet
      */
     public async fromSeed(
@@ -157,7 +155,7 @@ export class ABlockWallet {
         initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
-        const initIResult = this.keyMgmt.fromSeed(config.passphrase, seedPhrase);
+        const initIResult = this.keyMgmt.fromSeed(seedPhrase, config.passphrase);
         if (!initOffline) {
             const initNetworkIResult = await this.initNetwork(config);
             if (initNetworkIResult.status === 'error') {
@@ -239,6 +237,7 @@ export class ABlockWallet {
      *
      * @private
      * @param {IClientConfig} config - Additional configuration parameters
+     * @return {*}  {IClientResponse}
      * @memberof ABlockWallet
      */
     private async initNetworkForHost(

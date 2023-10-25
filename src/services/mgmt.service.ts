@@ -80,8 +80,8 @@ export class mgmtClient {
     /**
      * Init the client with a provided master key
      *
-     * @param {string} passphraseKey
      * @param {IMasterKeyEncrypted} masterKey
+     * @param {string} passphraseKey
      * @return {*}  {IResult<void>}
      * @memberof mgmtClient
      */
@@ -99,8 +99,8 @@ export class mgmtClient {
     /**
      * Init the client with a provided seed phrase
      *
-     * @param {string} passphraseKey
      * @param {string} seedPhrase
+     * @param {string} passphraseKey
      * @return {*}  {IResult<IMasterKeyEncrypted>}
      * @memberof mgmtClient
      */
