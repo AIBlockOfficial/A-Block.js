@@ -26,6 +26,7 @@ import {
     getAddressVersion,
     getNextDerivedKeypair,
     getPassphraseBuffer,
+    KEYPAIR_LOCAL_STORAGE,
     SEED_REGEN_THRES,
     TEMP_ADDRESS_VERSION,
 } from '../mgmt';
@@ -504,5 +505,38 @@ export class mgmtClient {
         const encryptedMasterKey = this.encryptMasterKey(this.masterKey);
         if (encryptedMasterKey.isErr()) return err(encryptedMasterKey.error);
         return ok(encryptedMasterKey.value);
+    }
+
+    /**
+    * Save keypairs to localStorage. (Browser)
+    * 
+    * @export
+    * @param {string} keypairs IKeypairEncrypted[] flattened to a string
+    * @return {*} {void} address of saved keypair
+    */
+    public saveKeypairs(keypairs: IKeypairEncrypted[]): IResult<void> {
+        console.log(window);
+        console.log(window.localStorage)
+        if (!keypairs || typeof window !== 'undefined') {
+            const flattened = JSON.stringify(keypairs);
+            window.localStorage.setItem(KEYPAIR_LOCAL_STORAGE, flattened);
+            return ok(undefined)
+        }
+        return err(IErrorInternal.UnableToSaveKeypairLocal)
+    }
+
+    /**
+    * Save keypairs to localStorage. (Browser)
+    * 
+    * @export
+    * @return {*} {IKeypairEncrypted[]}
+    */
+    public getKeypairs(): IResult<IKeypairEncrypted[]> {
+        let result = null;
+        if (typeof window !== 'undefined')
+            result = window.localStorage.getItem(KEYPAIR_LOCAL_STORAGE);
+        if (result != null)
+            return ok(JSON.parse(result))
+        return err(IErrorInternal.UnableToGetLocalKeypair)
     }
 }

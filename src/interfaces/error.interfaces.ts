@@ -71,6 +71,8 @@ export enum IErrorInternal {
     UnableToGenerateKeypair = 'Unable to generate key-pair',
     UnableToDeriveNextKeypair = 'Unable to derive next key-pair',
     UnableToEncryptKeypair = 'Unable to encrypt key-pair',
+    UnableToSaveKeypairLocal = 'Unable to save key-pair to local storage',
+    UnableToGetLocalKeypair = 'Unable to get key-pair from local storage',
     UnableToEncryptMasterKey = 'Unable to encrypt master key',
     UnableToDecryptKeypair = 'Unable to decrypt keypair',
     UnableToDecryptMasterKey = 'Unable to decrypt master key',

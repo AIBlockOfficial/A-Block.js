@@ -39,6 +39,8 @@ export type IContentType = {
     regenWalletResponse?: IKeypairEncrypted[];
     signMessageResponse?: IGenericKeyPair<string>;
     decryptKeypairResponse?: IKeypair;
+    saveKeypairResponse?: string[];
+    getKeypairsResponse?: IKeypairEncrypted[];
 } & IApiContentType;
 
 // Content received from mempool node / intercom server API endpoints
