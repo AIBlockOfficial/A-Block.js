@@ -33,7 +33,6 @@ test('init wallet without optional config fields', async () => {
 
 test('init wallet locally and then connect', async () => {
     await ablockInstance.initNew({ passphrase: '' }, true).then((res) => {
-        console.log(res)
         expect(res.status).toBe('success');
     });
 
@@ -44,7 +43,6 @@ test('init wallet locally and then connect', async () => {
     };
 
     await ablockInstance.initNetwork(config).then((res) => {
-        console.log(res)
         expect(res.status).toBe('success');
     });
 });
@@ -78,4 +76,62 @@ test('handles key-pair re-generation from wallet seed phrase', async () => {
                 (encryptedAddress) => encryptedAddress.address,
             ),
         ).toEqual(utxoAddressList);
+});
+
+test('sign message with given keypairs', async () => {
+    const config = {
+        mempoolHost: 'http://49.12.234.10:3003',
+        passphrase: '',
+    };
+    const MSG = 'hello, world';
+
+    await ablockInstance.initNew(config).then((res) => {
+        expect(res.status).toBe('success');
+    });
+
+    const kp = ablockInstance.getNewKeypair([]).content?.newKeypairResponse;
+    const kpAddr = kp?.address;
+
+    expect(kp).toBeDefined();
+    expect(kpAddr).toBeDefined();
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const kp1 = ablockInstance.getNewKeypair([kpAddr!]).content?.newKeypairResponse;
+
+    expect(kp1).toBeDefined();
+
+    const keypairs = [kp!, kp1!];
+
+    expect(keypairs).toBeDefined();
+
+    const signatures = ablockInstance.signMessage(keypairs, MSG).content?.signMessageResponse;
+
+    expect(signatures).toBeDefined();
+
+    const result = ablockInstance.verifyMessage(MSG, signatures!, keypairs)
+
+    expect(result.status).toBe('success');
+
+    const kp2 = ablockInstance.getNewKeypair([kpAddr!, kp1!.address]).content?.newKeypairResponse;
+
+    expect(kp2).toBeDefined();
+
+    const keypairs1 = [kp!, kp2!];
+
+    const result1 = ablockInstance.verifyMessage(MSG, signatures!, keypairs1)
+    console.log('RESULT 1: ', result1)
+    expect(result1.status).toBe('error');
+
+    // if (kp.content?.newKeypairResponse && kp1?.content?.newKeypairResponse)
+    //     keypairs = [kp.content.newKeypairResponse, kp1.content.newKeypairResponse];
+
+    //     if (keypairs) {
+    //         const signatures = await ablockInstance.signMessage(keypairs, MSG);
+    // ¨       const result = await ablockInstance.verifyMessage(MSG, signatures.content?.signMessageResponse, keypairs);
+    //         console.log(result)
+    //     }
+
+    // const kp = ablockInstance.getNewKeypair([]);
+
+    // await ablockInstance.signMessage(,)
 });
