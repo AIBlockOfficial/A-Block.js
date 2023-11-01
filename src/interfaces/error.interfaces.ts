@@ -92,6 +92,7 @@ export enum IErrorInternal {
     UnableToFindNonEmptyAddresses = 'Unable to find addresses that contain assets',
     InvalidNetworkResponse = 'Invalid network response',
     UnableToSignMessage = 'Unable to sign message',
+    UnableToVerifyMessage = 'Unable to verify message',
     NoHostsProvided = 'No hosts provided',
     NoKeypairsProvided = 'No key-pairs provided',
     NoPassPhraseProvided = 'No passphrase provided',

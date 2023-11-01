@@ -600,10 +600,10 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    async signMessage(
+    signMessage(
         keyPairsToSignWith: IKeypairEncrypted[],
         message: string,
-    ): Promise<IClientResponse> {
+    ): IClientResponse {
         try {
             if (this.keyMgmt === undefined) throw new Error(IErrorInternal.ClientNotInitialized);
             const keyPairs = throwIfErr(this.keyMgmt.decryptKeypairs(keyPairsToSignWith));
@@ -622,6 +622,28 @@ export class ABlockWallet {
             } as IClientResponse;
         }
     }
+
+    verifyMessage(
+        message: string,
+        signatures: IGenericKeyPair<string>,
+        keyPairs: IKeypairEncrypted[],
+    ): IClientResponse {
+        try {
+            if (this.keyMgmt === undefined) throw new Error(IErrorInternal.ClientNotInitialized);
+            const keyPairsUnencrypted = throwIfErr(this.keyMgmt.decryptKeypairs(keyPairs));
+            throwIfErr(this.keyMgmt.verifyMessage(message, signatures, keyPairsUnencrypted));
+            return {
+                status: 'success',
+                reason: ISuccessInternal.MessageVirified,
+            } as IClientResponse;
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
 
     /**
      * Make a payment of a specified token amount to a payment address

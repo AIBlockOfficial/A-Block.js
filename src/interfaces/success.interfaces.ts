@@ -30,7 +30,8 @@ export enum ISuccessNotary {
 
 export enum ISuccessInternal {
     ClientInitialized = 'Client initialized',
-    MessageSigned = 'Message successfully signed',
+    MessageSigned = 'Successfully signed message',
+    MessageVirified = 'Successfully verified message',
     RbPaymentProcessing = 'Receipt-based payment processing',
     PendingRbPaymentsFetched = 'Succesfully fetched pending receipt-based transactions',
     AddressesReconstructed = 'Addresses have successfully been reconstructed',
