@@ -40,11 +40,11 @@ export enum IErrorNotary {
     InternalServerError = 'Internal Server Error',
     NotaryNotAuthorized = 'Notary not authorized for operation',
     AddressConstructionFailed = 'Address construction from public keys failed',
-    TransactionOutputsHaveNoZeno = 'Transaction outputs do not contain Zeno tokens',
+    TransactionOutputsHaveNoABC = 'Transaction outputs do not contain ABC tokens',
     InputsDoNotBelongToPk = 'Previous inputs do not belong to the provided public keys',
     InvalidSignatures = 'Invalid signatures provided',
-    InvalidBurnTransaction = 'Transaction outputs to burn address do not contain Zeno tokens',
-    TransactionOutputsEmpty = 'Transaction outputs contain no Zeno tokens assigned to provided burn address',
+    InvalidBurnTransaction = 'Transaction outputs to burn address do not contain ABC tokens',
+    TransactionOutputsEmpty = 'Transaction outputs contain no ABC tokens assigned to provided burn address',
     KeypairUndefined = 'Key-pair undefined',
 }
 
