@@ -39,5 +39,7 @@ export enum ISuccessInternal {
     SeedPhraseObtained = 'Successfully obtained seed phrase',
     MasterKeyObtained = 'Successfully obtained master key',
     KeypairDecrypted = 'Successfully decrypted key-pair',
+    KeypairSaved = 'Successfully saved key-pair to local storage',
+    KeypairObtained = 'Successfully retreived key-pair from local storage',
     RespondedToRbPayment = 'Successfully responded to receipt-based payment',
 }

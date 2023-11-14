@@ -1150,6 +1150,57 @@ export class ABlockWallet {
         }
     }
 
+    /**
+     * Save keypairs to localStorage. (Browser)
+     * It is recommended to use user defined methods for I/O operations (see https://github.com/ABlockOfficial/A-Block.js#getting-started)
+     *
+     * @param {IKeypairEncrypted} encryptedKeypair - Encrypted key-pair to save
+     * @return {*} {void}
+     */
+    saveKeypairs(encryptedKeypair: IKeypairEncrypted[]): IClientResponse {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            throwIfErr(this.keyMgmt.saveKeypairs(encryptedKeypair));
+            return {
+                status: 'success',
+                reason: ISuccessInternal.KeypairSaved,
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            };
+        }
+    }
+
+    /**
+    * Get keypairs from localStorage. (Browser)
+    * It is recommended to use user defined methods for I/O operations (see https://github.com/ABlockOfficial/A-Block.js#getting-started)
+    * 
+    * @export
+    * @param {string} keypairs IKeypairEncrypted[] flattened to a string
+    * @return {*} {void}
+    */
+    getKeypairs(): IClientResponse {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            return {
+                status: 'success',
+                reason: ISuccessInternal.KeypairObtained,
+                content: {
+                    getKeypairsResponse: throwIfErr(
+                        this.keyMgmt.getKeypairs()
+                    ),
+                },
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            };
+        }
+    }
+
     /* -------------------------------------------------------------------------- */
     /*                                    Utils                                   */
 
