@@ -30,7 +30,7 @@ import {
     TEMP_ADDRESS_VERSION,
 } from '../mgmt';
 import { concatTypedArrays, getBytesString, getStringBytes, truncateByBytesUTF8 } from '../utils';
-import { getBytesHexString } from '../utils/general.utils';
+import { getBytesHexString, getHexStringBytes } from '../utils/general.utils';
 
 export class mgmtClient {
     private passphraseKey: Uint8Array;
@@ -80,8 +80,8 @@ export class mgmtClient {
     /**
      * Init the client with a provided master key
      *
-     * @param {string} passphraseKey
      * @param {IMasterKeyEncrypted} masterKey
+     * @param {string} passphraseKey
      * @return {*}  {IResult<void>}
      * @memberof mgmtClient
      */
@@ -99,8 +99,8 @@ export class mgmtClient {
     /**
      * Init the client with a provided seed phrase
      *
-     * @param {string} passphraseKey
      * @param {string} seedPhrase
+     * @param {string} passphraseKey
      * @return {*}  {IResult<IMasterKeyEncrypted>}
      * @memberof mgmtClient
      */
@@ -481,16 +481,27 @@ export class mgmtClient {
      * @memberof mgmtClient
      */
     public signMessage(keypairs: IKeypair[], message: string): IResult<IGenericKeyPair<string>> {
-        try {
-            const signatures: IGenericKeyPair<string> = {};
-            for (const keypair of keypairs) {
-                const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
-                signatures[getBytesHexString(keypair.publicKey)] = getBytesHexString(signature);
-            }
-            return ok(signatures);
-        } catch {
-            return err(IErrorInternal.UnableToSignMessage);
+        if (keypairs.length < 1)
+            return err(IErrorInternal.InvalidInputs);
+        const signatures: IGenericKeyPair<string> = {};
+        for (const keypair of keypairs) {
+            const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
+            signatures[getBytesHexString(keypair.publicKey)] = getBytesHexString(signature);
         }
+        if (Object.keys(signatures).length < 1) return err(IErrorInternal.UnableToSignMessage);
+        return ok(signatures);
+    }
+
+    public verifyMessage(message: string, signatures: IGenericKeyPair<string>, keypairs: IKeypair[]): IResult<boolean> {
+        console.log(keypairs.length, Object.keys(signatures).length)
+        if (keypairs.length < 1 || Object.keys(signatures).length != keypairs.length)
+            return err(IErrorInternal.InvalidInputs);
+        for (const keypair of keypairs) {
+            const sig = signatures[getBytesHexString(keypair.publicKey)]
+            if (!sig || !nacl.sign.detached.verify(Buffer.from(message), getHexStringBytes(sig), keypair.publicKey))
+                return err(IErrorInternal.UnableToVerifyMessage);
+        }
+        return ok(true);
     }
 
     /**

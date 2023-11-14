@@ -107,10 +107,9 @@ export class ABlockWallet {
     /**
      * Initialize an instance of the client with a provided master key
      *
-     * @param {IClientConfig} config - Additional configuration parameters
      * @param {IMasterKeyEncrypted} masterKey - Master key
+     * @param {IClientConfig} config - Additional configuration parameters
      * @param initOffline - Optionally initialize the client without initializing network settings
-     *
      * @return {*}  {IClientResponse}
      * @memberof ABlockWallet
      */
@@ -144,11 +143,10 @@ export class ABlockWallet {
     /**
      * Initialize an instance of the wallet with a provided seed phrase
      *
-     * @param {IClientConfig} config - Additional configuration parameters
      * @param {string} seedPhrase - Seed phrase
+     * @param {IClientConfig} config - Additional configuration parameters
+     * @param initOffline - Optionally initialize the client without initializing network settings 
      * @return {*}  {IClientResponse}
-     * @param initOffline - Optionally initialize the client without initializing network settings
-     *
      * @memberof ABlockWallet
      */
     public async fromSeed(
@@ -157,7 +155,7 @@ export class ABlockWallet {
         initOffline = false,
     ): Promise<IClientResponse> {
         this.keyMgmt = new mgmtClient();
-        const initIResult = this.keyMgmt.fromSeed(config.passphrase, seedPhrase);
+        const initIResult = this.keyMgmt.fromSeed(seedPhrase, config.passphrase);
         if (!initOffline) {
             const initNetworkIResult = await this.initNetwork(config);
             if (initNetworkIResult.status === 'error') {
@@ -184,7 +182,7 @@ export class ABlockWallet {
      * Common network initialization (retrieval of PoW list for compute and storage)
      *
      * @param {IClientConfig} config - Configuration parameters
-     * 
+     * @return {*}  {IClientResponse} 
      * @memberof ABlockWallet
      */
     public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
@@ -239,6 +237,7 @@ export class ABlockWallet {
      *
      * @private
      * @param {IClientConfig} config - Additional configuration parameters
+     * @return {*}  {IClientResponse}
      * @memberof ABlockWallet
      */
     private async initNetworkForHost(
@@ -601,10 +600,10 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    async signMessage(
+    signMessage(
         keyPairsToSignWith: IKeypairEncrypted[],
         message: string,
-    ): Promise<IClientResponse> {
+    ): IClientResponse {
         try {
             if (this.keyMgmt === undefined) throw new Error(IErrorInternal.ClientNotInitialized);
             const keyPairs = throwIfErr(this.keyMgmt.decryptKeypairs(keyPairsToSignWith));
@@ -623,6 +622,28 @@ export class ABlockWallet {
             } as IClientResponse;
         }
     }
+
+    verifyMessage(
+        message: string,
+        signatures: IGenericKeyPair<string>,
+        keyPairs: IKeypairEncrypted[],
+    ): IClientResponse {
+        try {
+            if (this.keyMgmt === undefined) throw new Error(IErrorInternal.ClientNotInitialized);
+            const keyPairsUnencrypted = throwIfErr(this.keyMgmt.decryptKeypairs(keyPairs));
+            throwIfErr(this.keyMgmt.verifyMessage(message, signatures, keyPairsUnencrypted));
+            return {
+                status: 'success',
+                reason: ISuccessInternal.MessageVirified,
+            } as IClientResponse;
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
 
     /**
      * Make a payment of a specified token amount to a payment address
