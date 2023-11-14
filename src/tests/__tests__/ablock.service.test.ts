@@ -95,7 +95,6 @@ test('sign message with given keypairs', async () => {
     expect(kp).toBeDefined();
     expect(kpAddr).toBeDefined();
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const kp1 = ablockInstance.getNewKeypair([kpAddr!]).content?.newKeypairResponse;
 
     expect(kp1).toBeDefined();
@@ -119,19 +118,5 @@ test('sign message with given keypairs', async () => {
     const keypairs1 = [kp!, kp2!];
 
     const result1 = ablockInstance.verifyMessage(MSG, signatures!, keypairs1)
-    console.log('RESULT 1: ', result1)
     expect(result1.status).toBe('error');
-
-    // if (kp.content?.newKeypairResponse && kp1?.content?.newKeypairResponse)
-    //     keypairs = [kp.content.newKeypairResponse, kp1.content.newKeypairResponse];
-
-    //     if (keypairs) {
-    //         const signatures = await ablockInstance.signMessage(keypairs, MSG);
-    // ¨       const result = await ablockInstance.verifyMessage(MSG, signatures.content?.signMessageResponse, keypairs);
-    //         console.log(result)
-    //     }
-
-    // const kp = ablockInstance.getNewKeypair([]);
-
-    // await ablockInstance.signMessage(,)
 });
