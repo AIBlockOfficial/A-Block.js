@@ -494,7 +494,6 @@ export class mgmtClient {
     }
 
     public verifyMessage(message: string, signatures: IGenericKeyPair<string>, keypairs: IKeypair[]): IResult<boolean> {
-        console.log(keypairs.length, Object.keys(signatures).length)
         if (keypairs.length < 1 || Object.keys(signatures).length != keypairs.length)
             return err(IErrorInternal.InvalidInputs);
         for (const keypair of keypairs) {
@@ -526,8 +525,6 @@ export class mgmtClient {
     * @return {*} {void} address of saved keypair
     */
     public saveKeypairs(keypairs: IKeypairEncrypted[]): IResult<void> {
-        console.log(window);
-        console.log(window.localStorage)
         if (!keypairs || typeof window !== 'undefined') {
             const flattened = JSON.stringify(keypairs);
             window.localStorage.setItem(KEYPAIR_LOCAL_STORAGE, flattened);
