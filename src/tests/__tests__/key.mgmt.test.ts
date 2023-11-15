@@ -94,7 +94,7 @@ test('derives deterministic signable keypairs through ed25519, via seed', () => 
     }
 });
 
-// NOTE: This test corresponds with `test_construct_valid_addresses` in Chain 
+// NOTE: This test corresponds with `test_construct_valid_addresses` in Chain
 test('generates a valid payment address with the temporary address structure', () => {
     const actual = [
         keyMgmt

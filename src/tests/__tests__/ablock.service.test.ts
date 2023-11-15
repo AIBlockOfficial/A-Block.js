@@ -8,7 +8,6 @@ beforeEach(() => {
 });
 
 test('init wallet without optional config fields', async () => {
-
     const config = {
         mempoolHost: 'http://49.12.234.10:3003',
         passphrase: '',
@@ -60,7 +59,7 @@ test('handles key-pair re-generation from wallet seed phrase', async () => {
         '28a7de5c30f8271be690db7a979e1be33d31f6b6aebaa3c82888354ba214c24d',
     ];
 
-    await ablockInstance.fromSeed(SEED, { passphrase: '' }, true,);
+    await ablockInstance.fromSeed(SEED, { passphrase: '' }, true);
 
     const foundAddresses = await ablockInstance.regenAddresses(SEED, utxoAddressList, 6);
 
@@ -107,7 +106,7 @@ test('sign message with given keypairs', async () => {
 
     expect(signatures).toBeDefined();
 
-    const result = ablockInstance.verifyMessage(MSG, signatures!, keypairs)
+    const result = ablockInstance.verifyMessage(MSG, signatures!, keypairs);
 
     expect(result.status).toBe('success');
 
@@ -117,6 +116,6 @@ test('sign message with given keypairs', async () => {
 
     const keypairs1 = [kp!, kp2!];
 
-    const result1 = ablockInstance.verifyMessage(MSG, signatures!, keypairs1)
+    const result1 = ablockInstance.verifyMessage(MSG, signatures!, keypairs1);
     expect(result1.status).toBe('error');
 });

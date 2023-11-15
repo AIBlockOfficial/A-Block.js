@@ -113,7 +113,7 @@ export function truncateByBytesUTF8(chars: string, n: number): string {
         try {
             return fromBytesUTF8(bytes);
             // eslint-disable-next-line no-empty
-        } catch (e) { }
+        } catch (e) {}
         bytes = bytes.substring(0, bytes.length - 1);
     }
 }

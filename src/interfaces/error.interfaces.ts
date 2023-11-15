@@ -99,7 +99,7 @@ export enum IErrorInternal {
     NoKeypairsProvided = 'No key-pairs provided',
     NoPassPhraseProvided = 'No passphrase provided',
     NoComputeHostProvided = 'No compute host provided',
-    UnknownError = 'Unknown Error'
+    UnknownError = 'Unknown Error',
 }
 
 // Custom `Result` wrapper with string error

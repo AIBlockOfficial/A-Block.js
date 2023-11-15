@@ -482,8 +482,7 @@ export class mgmtClient {
      * @memberof mgmtClient
      */
     public signMessage(keypairs: IKeypair[], message: string): IResult<IGenericKeyPair<string>> {
-        if (keypairs.length < 1)
-            return err(IErrorInternal.InvalidInputs);
+        if (keypairs.length < 1) return err(IErrorInternal.InvalidInputs);
         const signatures: IGenericKeyPair<string> = {};
         for (const keypair of keypairs) {
             const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
@@ -493,12 +492,23 @@ export class mgmtClient {
         return ok(signatures);
     }
 
-    public verifyMessage(message: string, signatures: IGenericKeyPair<string>, keypairs: IKeypair[]): IResult<boolean> {
+    public verifyMessage(
+        message: string,
+        signatures: IGenericKeyPair<string>,
+        keypairs: IKeypair[],
+    ): IResult<boolean> {
         if (keypairs.length < 1 || Object.keys(signatures).length != keypairs.length)
             return err(IErrorInternal.InvalidInputs);
         for (const keypair of keypairs) {
-            const sig = signatures[getBytesHexString(keypair.publicKey)]
-            if (!sig || !nacl.sign.detached.verify(Buffer.from(message), getHexStringBytes(sig), keypair.publicKey))
+            const sig = signatures[getBytesHexString(keypair.publicKey)];
+            if (
+                !sig ||
+                !nacl.sign.detached.verify(
+                    Buffer.from(message),
+                    getHexStringBytes(sig),
+                    keypair.publicKey,
+                )
+            )
                 return err(IErrorInternal.UnableToVerifyMessage);
         }
         return ok(true);
@@ -518,33 +528,32 @@ export class mgmtClient {
     }
 
     /**
-    * Save keypairs to localStorage. (Browser)
-    * 
-    * @export
-    * @param {string} keypairs IKeypairEncrypted[] flattened to a string
-    * @return {*} {void} address of saved keypair
-    */
+     * Save keypairs to localStorage. (Browser)
+     *
+     * @export
+     * @param {string} keypairs IKeypairEncrypted[] flattened to a string
+     * @return {*} {void} address of saved keypair
+     */
     public saveKeypairs(keypairs: IKeypairEncrypted[]): IResult<void> {
         if (!keypairs || typeof window !== 'undefined') {
             const flattened = JSON.stringify(keypairs);
             window.localStorage.setItem(KEYPAIR_LOCAL_STORAGE, flattened);
-            return ok(undefined)
+            return ok(undefined);
         }
-        return err(IErrorInternal.UnableToSaveKeypairLocal)
+        return err(IErrorInternal.UnableToSaveKeypairLocal);
     }
 
     /**
-    * Save keypairs to localStorage. (Browser)
-    * 
-    * @export
-    * @return {*} {IKeypairEncrypted[]}
-    */
+     * Save keypairs to localStorage. (Browser)
+     *
+     * @export
+     * @return {*} {IKeypairEncrypted[]}
+     */
     public getKeypairs(): IResult<IKeypairEncrypted[]> {
         let result = null;
         if (typeof window !== 'undefined')
             result = window.localStorage.getItem(KEYPAIR_LOCAL_STORAGE);
-        if (result != null)
-            return ok(JSON.parse(result))
-        return err(IErrorInternal.UnableToGetLocalKeypair)
+        if (result != null) return ok(JSON.parse(result));
+        return err(IErrorInternal.UnableToGetLocalKeypair);
     }
 }
