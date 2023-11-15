@@ -62,19 +62,19 @@ export function getInputsForTx(
     const enoughRunningTotal = isOfTypeAssetToken
         ? paymentAsset.Token <= fetchBalanceResponse.total.tokens
         : paymentAsset.Receipt.amount <=
-        fetchBalanceResponse.total.receipts[paymentAsset.Receipt.drs_tx_hash];
+          fetchBalanceResponse.total.receipts[paymentAsset.Receipt.drs_tx_hash];
 
     if (enoughRunningTotal) {
         // Initialize the total amount gathered; apply DRS transaction hash where required
         let totalAmountGathered: IAssetToken | IAssetReceipt = isOfTypeAssetToken
             ? initIAssetToken()
             : initIAssetReceipt({
-                Receipt: {
-                    amount: 0,
-                    drs_tx_hash: paymentAsset.Receipt.drs_tx_hash,
-                    metadata: paymentAsset.Receipt.metadata,
-                },
-            });
+                  Receipt: {
+                      amount: 0,
+                      drs_tx_hash: paymentAsset.Receipt.drs_tx_hash,
+                      metadata: paymentAsset.Receipt.metadata,
+                  },
+              });
         // A list of all addresses used to gather inputs
         const usedAddresses: string[] = [];
         // A list of all addresses which no longer contain usable assets after this transaction is created

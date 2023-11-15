@@ -145,7 +145,7 @@ export class ABlockWallet {
      *
      * @param {string} seedPhrase - Seed phrase
      * @param {IClientConfig} config - Additional configuration parameters
-     * @param initOffline - Optionally initialize the client without initializing network settings 
+     * @param initOffline - Optionally initialize the client without initializing network settings
      * @return {*}  {IClientResponse}
      * @memberof ABlockWallet
      */
@@ -182,7 +182,7 @@ export class ABlockWallet {
      * Common network initialization (retrieval of PoW list for compute and storage)
      *
      * @param {IClientConfig} config - Configuration parameters
-     * @return {*}  {IClientResponse} 
+     * @return {*}  {IClientResponse}
      * @memberof ABlockWallet
      */
     public async initNetwork(config: IClientConfig): Promise<IClientResponse> {
@@ -194,7 +194,7 @@ export class ABlockWallet {
         if (this.mempoolHost == undefined)
             return {
                 status: 'error',
-                reason: IErrorInternal.NoComputeHostProvided
+                reason: IErrorInternal.NoComputeHostProvided,
             } as IClientResponse;
 
         // Initialize routes proof-of-work for compute host
@@ -204,7 +204,6 @@ export class ABlockWallet {
             this.mempoolRoutesPoW,
         );
         if (initComputeResult.status == 'error') return initComputeResult;
-
 
         // Optional - Initialize routes proof-of-work for storage host
         if (this.storageHost !== undefined) {
@@ -356,9 +355,9 @@ export class ABlockWallet {
      */
     public async fetchTransactions(transactionHashes: string[]): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.storageHost || !this.storageRoutesPoW) /* Storage is optional on wallet init, but must be initialized here */
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.storageHost || !this.storageRoutesPoW)
+                /* Storage is optional on wallet init, but must be initialized here */
                 throw new Error(IErrorInternal.StorageNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 this.mempoolRoutesPoW,
@@ -508,10 +507,8 @@ export class ABlockWallet {
      */
     async getNotaryBurnAddress(): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.notaryHost)
-                throw new Error(IErrorInternal.NotaryNotInitialized);
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.notaryHost) throw new Error(IErrorInternal.NotaryNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 new Map(),
                 IAPIRoute.GetNotaryBurnAddress,
@@ -555,10 +552,8 @@ export class ABlockWallet {
         signatures: IGenericKeyPair<string>,
     ): Promise<IClientResponse> {
         try {
-            if (!this.keyMgmt)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.notaryHost)
-                throw new Error(IErrorInternal.NotaryNotInitialized);
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.notaryHost) throw new Error(IErrorInternal.NotaryNotInitialized);
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 new Map(),
                 IAPIRoute.GetNotarySignature,
@@ -600,10 +595,7 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    signMessage(
-        keyPairsToSignWith: IKeypairEncrypted[],
-        message: string,
-    ): IClientResponse {
+    signMessage(keyPairsToSignWith: IKeypairEncrypted[], message: string): IClientResponse {
         try {
             if (this.keyMgmt === undefined) throw new Error(IErrorInternal.ClientNotInitialized);
             const keyPairs = throwIfErr(this.keyMgmt.decryptKeypairs(keyPairsToSignWith));
@@ -643,7 +635,6 @@ export class ABlockWallet {
             } as IClientResponse;
         }
     }
-
 
     /**
      * Make a payment of a specified token amount to a payment address
@@ -711,8 +702,7 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.intercomHost)
-                throw new Error(IErrorInternal.IntercomNotInitialized);
+            if (!this.intercomHost) throw new Error(IErrorInternal.IntercomNotInitialized);
             const senderKeypair = throwIfErr(this.keyMgmt.decryptKeypair(receiveAddress));
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
@@ -858,8 +848,7 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.intercomHost)
-                throw new Error(IErrorInternal.IntercomNotInitialized);
+            if (!this.intercomHost) throw new Error(IErrorInternal.IntercomNotInitialized);
 
             // Generate a key-pair map
             const [allAddresses, keyPairMap] = throwIfErr(
@@ -1174,13 +1163,13 @@ export class ABlockWallet {
     }
 
     /**
-    * Get keypairs from localStorage. (Browser)
-    * It is recommended to use user defined methods for I/O operations (see https://github.com/ABlockOfficial/A-Block.js#getting-started)
-    * 
-    * @export
-    * @param {string} keypairs IKeypairEncrypted[] flattened to a string
-    * @return {*} {void}
-    */
+     * Get keypairs from localStorage. (Browser)
+     * It is recommended to use user defined methods for I/O operations (see https://github.com/ABlockOfficial/A-Block.js#getting-started)
+     *
+     * @export
+     * @param {string} keypairs IKeypairEncrypted[] flattened to a string
+     * @return {*} {void}
+     */
     getKeypairs(): IClientResponse {
         try {
             if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
@@ -1188,9 +1177,7 @@ export class ABlockWallet {
                 status: 'success',
                 reason: ISuccessInternal.KeypairObtained,
                 content: {
-                    getKeypairsResponse: throwIfErr(
-                        this.keyMgmt.getKeypairs()
-                    ),
+                    getKeypairsResponse: throwIfErr(this.keyMgmt.getKeypairs()),
                 },
             };
         } catch (error) {
@@ -1311,8 +1298,7 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.intercomHost)
-                throw new Error(IErrorInternal.IntercomNotInitialized);
+            if (!this.intercomHost) throw new Error(IErrorInternal.IntercomNotInitialized);
             const [allAddresses, keyPairMap] = throwIfErr(
                 this.keyMgmt.getAllAddressesAndKeypairMap(allKeypairs),
             );

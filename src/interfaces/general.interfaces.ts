@@ -8,14 +8,14 @@ export type IClientConfig = {
     storageHost?: string;
     intercomHost?: string;
     notaryHost?: string;
-    passphrase: string; /* Required */
+    passphrase: string /* Required */;
 };
 
 // Init
 export type INewWalletResponse = {
-    seedphrase: string,
-    masterKey: IMasterKeyEncrypted,
-}
+    seedphrase: string;
+    masterKey: IMasterKeyEncrypted;
+};
 
 /* -------------------------------------------------------------------------- */
 /*                             Internal Interfaces                            */
