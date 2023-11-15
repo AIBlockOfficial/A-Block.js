@@ -94,7 +94,7 @@ test('derives deterministic signable keypairs through ed25519, via seed', () => 
     }
 });
 
-// NOTE: This test corresponds with `test_construct_valid_addresses` in NAOM
+// NOTE: This test corresponds with `test_construct_valid_addresses` in Chain 
 test('generates a valid payment address with the temporary address structure', () => {
     const actual = [
         keyMgmt
@@ -117,7 +117,7 @@ test('generates a valid payment address with the temporary address structure', (
     expect(actual).toEqual(expected);
 });
 
-test('generates a valid payment address with latest ZNP version', () => {
+test('generates a valid payment address with latest ABlock network version', () => {
     const actual = [
         keyMgmt.constructAddress(getHexStringBytes(PUBLIC_KEYS[0]), ADDRESS_VERSION).unwrapOr(''),
         keyMgmt.constructAddress(getHexStringBytes(PUBLIC_KEYS[1]), ADDRESS_VERSION).unwrapOr(''),

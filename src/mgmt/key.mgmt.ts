@@ -75,6 +75,8 @@ export function generateSeed(): IResult<string> {
  * @param passphrase {string} - Passphrase as a string
  */
 export function getPassphraseBuffer(passphrase: string): IResult<Uint8Array> {
+    if (passphrase == undefined)
+        return err(IErrorInternal.NoPassPhraseProvided);
     try {
         const hash = sha3_256(passphrase);
         const val = truncateByBytesUTF8(hash, 32);

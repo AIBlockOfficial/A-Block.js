@@ -98,101 +98,69 @@ Install the module to your project:
 
 -   `initNew`
 
-    ```typescript
-    import { ABlockWallet } from '@a-block/a-blockjs';
+```typescript
+import { ABlockWallet } from '@a-block/a-blockjs';
 
-    const COMPUTE_HOST = 'example.compute.host.com';
-    const INTERCOM_HOST = 'example.intercom.host.com';
-    const PASSPHRASE = 'a secure passphrase';
+const CONFIG = {
+  mempoolHost: 'example.mempool.host.com',
+  passphrase: 'a secure passphrase',
+/* Optional, subject to certain requests not being usable.
+  storageHost: example.storage.host.com;
+  intercomHost: example.intercom.host.com;
+  notaryHost: example.notary.host.com;
+*/
+};
 
-    // Create the client object
-    const client = new ABlockWallet();
-
-    // Initialize the client with the needed configuration
-    // NOTE: This is an async call
-    client
-        .initNew({
-            computeHost: COMPUTE_HOST,
-            intercomHost: INTERCOM_HOST,
-            passPhrase: PASSPHRASE,
-        })
-        .then((initResult) => {
-            // Display the seed phrase to the user for safe keeping
-            displaySeedPhrase(initResult.content.initNewResponse[0]);
-
-            // Store the encrypted master key safely
-            saveMasterKey(initResult.content.initNewResponse[1]);
-        });
-    ```
-
-When the client is initialized without a pre-generated seed phrase or existing master key, the `initNew` function is used to initialize the client. This type of initialization will in return provide a generated seed phrase as well as its corresponding master key in an encrypted format. It is then up to the developer to store this master key somewhere safe, and to display the seed phrase at least once to the user for safe-keeping. This seed phrase can be used to re-construct lost key-pairs if the need should arise.
-
-Some arguments during the initialization are optional, such as the `initOffline`- which is used to initialize the client in an offline state.
-
-The `computeHost` and `intercomHost` interface elements are used to determine the API endpoints for the Compute node, and ABlock Intercom server the client is supposed to connect to, respectively.
-
-A user-defined `passPhrase` needs to be supplied to the client during initialization, as this passphrase will be used to encrypt/decrypt data during operations.
-
--   `initFromMasterKey`
-
-    ```typescript
-    import { ABlockWallet } from '@a-block/a-blockjs';
-
-    const COMPUTE_HOST = 'example.compute.host.com'
-    const INTERCOM_HOST = 'example.intercom.host.com'
-    const PASSPHRASE = 'a secure passphrase'
-
-    // Create the client object
-    const client = new ABlockWallet();
-
-    // Initialize the client with the needed configuration
-    client.initFromMasterKey({
-        computeHost: COMPUTE_HOST,
-        intercomHost: INTERCOM_HOST,
-        passPhrase: PASSPHRASE,
-      },
-      masterKey: getMasterKey()
-    );
-    ```
-
-When an existing master key exists, this type of initialization **should** be used. This typically occurs when the client has been initialized previously using `initNew` and the encrypted master key has been stored safely. Using an existing master key will ensure that BIP39 key-pair derivation is consistent. This type of initialization does not have a return value.
-
--   `initFromSeed`
-
-    ```typescript
-    import { ABlockWallet } from '@a-block/a-blockjs';
-
-    const COMPUTE_HOST = 'example.compute.host.com'
-    const INTERCOM_HOST = 'example.intercom.host.com'
-    const PASSPHRASE = 'a secure passphrase'
-    const SEED_PHRASE = 'a seed phrase that should look like a bunch of random words'
-
-    // Create the client object
-    const client = new ABlockWallet();
-
-    // Initialize the client with the needed configuration
-    client.initFromSeed({
-        computeHost: COMPUTE_HOST,
-        intercomHost: INTERCOM_HOST,
-        passPhrase: PASSPHRASE,
-      },
-      seedPhrase: SEED_PHRASE
-    ).then((initResult) => {
-      const masterKey = initResult.content.initFromSeedResponse;
-
-      // Store the encrypted master key safely
-      saveMasterKey(initResult.content.initFromSeedResponse);
+// Create the wallet object
+const wallet = new ABlockWallet();
+// Initialize the wallet with the needed configuration
+// NOTE: This is an async call
+wallet
+    .initNew(CONFIG)
+    .then((res) => {
+        // Display the seed phrase to the user for safe keeping
+        display(res.content.initNewResponse.seedphrase);
+        // Store the encrypted master key safely
+        saveMasterKey(res.content.initNewResponse.masterKey);
     });
-    ```
+```
 
-Initialization of the client through the use of an existing seed phrase may happen for one of two reasons:
+When the wallet is initialized without a pre-generated seed phrase or existing master key, the `initNew` function is used to initialize the wallet. This type of initialization will in return provide a generated seed phrase as well as its corresponding master key in an encrypted format. It is then up to the developer to store this master key somewhere safe, and to display the seed phrase at least once to the user for safe-keeping. This seed phrase can be used to re-construct lost key-pairs if the need should arise.
+
+Some arguments during the initialization are optional, such as the `initOffline`- which is used to initialize the wallet in an offline state.
+
+The `computeHost` and `intercomHost` interface elements are used to determine the API endpoints for the Compute node, and ABlock Intercom server the wallet is supposed to connect to, respectively.
+
+A user-defined `passPhrase` needs to be supplied to the wallet during initialization, as this passphrase will be used to encrypt/decrypt data during operations.
+
+-   `fromMasterKey`
+
+```typescript
+// Initialize the wallet with the needed configuration
+wallet.fromMasterKey(masterKey, CONFIG);
+```
+
+When an existing master key exists, this type of initialization **should** be used. This typically occurs when the wallet has been initialized previously using `initNew` and the encrypted master key has been stored safely. Using an existing master key will ensure that BIP39 key-pair derivation is consistent. This type of initialization does not have a return value.
+
+-   `fromSeed`
+
+```typescript
+const sp = 'existing seed phrase';
+// Initialize the wallet with the needed configuration
+wallet.fromSeed(sp, CONFIG).then((res) => {
+  // Store the encrypted master key safely
+  saveMasterKey(initResult.content.fromSeedResponse);
+});
+```
+
+Initialization of the wallet through the use of an existing seed phrase may happen for one of two reasons:
 
 <ol>
 <li>
 The user has lost their key-pairs and re-generation is needed by providing the seed phrase.
 </li>
 <li>
-A valid seed phrase has been pre-generated due to specific UX design constraints and needs to be used to initialize the client.
+A valid seed phrase has been pre-generated due to specific UX design constraints and needs to be used to initialize the wallet.
 </li>
 </ol>
 
@@ -205,36 +173,33 @@ This type of initialization will return the corresponding master key (in an encr
 ```typescript
 import { ABlockWallet } from '@a-block/a-blockjs';
 
-const COMPUTE_HOST = 'example.compute.host.com';
-const INTERCOM_HOST = 'example.intercom.host.com';
-const PASSPHRASE = 'a secure passphrase';
+// Create the wallet object
+const wallet = new ABlockWallet();
 
-// Create the client object
-const client = new ABlockWallet();
-
-// Configuration
-const config = {
-    computeHost: COMPUTE_HOST,
-    intercomHost: INTERCOM_HOST,
-    passPhrase: PASSPHRASE,
-};
-
-// Initialize the client with the needed configuration
-const initResult = client.initNew(config, true).then((initResult) => {
+// Initialize the wallet with the needed configuration
+const initResult = wallet.initNew({passphrase: 'a secure passphrase'}, true).then((initResult) => {
     const [seedPhrase, masterKeyEncrypted] = initResult.content.initNewResponse;
 
     // Display the seed phrase to the user for safe keeping
-    displaySeedPhrase(seedPhrase);
+    display(seedPhrase);
 
     // Store the encrypted master key safely
     saveMasterKey(masterKeyEncrypted);
 });
 
+// Configuration
+const config = {
+  mempoolHost: 'example.mempool.host.com',
+  storageHost: 'example.storage.host.com';
+  intercomHost: 'example.intercom.host.com';
+  notaryHost: 'example.notary.host.com';
+};
+
 // Initialize network configuration when required
-const initNetworkResult = client.initNetwork(config);
+const initNetworkResult = wallet.initNetwork(config);
 ```
 
-In some cases, it might be desirable to initialize the client without a network connection. This will allow the client to be used offline, but will inadvertently prevent the client from being able to perform any operations that require interaction with the ABlock network. The following functions are available with an offline configuration:
+In some cases, it might be desirable to initialize the wallet without a network connection. This will allow the wallet to be used offline, but will inadvertently prevent the wallet from being able to perform any operations that require interaction with the ABlock network. The following functions are available with an offline configuration:
 
 -   `regenAddresses` - Re-generate lost key-pairs from a list of given addresses.
 -   `getNewKeypair` - Generate a new key-pair.
@@ -291,7 +256,7 @@ Many methods will either **require** or **return** different types of data depen
 
 ## Usage
 
-After the client has been correctly initialized, the methods provided by the client will allow the developer to interact with the ABlock blockchain network.
+After the wallet has been correctly initialized, the methods provided by the wallet will allow the developer to interact with the ABlock blockchain network.
 
 ### Generating and Testing Seed Phrases
 
@@ -313,9 +278,9 @@ After the client has been correctly initialized, the methods provided by the cli
     const testResult = testSeedPhrase(seedPhrase);
     ```
 
-As seen previously, depending on the scenario, the client can be initialized in a number of different ways. If the client is initialized using `initNew`, a new seed phrase will be generated automatically. However, in some cases the client needs to be initialized using a pre-generated or provided seed phrase.
+As seen previously, depending on the scenario, the wallet can be initialized in a number of different ways. If the wallet is initialized using `initNew`, a new seed phrase will be generated automatically. However, in some cases the wallet needs to be initialized using a pre-generated or provided seed phrase.
 
-The `generateSeedPhrase` method is provided by the module to generate valid new seed phrases on the fly. This is especially useful in cases where UX design constraints require a valid seed phrase to be generated and displayed to the user before the client is initialized.
+The `generateSeedPhrase` method is provided by the module to generate valid new seed phrases on the fly. This is especially useful in cases where UX design constraints require a valid seed phrase to be generated and displayed to the user before the wallet is initialized.
 
 Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is customary for the user to be able to provide their own seed phrase should the need arise. To test if the seed phrase is capable of constructing a valid master key, the `testSeedPhrase` method should be used.
 
@@ -326,13 +291,13 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
 
-    const client = new ABlockWallet();
+    const wallet = new ABlockWallet();
 
-    // Initialize the client correctly
+    // Initialize the wallet correctly
     ...
 
     // The array argument can contain existing keypairs to be used
-    const newKeypairResult = client.getNewKeypair([]);
+    const newKeypairResult = wallet.getNewKeypair([]);
 
     const newKeypair: IKeypairEncrypted = newKeypairResult.content.newKeypairResponse;
 
@@ -350,17 +315,17 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
 
-    const client = new ABlockWallet();
+    const wallet = new ABlockWallet();
 
-    // Initialize the client correctly
+    // Initialize the wallet correctly
     ...
 
-    const allKeypairs = getAllKeypairs();
+    const allKeypairs = getKeyPairs();
 
     // We only need the 'address' field of the key-pairs
     const addressList = allKeypairs.map(keypair => keypair.address);
 
-    const balanceResult = await client.fetchBalance(addressList);
+    const balanceResult = await wallet.fetchBalance(addressList);
 
     const balance: IFetchBalanceResponse = balanceResult.content.fetchBalanceResponse;
     ```
@@ -440,25 +405,25 @@ or complex logic to create.
 ```typescript
 import { ABlockWallet } from '@a-block/a-blockjs';
 
-const client = new ABlockWallet();
+const wallet = new ABlockWallet();
 
-// Initialize the client correctly
+// Initialize the wallet correctly
 ...
 
 // Address / key-pair to assign the `Receipt` assets to
-const keyPair = getAllKeypairs()[0];
+const keyPair = getKeypairs()[0];
 
 // Create `Receipt` assets that have the default DRS identifier
-const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
+const createReceiptResponse = await wallet.createReceipts(keyPair).content.createReceiptResponse;
 
 <!-- --------------------------------- OR ---------------------------------- -->
 
 // Create `Receipt` assets that have a unique DRS identifier
-const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+const createReceiptResponse = await wallet.createReceipts(keyPair, false).content.createReceiptResponse;
 
 <!-- --------------------------------- ALL ARGUMENTS VERSION ---------------------------------- -->
 
-const createReceiptResponse = await client.createReceipts(
+const createReceiptResponse = await wallet.createReceipts(
   keyPair,
   false,
   10000,
@@ -508,13 +473,13 @@ const createReceiptResponse = await client.createReceipts(
 ```typescript
 import { ABlockWallet } from '@a-block/a-blockjs';
 
-const client = new ABlockWallet();
+const wallet = new ABlockWallet();
 
-// Initialize the client correctly
+// Initialize the wallet correctly
 ...
 
 // All key-pairs
-const allKeypairs = getAllKeypairs();
+const allKeypairs = getKeyPairs();
 
 // Change/excess key-pair
 const changeKeyPair = allKeypairs[0];
@@ -545,13 +510,13 @@ await makeTokenPayment(
 ```typescript
 import { ABlockWallet } from '@a-block/a-blockjs';
 
-const client = new ABlockWallet();
+const wallet = new ABlockWallet();
 
-// Initialize the client correctly
+// Initialize the wallet correctly
 ...
 
 // All key-pairs
-const keyPairs = getAllKeypairs();
+const keyPairs = getKeypairs();
 
 // Change/excess key-pair
 const changeKeyPair = keyPairs[0];
@@ -586,13 +551,13 @@ await makeReceiptPayment(
 ```typescript
 import { ABlockWallet } from '@a-block/a-blockjs';
 
-const client = new ABlockWallet();
+const wallet = new ABlockWallet();
 
-// Initialize the client correctly
+// Initialize the wallet correctly
 ...
 
 // All key-pairs
-const allKeypairs = getAllKeypairs();
+const allKeypairs = getKeyPairs();
 
 // Receive address (which is also the excess/change address)
 const receivingAddress = allKeypairs[0];
@@ -632,19 +597,19 @@ const paymentResult = await makeRbPayment(
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
 
-    const client = new ABlockWallet();
+    const wallet = new ABlockWallet();
 
-    // Initialize the client correctly
+    // Initialize the wallet correctly
     ...
 
     // ALl key-pairs
-    const allKeypairs = getAllKeypairs();
+    const allKeypairs = getKeyPairs();
 
     // All encrypted transactions
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // Fetch pending receipt-based payments
-    const pendingRbTransactionsResult = await client.fetchPendingRbTransactions(
+    const pendingRbTransactionsResult = await wallet.fetchPendingRbTransactions(
           allKeypairs,
           allEncryptedTxs:,
       )
@@ -699,9 +664,9 @@ const paymentResult = await makeRbPayment(
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
 
-    const client = new ABlockWallet();
+    const wallet = new ABlockWallet();
 
-    // Initialize the client correctly
+    // Initialize the wallet correctly
     ...
 
     // Fetch the pending receipt-based payments from the network
@@ -710,15 +675,15 @@ const paymentResult = await makeRbPayment(
 
     // Fetch all existing key-pairs
     ...
-    const allKeypairs = getAllKeypairs();
+    const allKeypairs = getKeyPairs();
 
     // Accept a receipt-based payment using its unique `DRUID` identifier
-    await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await wallet.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Reject a receipt-based payment using its unique `DRUID` identifier
-    await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await wallet.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
     ```
 
     Receipt-based transactions are accepted **or** rejected by passing their unique DRUID identifier as an argument to the corresponding methods.
@@ -727,7 +692,7 @@ const paymentResult = await makeRbPayment(
 
 ## Client Response Type
 
-All methods provided by the client have a return value corresponding to the following interface:
+All methods provided by the wallet have a return value corresponding to the following interface:
 
 ```typescript
 export type IClientResponse = {
@@ -746,6 +711,6 @@ export type IClientResponse = {
 
 -   `reason`: Detailed feedback corresponding to the `status` field
 
--   `content`: Data structures or values returned from the client object
+-   `content`: Data structures or values returned from the wallet object
 
 <p align="right">(<a href="#top">back to top</a>)</p>

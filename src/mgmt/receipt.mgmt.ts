@@ -22,7 +22,7 @@ import { createTx, getInputsForTx } from './tx.mgmt';
 /* -------------------------------------------------------------------------- */
 
 /**
- * Create a payload needed to create receipt assets which is suitable for processing by a compute node
+ * Create a payload needed to create receipt assets which is suitable for processing by a mempool node
  *
  * @export
  * @param {Uint8Array} secretKey - Secret key as Uint8Array
@@ -69,7 +69,7 @@ export function createReceiptPayload(
  * Create one "half" of a receipt-based payment
  *
  * @export
- * @param {IFetchBalanceResponse} fetchBalanceResponse - Balance as received from the compute node
+ * @param {IFetchBalanceResponse} fetchBalanceResponse - Balance as received from the mempool node
  * @param {string} druid - Unique DRUID value associated with this transaction; needs to match the other "half" of this receipt-based payment
  * @param {IDruidExpectation} senderExpectation - Expectation for the sender of this transaction
  * @param {IDruidExpectation} receiverExpectation - Expectation for the receiver of this transaction

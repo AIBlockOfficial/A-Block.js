@@ -13,6 +13,7 @@ import {
     IKeypairEncrypted,
     IMasterKey,
     IMasterKeyEncrypted,
+    INewWalletResponse,
     IResult,
 } from '../interfaces';
 import {
@@ -25,11 +26,12 @@ import {
     getAddressVersion,
     getNextDerivedKeypair,
     getPassphraseBuffer,
+    KEYPAIR_LOCAL_STORAGE,
     SEED_REGEN_THRES,
     TEMP_ADDRESS_VERSION,
 } from '../mgmt';
 import { concatTypedArrays, getBytesString, getStringBytes, truncateByBytesUTF8 } from '../utils';
-import { getBytesHexString } from '../utils/general.utils';
+import { getBytesHexString, getHexStringBytes } from '../utils/general.utils';
 
 export class mgmtClient {
     private passphraseKey: Uint8Array;
@@ -60,7 +62,7 @@ export class mgmtClient {
      * @return {*}  {IResult<[string, IMasterKeyEncrypted]>}
      * @memberof mgmtClient
      */
-    public initNew(passphraseKey: string): IResult<[string, IMasterKeyEncrypted]> {
+    public initNew(passphraseKey: string): IResult<INewWalletResponse> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
@@ -73,18 +75,18 @@ export class mgmtClient {
         const saveIResult = this.encryptMasterKey(newMasterKey.value, passphrase.value);
         if (saveIResult && saveIResult.isErr()) return err(saveIResult.error);
         this.seedPhrase = generatedSeed.value;
-        return ok([generatedSeed.value, saveIResult.value]);
+        return ok({ seedphrase: generatedSeed.value, masterKey: saveIResult.value });
     }
 
     /**
      * Init the client with a provided master key
      *
-     * @param {string} passphraseKey
      * @param {IMasterKeyEncrypted} masterKey
+     * @param {string} passphraseKey
      * @return {*}  {IResult<void>}
      * @memberof mgmtClient
      */
-    public initFromMasterKey(passphraseKey: string, masterKey: IMasterKeyEncrypted): IResult<void> {
+    public fromMasterKey(masterKey: IMasterKeyEncrypted, passphraseKey: string): IResult<void> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
@@ -98,12 +100,12 @@ export class mgmtClient {
     /**
      * Init the client with a provided seed phrase
      *
-     * @param {string} passphraseKey
      * @param {string} seedPhrase
+     * @param {string} passphraseKey
      * @return {*}  {IResult<IMasterKeyEncrypted>}
      * @memberof mgmtClient
      */
-    public initFromSeed(passphraseKey: string, seedPhrase: string): IResult<IMasterKeyEncrypted> {
+    public fromSeed(seedPhrase: string, passphraseKey: string): IResult<IMasterKeyEncrypted> {
         const passphrase = getPassphraseBuffer(passphraseKey);
         if (passphrase.isErr()) return err(passphrase.error);
         this.passphraseKey = passphrase.value;
@@ -480,16 +482,26 @@ export class mgmtClient {
      * @memberof mgmtClient
      */
     public signMessage(keypairs: IKeypair[], message: string): IResult<IGenericKeyPair<string>> {
-        try {
-            const signatures: IGenericKeyPair<string> = {};
-            for (const keypair of keypairs) {
-                const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
-                signatures[getBytesHexString(keypair.publicKey)] = getBytesHexString(signature);
-            }
-            return ok(signatures);
-        } catch {
-            return err(IErrorInternal.UnableToSignMessage);
+        if (keypairs.length < 1)
+            return err(IErrorInternal.InvalidInputs);
+        const signatures: IGenericKeyPair<string> = {};
+        for (const keypair of keypairs) {
+            const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
+            signatures[getBytesHexString(keypair.publicKey)] = getBytesHexString(signature);
         }
+        if (Object.keys(signatures).length < 1) return err(IErrorInternal.UnableToSignMessage);
+        return ok(signatures);
+    }
+
+    public verifyMessage(message: string, signatures: IGenericKeyPair<string>, keypairs: IKeypair[]): IResult<boolean> {
+        if (keypairs.length < 1 || Object.keys(signatures).length != keypairs.length)
+            return err(IErrorInternal.InvalidInputs);
+        for (const keypair of keypairs) {
+            const sig = signatures[getBytesHexString(keypair.publicKey)]
+            if (!sig || !nacl.sign.detached.verify(Buffer.from(message), getHexStringBytes(sig), keypair.publicKey))
+                return err(IErrorInternal.UnableToVerifyMessage);
+        }
+        return ok(true);
     }
 
     /**
@@ -503,5 +515,36 @@ export class mgmtClient {
         const encryptedMasterKey = this.encryptMasterKey(this.masterKey);
         if (encryptedMasterKey.isErr()) return err(encryptedMasterKey.error);
         return ok(encryptedMasterKey.value);
+    }
+
+    /**
+    * Save keypairs to localStorage. (Browser)
+    * 
+    * @export
+    * @param {string} keypairs IKeypairEncrypted[] flattened to a string
+    * @return {*} {void} address of saved keypair
+    */
+    public saveKeypairs(keypairs: IKeypairEncrypted[]): IResult<void> {
+        if (!keypairs || typeof window !== 'undefined') {
+            const flattened = JSON.stringify(keypairs);
+            window.localStorage.setItem(KEYPAIR_LOCAL_STORAGE, flattened);
+            return ok(undefined)
+        }
+        return err(IErrorInternal.UnableToSaveKeypairLocal)
+    }
+
+    /**
+    * Save keypairs to localStorage. (Browser)
+    * 
+    * @export
+    * @return {*} {IKeypairEncrypted[]}
+    */
+    public getKeypairs(): IResult<IKeypairEncrypted[]> {
+        let result = null;
+        if (typeof window !== 'undefined')
+            result = window.localStorage.getItem(KEYPAIR_LOCAL_STORAGE);
+        if (result != null)
+            return ok(JSON.parse(result))
+        return err(IErrorInternal.UnableToGetLocalKeypair)
     }
 }

@@ -7,11 +7,11 @@ import { Result } from 'neverthrow';
 export enum IErrorAll {
     IErrorInternal,
     IErrorNotary,
-    IErrorZNP,
+    IErrorNetwork,
 }
 
-// ZNP Error Types
-export enum IErrorZNP {
+// Network Error Types
+export enum IErrorNetwork {
     InternalServerError = 'Internal Server Error',
     InvalidPassphrase = 'Invalid passphrase',
     BlankPassphrase = 'New passphrase cannot be blank',
@@ -19,7 +19,7 @@ export enum IErrorZNP {
     CannotParseAddress = 'Cannot parse address',
     CannotAccessWallet = 'Cannot access wallet',
     CannotAccessUserNode = 'Cannot access user node',
-    CannotAccessComputeNode = 'Cannot access compute node',
+    CannotAccessMempoolNode = 'Cannot access mempool node',
     CannotAccessPeerUserNode = 'Cannot access peer user node',
     CannotSaveAddressesToWallet = 'Cannot save address to wallet',
     CannotFetchBalance = 'Cannot fetch balance',
@@ -40,11 +40,11 @@ export enum IErrorNotary {
     InternalServerError = 'Internal Server Error',
     NotaryNotAuthorized = 'Notary not authorized for operation',
     AddressConstructionFailed = 'Address construction from public keys failed',
-    TransactionOutputsHaveNoZeno = 'Transaction outputs do not contain Zeno tokens',
+    TransactionOutputsHaveNoTokens = 'Transaction outputs do not contain tokens',
     InputsDoNotBelongToPk = 'Previous inputs do not belong to the provided public keys',
     InvalidSignatures = 'Invalid signatures provided',
-    InvalidBurnTransaction = 'Transaction outputs to burn address do not contain Zeno tokens',
-    TransactionOutputsEmpty = 'Transaction outputs contain no Zeno tokens assigned to provided burn address',
+    InvalidBurnTransaction = 'Transaction outputs to burn address do not contain tokens',
+    TransactionOutputsEmpty = 'Transaction outputs contain no tokens assigned to provided burn address',
     KeypairUndefined = 'Key-pair undefined',
 }
 
@@ -71,6 +71,8 @@ export enum IErrorInternal {
     UnableToGenerateKeypair = 'Unable to generate key-pair',
     UnableToDeriveNextKeypair = 'Unable to derive next key-pair',
     UnableToEncryptKeypair = 'Unable to encrypt key-pair',
+    UnableToSaveKeypairLocal = 'Unable to save key-pair to local storage',
+    UnableToGetLocalKeypair = 'Unable to get key-pair from local storage',
     UnableToEncryptMasterKey = 'Unable to encrypt master key',
     UnableToDecryptKeypair = 'Unable to decrypt keypair',
     UnableToDecryptMasterKey = 'Unable to decrypt master key',
@@ -82,6 +84,9 @@ export enum IErrorInternal {
     InvalidDRUIDProvided = 'Invalid DRUID value provided',
     UnableToFilterIntercomData = 'Unable to filter intercom data',
     ClientNotInitialized = 'Client not initialized',
+    StorageNotInitialized = 'Storage host not initialized',
+    IntercomNotInitialized = 'Intercom host not initialized',
+    NotaryNotInitialized = 'Notary host not initialized',
     FetchBalanceResponseEmpty = 'Balance object is empty',
     NoDRUIDValues = 'DRUID values are null',
     AssetsIncompatible = 'Assets are incompatible',
@@ -89,9 +94,12 @@ export enum IErrorInternal {
     UnableToFindNonEmptyAddresses = 'Unable to find addresses that contain assets',
     InvalidNetworkResponse = 'Invalid network response',
     UnableToSignMessage = 'Unable to sign message',
+    UnableToVerifyMessage = 'Unable to verify message',
     NoHostsProvided = 'No hosts provided',
     NoKeypairsProvided = 'No key-pairs provided',
-    UnknownError = 'Unknown Error',
+    NoPassPhraseProvided = 'No passphrase provided',
+    NoComputeHostProvided = 'No compute host provided',
+    UnknownError = 'Unknown Error'
 }
 
 // Custom `Result` wrapper with string error

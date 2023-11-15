@@ -4,12 +4,18 @@
 
 // Config needed for initialization
 export type IClientConfig = {
-    computeHost?: string;
+    mempoolHost?: string;
     storageHost?: string;
     intercomHost?: string;
     notaryHost?: string;
-    passPhrase: string;
+    passphrase: string; /* Required */
 };
+
+// Init
+export type INewWalletResponse = {
+    seedphrase: string,
+    masterKey: IMasterKeyEncrypted,
+}
 
 /* -------------------------------------------------------------------------- */
 /*                             Internal Interfaces                            */
@@ -96,7 +102,7 @@ export type IDruidExpectation = {
     asset: IAssetToken | IAssetReceipt;
 };
 
-// DDE/DRUID droplet value as stored on compute node
+// DDE/DRUID droplet value as stored on mempool node
 export type IDruidDroplet = {
     participants: number;
     tx: { [key: string]: ITransaction };
@@ -116,7 +122,7 @@ export type IAssetToken = {
     Token: number;
 };
 
-// `Script` part of body sent to compute node for processing
+// `Script` part of body sent to mempool node for processing
 export type ICreateTxInScript = {
     Pay2PkH: {
         signable_data: string;
@@ -126,13 +132,13 @@ export type ICreateTxInScript = {
     };
 };
 
-// `Transaction inputs` part of body sent to compute node for processing
+// `Transaction inputs` part of body sent to mempool node for processing
 export type ICreateTxIn = {
     previous_out: IOutPoint | null;
     script_signature: ICreateTxInScript | null;
 };
 
-// Entire request body sent to compute node for transaction processing
+// Entire request body sent to mempool node for transaction processing
 export type ICreateTransaction = {
     inputs: ICreateTxIn[];
     outputs: ITxOut[];
