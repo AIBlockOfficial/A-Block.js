@@ -7,5 +7,8 @@ module.exports = {
     "node_modules",
     "./src"
   ],
+  moduleNameMapper: {
+    "axios": "axios/dist/node/axios.cjs"
+  },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
 };
