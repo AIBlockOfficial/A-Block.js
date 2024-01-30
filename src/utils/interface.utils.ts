@@ -3,7 +3,7 @@ import {
     IAssetToken,
     IAssetReceipt,
     IDruidExpectation,
-    IPendingRbTxDetails,
+    IPendingIbTxDetails,
     IResult,
     IErrorInternal,
     IApiCreateTxResponse,
@@ -77,16 +77,16 @@ export function initIDruidExpectation(options?: Partial<IDruidExpectation>): IDr
 }
 
 /**
- * Initialize an empty structure of type `IPendingRbTxDetails`, providing optional additional values
+ * Initialize an empty structure of type `IPendingIbTxDetails`, providing optional additional values
  *
  * @export
- * @param {Partial<IPendingRbTxDetails>} [options] - Optional additional values to initialize the structure with
- * @return {*}  {IPendingRbTxDetails}
+ * @param {Partial<IPendingIbTxDetails>} [options] - Optional additional values to initialize the structure with
+ * @return {*}  {IPendingIbTxDetails}
  */
-export function initIPendingRbTxDetails(
-    options?: Partial<IPendingRbTxDetails>,
-): IPendingRbTxDetails {
-    const defaults: IPendingRbTxDetails = {
+export function initIPendingIbTxDetails(
+    options?: Partial<IPendingIbTxDetails>,
+): IPendingIbTxDetails {
+    const defaults: IPendingIbTxDetails = {
         druid: '',
         senderExpectation: initIDruidExpectation(),
         receiverExpectation: initIDruidExpectation(),
@@ -254,13 +254,13 @@ export const isOfTypeIAssetReceipt = (value: any): value is IAssetReceipt =>
     isOfType<IAssetReceipt>(value, initIAssetReceipt());
 
 /**
- *   Determine whether the provided value is of type `IPendingRbTxDetails`
+ *   Determine whether the provided value is of type `IPendingIbTxDetails`
  *
  * @param {*} value
- * @return {*}  {value is IPendingRbTxDetails}
+ * @return {*}  {value is IPendingIbTxDetails}
  */
-export const isOfTypeIPendingRbTxDetails = (value: any): value is IPendingRbTxDetails =>
-    isOfType<IPendingRbTxDetails>(value, initIPendingRbTxDetails());
+export const isOfTypeIPendingIbTxDetails = (value: any): value is IPendingIbTxDetails =>
+    isOfType<IPendingIbTxDetails>(value, initIPendingIbTxDetails());
 
 /**
  *
@@ -297,7 +297,7 @@ export const assetsAreBothTokens = (
  * @param {(IAssetToken | IAssetReceipt)} rhs
  * @return {*}  {IResult<[IAssetReceipt, IAssetReceipt]>}
  */
-export const assetsAreBothCompatibleReceipts = (
+export const assetsAreBothCompatibleItems = (
     lhs: IAssetToken | IAssetReceipt,
     rhs: IAssetToken | IAssetReceipt,
 ): IResult<[IAssetReceipt, IAssetReceipt]> => {
@@ -321,7 +321,7 @@ export const assetsAreCompatible = (
     lhs: IAssetToken | IAssetReceipt,
     rhs: IAssetToken | IAssetReceipt,
 ): boolean => {
-    return assetsAreBothTokens(lhs, rhs).isOk() || assetsAreBothCompatibleReceipts(lhs, rhs).isOk();
+    return assetsAreBothTokens(lhs, rhs).isOk() || assetsAreBothCompatibleItems(lhs, rhs).isOk();
 };
 
 /**

@@ -31,7 +31,7 @@ export type IContentType = {
     newDRUIDResponse?: string;
     newSeedPhraseResponse?: string;
     getSeedPhraseResponse?: string;
-    makeRbPaymentResponse?: IMakeRbPaymentResponse;
+    makeIbPaymentResponse?: IMakeIbPaymentResponse;
     newKeypairResponse?: IKeypairEncrypted;
     getMasterKeyResponse?: IMasterKeyEncrypted;
     initNewResponse?: INewWalletResponse;
@@ -49,7 +49,7 @@ export type IApiContentType = {
     fetchBalanceResponse?: IFetchBalanceResponse;
     fetchPendingDDEResponse?: IFetchPendingDDEResponse;
     createReceiptResponse?: ICreateReceiptResponse;
-    fetchPendingRbResponse?: IResponseIntercom<IPendingRbTxDetails>;
+    fetchPendingIbResponse?: IResponseIntercom<IPendingIbTxDetails>;
     debugDataResponse?: IDebugDataResponse;
     fetchTransactionsResponse?: IFetchTransactionsResponse;
     getNotarySignatureResponse?: INotarySignatureResponse;
@@ -145,7 +145,7 @@ export type IDebugDataResponse = {
 export type IFetchBalanceResponse = {
     total: {
         tokens: number;
-        receipts: IGenericKeyPair<number>;
+        items: IGenericKeyPair<number>;
     };
     address_list: IGenericKeyPair<{ out_point: IOutPoint; value: IAssetReceipt | IAssetToken }[]>;
 };
@@ -227,7 +227,7 @@ export type IRedisFieldEntry<T> = {
 };
 
 // NOTE: This data structure can be changed to anything and it will still be supported by the intercom server
-export type IPendingRbTxDetails = {
+export type IPendingIbTxDetails = {
     druid: string; // Value to bind transactions together
     senderExpectation: IDruidExpectation;
     receiverExpectation: IDruidExpectation;
@@ -239,7 +239,7 @@ export type IPendingRbTxDetails = {
 /*                     ABlockWallet Response Interfaces                    */
 /* -------------------------------------------------------------------------- */
 // Make receipt-based payment response
-export type IMakeRbPaymentResponse = {
+export type IMakeIbPaymentResponse = {
     druid: string;
     encryptedTx: ICreateTransactionEncrypted;
 };

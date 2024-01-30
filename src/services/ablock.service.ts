@@ -14,7 +14,7 @@ import {
     IKeypairEncrypted,
     IMasterKeyEncrypted,
     INetworkResponse,
-    IPendingRbTxDetails,
+    IPendingIbTxDetails,
     IRequestIntercomDelBody,
     IRequestIntercomGetBody,
     IResponseIntercom,
@@ -23,7 +23,7 @@ import {
 import {
     constructTxInsAddress,
     createPaymentTx,
-    createRbTxHalf,
+    createIbTxHalf,
     createReceiptPayload,
     DEFAULT_HEADERS,
     RECEIPT_DEFAULT,
@@ -446,7 +446,7 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    public async createReceipts(
+    public async createItems(
         address: IKeypairEncrypted,
         defaultDrsTxHash = true,
         amount: number = RECEIPT_DEFAULT,
@@ -692,7 +692,7 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    public async makeRbPayment(
+    public async makeIbPayment(
         paymentAddress: string,
         sendingAsset: IAssetReceipt | IAssetToken,
         receivingAsset: IAssetReceipt | IAssetToken,
@@ -731,8 +731,8 @@ export class ABlockWallet {
             };
 
             // Create "sender" half transaction with some missing data in DruidExpectations objects (`from`)
-            const sendRbTxHalf = throwIfErr(
-                createRbTxHalf(
+            const sendIbTxHalf = throwIfErr(
+                createIbTxHalf(
                     balance.content.fetchBalanceResponse,
                     druid,
                     senderExpectation,
@@ -744,17 +744,17 @@ export class ABlockWallet {
 
             // Create transaction struct has successfully been created
             // now we encrypt the created transaction for storage
-            const encryptedTx = throwIfErr(this.keyMgmt.encryptTransaction(sendRbTxHalf.createTx));
+            const encryptedTx = throwIfErr(this.keyMgmt.encryptTransaction(sendIbTxHalf.createTx));
 
             // Create "sender" details and expectations for intercom server
             receiverExpectation.from = throwIfErr(
-                constructTxInsAddress(sendRbTxHalf.createTx.inputs),
+                constructTxInsAddress(sendIbTxHalf.createTx.inputs),
             );
-            if (sendRbTxHalf.createTx.druid_info === null)
+            if (sendIbTxHalf.createTx.druid_info === null)
                 throw new Error(IErrorInternal.NoDRUIDValues);
 
             // Generate the values to be placed on the intercom server for the receiving party
-            const valuePayload: IPendingRbTxDetails = {
+            const valuePayload: IPendingIbTxDetails = {
                 druid,
                 senderExpectation,
                 receiverExpectation,
@@ -777,9 +777,9 @@ export class ABlockWallet {
                     // Payment now getting processed
                     return {
                         status: 'success',
-                        reason: ISuccessInternal.RbPaymentProcessing,
+                        reason: ISuccessInternal.IbPaymentProcessing,
                         content: {
-                            makeRbPaymentResponse: {
+                            makeIbPaymentResponse: {
                                 druid,
                                 encryptedTx: encryptedTx,
                             },
@@ -802,35 +802,35 @@ export class ABlockWallet {
      * Accept a receipt-based payment
      *
      * @param {string} druid - Unique DRUID value associated with a receipt-based payment
-     * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
+     * @param {IResponseIntercom<IPendingIbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    public async acceptRbTx(
+    public async acceptIbTx(
         druid: string,
-        pendingResponse: IResponseIntercom<IPendingRbTxDetails>,
+        pendingResponse: IResponseIntercom<IPendingIbTxDetails>,
         allKeypairs: IKeypairEncrypted[],
     ): Promise<IClientResponse> {
-        return this.handleRbTxResponse(druid, pendingResponse, 'accepted', allKeypairs);
+        return this.handleIbTxResponse(druid, pendingResponse, 'accepted', allKeypairs);
     }
 
     /**
      * Reject a receipt-based payment
      *
      * @param {string} druid - Unique DRUID value associated with a receipt-based payment
-     * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
+     * @param {IResponseIntercom<IPendingIbTxDetails>} pendingResponse - Receipt-based transaction(s) information as received from the intercom server
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
 
-    public async rejectRbTx(
+    public async rejectIbTx(
         druid: string,
-        pendingResponse: IResponseIntercom<IPendingRbTxDetails>,
+        pendingResponse: IResponseIntercom<IPendingIbTxDetails>,
         allKeypairs: IKeypairEncrypted[],
     ): Promise<IClientResponse> {
-        return this.handleRbTxResponse(druid, pendingResponse, 'rejected', allKeypairs);
+        return this.handleIbTxResponse(druid, pendingResponse, 'rejected', allKeypairs);
     }
 
     /**
@@ -841,7 +841,7 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    public async fetchPendingRbTransactions(
+    public async fetchPendingIbTransactions(
         allKeypairs: IKeypairEncrypted[],
         allEncryptedTxs: ICreateTransactionEncrypted[],
     ): Promise<IClientResponse> {
@@ -870,7 +870,7 @@ export class ABlockWallet {
 
             // Get all pending RB transactions
             let responseData = await axios
-                .post<IResponseIntercom<IPendingRbTxDetails>>(
+                .post<IResponseIntercom<IPendingIbTxDetails>>(
                     `${this.intercomHost}${IAPIRoute.IntercomGet}`,
                     pendingIntercom,
                 )
@@ -887,7 +887,7 @@ export class ABlockWallet {
 
             // Get accepted and rejected receipt-based transactions
             const rbDataToDelete: IRequestIntercomDelBody[] = [];
-            const [acceptedRbTxs, rejectedRbTxs] = [
+            const [acceptedIbTxs, rejectedIbTxs] = [
                 throwIfErr(
                     filterIntercomDataForPredicates(responseData, { status: 'accepted' }, true),
                 ),
@@ -897,9 +897,9 @@ export class ABlockWallet {
             ];
 
             // We have accepted receipt-based payments to send to mempool
-            if (Object.entries(acceptedRbTxs).length > 0) {
+            if (Object.entries(acceptedIbTxs).length > 0) {
                 const transactionsToSend: ICreateTransaction[] = [];
-                for (const acceptedTx of Object.values(acceptedRbTxs)) {
+                for (const acceptedTx of Object.values(acceptedIbTxs)) {
                     // Decrypt transaction stored along with DRUID value
                     const encryptedTx = encryptedTxMap.get(acceptedTx.value.druid);
                     if (!encryptedTx) throw new Error(IErrorInternal.InvalidDRUIDProvided);
@@ -954,8 +954,8 @@ export class ABlockWallet {
             }
 
             // Add rejected receipt-based transactions to delete list as well
-            if (Object.entries(rejectedRbTxs).length > 0) {
-                for (const rejectedTx of Object.values(rejectedRbTxs)) {
+            if (Object.entries(rejectedIbTxs).length > 0) {
+                for (const rejectedTx of Object.values(rejectedIbTxs)) {
                     const keyPair = keyPairMap.get(rejectedTx.value.senderExpectation.to);
                     if (!keyPair) throw new Error(IErrorInternal.UnableToGetKeypair);
 
@@ -980,9 +980,9 @@ export class ABlockWallet {
 
             return {
                 status: 'success',
-                reason: ISuccessInternal.PendingRbPaymentsFetched,
+                reason: ISuccessInternal.PendingIbPaymentsFetched,
                 content: {
-                    fetchPendingRbResponse: responseData,
+                    fetchPendingIbResponse: responseData,
                 },
             } as IClientResponse;
         } catch (error) {
@@ -1283,15 +1283,15 @@ export class ABlockWallet {
      *
      * @private
      * @param {string} druid - Unique DRUID value associated with this payment
-     * @param {IResponseIntercom<IPendingRbTxDetails>} pendingResponse - Pending receipt-based payments response as received from the intercom server
+     * @param {IResponseIntercom<IPendingIbTxDetails>} pendingResponse - Pending receipt-based payments response as received from the intercom server
      * @param {('accepted' | 'rejected')} status - Status to se the payment to
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    private async handleRbTxResponse(
+    private async handleIbTxResponse(
         druid: string,
-        pendingResponse: IResponseIntercom<IPendingRbTxDetails>,
+        pendingResponse: IResponseIntercom<IPendingIbTxDetails>,
         status: 'accepted' | 'rejected',
         allKeypairs: IKeypairEncrypted[],
     ): Promise<IClientResponse> {
@@ -1310,7 +1310,7 @@ export class ABlockWallet {
 
             // Find specified DRUID value and entry that is still marked as 'pending'
             const rbDataForDruid = throwIfErr(
-                filterIntercomDataForPredicates<IPendingRbTxDetails>(pendingResponse, {
+                filterIntercomDataForPredicates<IPendingIbTxDetails>(pendingResponse, {
                     druid: druid /* Filter for specific DRUID value */,
                     status: 'pending' /* Filter for status which is still 'pending' */,
                 }),
@@ -1328,10 +1328,10 @@ export class ABlockWallet {
 
             // Handle case for 'accepted'; create and send transaction to mempool node
             if (status === 'accepted') {
-                const sendRbTxHalf = throwIfErr(
+                const sendIbTxHalf = throwIfErr(
                     // Sender expectation and receiver expectation context is switched
-                    // in comparison to `makeRbPayment` since we are the receiving party
-                    createRbTxHalf(
+                    // in comparison to `makeIbPayment` since we are the receiving party
+                    createIbTxHalf(
                         balance.content.fetchBalanceResponse,
                         druid,
                         txInfo.receiverExpectation, // What we expect from the other party
@@ -1343,7 +1343,7 @@ export class ABlockWallet {
 
                 // Construct our 'from` address using our transaction inputs
                 txInfo.senderExpectation.from = throwIfErr(
-                    constructTxInsAddress(sendRbTxHalf.createTx.inputs),
+                    constructTxInsAddress(sendIbTxHalf.createTx.inputs),
                 );
 
                 // Generate the required headers
@@ -1357,7 +1357,7 @@ export class ABlockWallet {
                     .post<INetworkResponse>(
                         // We send this transaction to the mempool node specified by the sending party
                         `${txInfo.mempoolHost}${IAPIRoute.CreateTransactions}`,
-                        [sendRbTxHalf.createTx],
+                        [sendIbTxHalf.createTx],
                         { ...headers, validateStatus: () => true },
                     )
                     .then((response) => {
@@ -1372,7 +1372,7 @@ export class ABlockWallet {
 
             // Send the updated status of the transaction on the intercom server
             const setBody = [
-                generateIntercomSetBody<IPendingRbTxDetails>(
+                generateIntercomSetBody<IPendingIbTxDetails>(
                     txInfo.senderExpectation.to,
                     txInfo.receiverExpectation.to,
                     receiverKeypair,
@@ -1390,7 +1390,7 @@ export class ABlockWallet {
 
             return {
                 status: 'success',
-                reason: ISuccessInternal.RespondedToRbPayment,
+                reason: ISuccessInternal.RespondedToIbPayment,
             } as IClientResponse;
         } catch (error) {
             return {

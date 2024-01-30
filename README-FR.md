@@ -369,7 +369,7 @@ La méthode `generateSeedPhrase` est fournie par le module pour générer dynami
     {
         "total": {
             "tokens": 0,
-            "receipts": {
+            "items": {
                 "default_drs_tx_hash": 1000,
                 "g7d07...6704b": 1000
             }
@@ -423,7 +423,7 @@ La méthode `generateSeedPhrase` est fournie par le module pour générer dynami
 
 Les reçus sont les NFT (jetons non fongibles) de la blockchain ABlock, mais contrairement aux NFT, ils ne nécessitent pas l'écriture de contrats Intelligents ou de logique complexe pour être créés.
 
--   `createReceipts`
+-   `createItems`
 
 | **Argument**     | **Type**            | **Default** | **Requis** | **Description**                                                                                                                                                                                                                          |
 | ---------------- | ------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -445,16 +445,16 @@ const client = new ABlockWallet();
 const keyPair = getAllKeypairs()[0];
 
 // Créer des actifs `Receipt` avec l'identifiant DRS par défaut
-const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
+const createReceiptResponse = await client.createItems(keyPair).content.createReceiptResponse;
 
 <!-- --------------------------------- OU ---------------------------------- -->
 
 // Créer des actifs `Receipt` avec un identifiant DRS unique
-const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+const createReceiptResponse = await client.createItems(keyPair, false).content.createReceiptResponse;
 
 <!-- --------------------------------- VERSION AVEC TOUS LES ARGUMENTS ---------------------------------- -->
 
-const createReceiptResponse = await client.createReceipts(
+const createReceiptResponse = await client.createItems(
   keyPair,
   false,
   10000,
@@ -569,7 +569,7 @@ await makeReceiptPayment(
 
 ### Réalisation de paiements basés sur les reçus
 
--   `makeRbPayment`
+-   `makeIbPayment`
 
 | **Argument**   | **Type**                       | **Default** | **Required** | **Description**                                               |
 | -------------- | ------------------------------ | ----------- | ------------ | ------------------------------------------------------------- |
@@ -603,7 +603,7 @@ const actifReception = initIAssetReceipt({
       "drs_tx_hash": "default_drs_tx_hash"
   }});
 
-const resultatPaiement = await makeRbPayment(
+const resultatPaiement = await makeIbPayment(
       "18f70...caeda",  // Adresse de paiement
       actifEnvoi,     // Actif de paiement
       actifReception,   // Actif de réception
@@ -611,7 +611,7 @@ const resultatPaiement = await makeRbPayment(
       adresseReception, // Adresse de réception
   );
 
-const { druid, encryptedTx } = paymentResult.content.makeRbPaymentResponse;
+const { druid, encryptedTx } = paymentResult.content.makeIbPaymentResponse;
 
 // Enregistrer la transaction chiffrée avec sa valeur DRUID correspondante
 saveEncryptedTx(druid, encryptedTx);
@@ -622,7 +622,7 @@ saveEncryptedTx(druid, encryptedTx);
 
 ### Récupération des paiements en attente basés sur les reçus
 
--   `fetchPendingRbTransactions`
+-   `fetchPendingIbTransactions`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -639,12 +639,12 @@ saveEncryptedTx(druid, encryptedTx);
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // Récupérer les paiements en attente basés sur les reçus
-    const pendingRbTransactionsResult = await client.fetchPendingRbTransactions(
+    const pendingIbTransactionsResult = await client.fetchPendingIbTransactions(
           allKeypairs,
           allEncryptedTxs:,
       )
 
-    const pendingRbTransactions: IResponseIntercom<IPendingRbTxDetails> = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IResponseIntercom<IPendingIbTxDetails> = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     ```
 
@@ -689,7 +689,7 @@ saveEncryptedTx(druid, encryptedTx);
 
 ### Répondre aux paiements basés sur le reçu en attente
 
--   `acceptRbTx` et `rejectRbTx`
+-   `acceptIbTx` et `rejectIbTx`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -701,19 +701,19 @@ saveEncryptedTx(druid, encryptedTx);
 
     // Récupérer les paiements en attente basés sur les reçus depuis le réseau
     ...
-    const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IFetchPendingIbResponse = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     // Récupérer toutes les paires de clés existantes
     ...
     const allKeypairs = getAllKeypairs();
 
     // Accepter un paiement basé sur un reçu en utilisant son identifiant unique `DRUID`
-    await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.acceptIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Rejeter un paiement basé sur un reçu en utilisant son identifiant unique `DRUID`
-    await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.rejectIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
     ```
 
     Les transactions basées sur les reçus sont acceptées **ou** rejetées en passant leur identifiant DRUID unique en tant qu'argument aux méthodes correspondantes.

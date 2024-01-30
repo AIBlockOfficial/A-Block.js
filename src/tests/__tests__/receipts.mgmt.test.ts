@@ -12,7 +12,7 @@ import * as receiptMgmt from '../../mgmt/receipt.mgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
 import { initIAssetReceipt, initIAssetToken, initIDruidExpectation } from '../../utils';
 
-test('creates a valid payload to create receipts', () => {
+test('creates a valid payload to create items', () => {
     const keypair = {
         publicKey: new Uint8Array([
             105, 254, 232, 28, 144, 69, 179, 94, 175, 4, 183, 75, 250, 121, 131, 97, 138, 8, 172,
@@ -81,7 +81,7 @@ test('create transaction for the SEND portion of a receipt-based payment', () =>
         });
     }
 
-    const createTransaction = receiptMgmt.createRbTxHalf(
+    const createTransaction = receiptMgmt.createIbTxHalf(
         FETCH_BALANCE_RESPONSE_TEST,
         'full_druid',
         initIDruidExpectation({
@@ -235,7 +235,7 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
         });
     }
 
-    const createTransaction = receiptMgmt.createRbTxHalf(
+    const createTransaction = receiptMgmt.createIbTxHalf(
         FETCH_BALANCE_RESPONSE_TEST,
         'full_druid',
         initIDruidExpectation({
