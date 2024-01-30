@@ -11,7 +11,7 @@ import {
     IResult,
 } from '../interfaces';
 import { createSignature } from '../mgmt/key.mgmt';
-import { isOfTypeIPendingRbTxDetails } from './interface.utils';
+import { isOfTypeIPendingIbTxDetails } from './interface.utils';
 
 /**
  * Filter data received from the intercom server for a list of pre-defined predicates
@@ -136,7 +136,7 @@ export function filterValidIntercomData<T>(pending: IResponseIntercom<T>): IResp
     // We test against this body structure to ensure that the data is valid
     const returnValue: IResponseIntercom<T> = {};
     Object.entries(pending)
-        .filter(([, entry]) => isOfTypeIPendingRbTxDetails(entry.value))
+        .filter(([, entry]) => isOfTypeIPendingIbTxDetails(entry.value))
         .forEach(([key, value]) => (returnValue[key] = value));
     return returnValue;
 }

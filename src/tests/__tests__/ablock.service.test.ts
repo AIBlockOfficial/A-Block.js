@@ -21,7 +21,7 @@ test('init wallet without optional config fields', async () => {
         expect(res.reason).toBe('Error: Storage host not initialized');
     });
 
-    await ablockInstance.fetchPendingRbTransactions([], []).then((res) => {
+    await ablockInstance.fetchPendingIbTransactions([], []).then((res) => {
         expect(res.reason).toBe('Error: Intercom host not initialized');
     });
 

@@ -77,7 +77,7 @@ export function createReceiptPayload(
  * @param {Map<string, IKeypair>} allKeypairs - Map of all keypairs
  * @return {*}  {IResult<ICreateTxPayload>}
  */
-export function createRbTxHalf(
+export function createIbTxHalf(
     fetchBalanceResponse: IFetchBalanceResponse,
     druid: string,
     senderExpectation: IDruidExpectation,

@@ -41,7 +41,7 @@ export const ADDRESS_LIST_TEST: IAddressListTest = {
 export const FETCH_BALANCE_RESPONSE_TEST: IFetchBalanceResponse = {
     total: {
         tokens: 1060,
-        receipts: { default_drs_tx_hash: 3 },
+        items: { default_drs_tx_hash: 3 },
     },
     address_list: {
         cf0067d6c42463b2c1e4236e9669df546c74b16c0e2ef37114549b2944e05b7c: [
@@ -93,4 +93,4 @@ export const FETCH_BALANCE_RESPONSE_TEST: IFetchBalanceResponse = {
     },
 };
 
-test.skip('test constants', () => {});
+test.skip('test constants', () => { });

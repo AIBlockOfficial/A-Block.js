@@ -21,7 +21,7 @@ import {
     formatSingleCustomKeyValuePair,
 } from '../../utils';
 import { sha3_256 } from 'js-sha3';
-import { IKeypair, IResponseIntercom, IPendingRbTxDetails } from '../../interfaces';
+import { IKeypair, IResponseIntercom, IPendingIbTxDetails } from '../../interfaces';
 import { DEFAULT_DRS_TX_HASH } from '../../mgmt';
 import { initIDruidExpectation } from '../../utils';
 
@@ -73,7 +73,7 @@ test('validate asset type guards', () => {
 
     /* -------------------------- Combined type guards -------------------------- */
     // Note: Infers correct operability of `assetsAreBothTokens`
-    // and `assetsAreBothCompatibleReceipts` utility functions
+    // and `assetsAreBothCompatibleItems` utility functions
 
     // All assets of type `Token` are compatible with each other
     expect(assetsAreCompatible(assetToken_1, assetToken_2)).toBe(true);
@@ -313,7 +313,7 @@ test('generate intercom delete body', () => {
 
 test('filter intercom data for predicate', () => {
     // Data received from intercom server
-    const intercomData: IResponseIntercom<IPendingRbTxDetails> = {
+    const intercomData: IResponseIntercom<IPendingIbTxDetails> = {
         sender_address_1: {
             timestamp: 0,
             value: {

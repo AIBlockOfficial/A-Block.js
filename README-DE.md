@@ -369,7 +369,7 @@ Da eine Seed-Phrase verwendet werden kann, um verlorene/fehlende Schlüsselpaare
     {
         "total": {
             "tokens": 0,
-            "receipts": {
+            "items": {
                 "default_drs_tx_hash": 1000,
                 "g7d07...6704b": 1000
             }
@@ -423,7 +423,7 @@ Da eine Seed-Phrase verwendet werden kann, um verlorene/fehlende Schlüsselpaare
 
 Empfangsassets sind die NFTs der ABlock-Blockchain, erfordern jedoch im Gegensatz zu NFTs keine Smart Contracts oder komplexe Logik zum Erstellen.
 
--   `createReceipts`
+-   `createItems`
 
 | **Argument**     | **Typ**             | **Standardwert** | **Erforderlich** | **Beschreibung**                                                                                                                                                                                                                                       |
 | ---------------- | ------------------- | ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -445,16 +445,16 @@ const client = new ABlockWallet();
 const keyPair = getAllKeypairs()[0];
 
 // Erstellen Sie `Receipt`-Vermögenswerte mit dem Standard-DRS-Identifier
-const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
+const createReceiptResponse = await client.createItems(keyPair).content.createReceiptResponse;
 
 <!-- --------------------------------- ODER ---------------------------------- -->
 
 // Erstellen Sie `Receipt`-Vermögenswerte mit einem eindeutigen DRS-Identifier
-const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+const createReceiptResponse = await client.createItems(keyPair, false).content.createReceiptResponse;
 
 <!-- --------------------------------- VERSION MIT ALLEN ARGUMENTEN ---------------------------------- -->
 
-const createReceiptResponse = await client.createReceipts(
+const createReceiptResponse = await client.createItems(
   keyPair,
   false,
   10000,
@@ -569,7 +569,7 @@ await makeReceiptPayment(
 
 ### Quittungsbasierte Zahlungen durchführen
 
--   `makeRbPayment`
+-   `makeIbPayment`
 
 | **Argument**   | **Typ**                        | **Standard** | **Erforderlich** | **Beschreibung**                                                         |
 | -------------- | ------------------------------ | ------------ | ---------------- | ------------------------------------------------------------------------ |
@@ -603,7 +603,7 @@ const empfangenesAsset = initIAssetReceipt({
       "drs_tx_hash": "default_drs_tx_hash"
   }});
 
-const zahlungsergebnis = await makeRbPayment(
+const zahlungsergebnis = await makeIbPayment(
       "18f70...caeda",  // Zahlungsadresse
       sendendesAsset,     // Zahlungsasset
       empfangenesAsset,   // Empfangsasset
@@ -611,7 +611,7 @@ const zahlungsergebnis = await makeRbPayment(
       empfangsadresse, // Empfangsadresse
   );
 
-  const { druid, encryptedTx } = zahlungsergebnis.content.makeRbPaymentResponse;
+  const { druid, encryptedTx } = zahlungsergebnis.content.makeIbPaymentResponse;
 
   // Speichern der verschlüsselten Transaktion zusammen
   // mit dem entsprechenden DRUID-Wert
@@ -623,7 +623,7 @@ const zahlungsergebnis = await makeRbPayment(
 
 ### Abrufen ausstehender Zahlungen basierend auf Quittungen
 
--   `fetchPendingRbTransactions`
+-   `fetchPendingIbTransactions`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -640,12 +640,12 @@ const zahlungsergebnis = await makeRbPayment(
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // FAusstehende Zahlungen basierend auf Quittungen abrufen
-    const pendingRbTransactionsResult = await client.fetchPendingRbTransactions(
+    const pendingIbTransactionsResult = await client.fetchPendingIbTransactions(
           allKeypairs,
           allEncryptedTxs:,
       )
 
-    const pendingRbTransactions: IResponseIntercom<IPendingRbTxDetails> = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IResponseIntercom<IPendingIbTxDetails> = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     ```
 
@@ -690,7 +690,7 @@ const zahlungsergebnis = await makeRbPayment(
 
 ### Reaktion auf ausstehende Zahlungen auf Basis des Belegs
 
--   `acceptRbTx` und `rejectRbTx`
+-   `acceptIbTx` und `rejectIbTx`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -702,19 +702,19 @@ const zahlungsergebnis = await makeRbPayment(
 
     // Hole die ausstehenden Zahlungen basierend auf Belegen vom Netzwerk ab
     ...
-    const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IFetchPendingIbResponse = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     // Hole alle vorhandenen Schlüsselpaare
     ...
     const allKeypairs = getAllKeypairs();
 
     // Akzeptiere eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung
-    await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.acceptIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Lehne eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung ab
-    await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.rejectIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
     ```
 
     Belegbasierte Transaktionen werden akzeptiert **oder** abgelehnt, indem ihre eindeutige DRUID-Kennung als Argument an die entsprechenden Methoden übergeben wird.

@@ -32,8 +32,8 @@ export enum ISuccessInternal {
     ClientInitialized = 'Client initialized',
     MessageSigned = 'Successfully signed message',
     MessageVirified = 'Successfully verified message',
-    RbPaymentProcessing = 'Receipt-based payment processing',
-    PendingRbPaymentsFetched = 'Succesfully fetched pending receipt-based transactions',
+    IbPaymentProcessing = 'Receipt-based payment processing',
+    PendingIbPaymentsFetched = 'Succesfully fetched pending receipt-based transactions',
     AddressesReconstructed = 'Addresses have successfully been reconstructed',
     NewAddressGenerated = 'Successfully generated new address',
     SeedPhraseObtained = 'Successfully obtained seed phrase',
@@ -41,5 +41,5 @@ export enum ISuccessInternal {
     KeypairDecrypted = 'Successfully decrypted key-pair',
     KeypairSaved = 'Successfully saved key-pair to local storage',
     KeypairObtained = 'Successfully retreived key-pair from local storage',
-    RespondedToRbPayment = 'Successfully responded to receipt-based payment',
+    RespondedToIbPayment = 'Successfully responded to receipt-based payment',
 }
