@@ -82,7 +82,7 @@ export type IOutPoint = {
 
 // Transaction Output
 export type ITxOut = {
-    value: IAssetToken | IAssetReceipt;
+    value: IAssetToken | IAssetItem;
     locktime: number;
     drs_block_hash: string | null;
     script_public_key: string | null;
@@ -99,7 +99,7 @@ export type IDdeValues = {
 export type IDruidExpectation = {
     from: string;
     to: string;
-    asset: IAssetToken | IAssetReceipt;
+    asset: IAssetToken | IAssetItem;
 };
 
 // DDE/DRUID droplet value as stored on mempool node
@@ -108,9 +108,9 @@ export type IDruidDroplet = {
     tx: { [key: string]: ITransaction };
 };
 
-// Receipt asset type
-export type IAssetReceipt = {
-    Receipt: {
+// Item asset type
+export type IAssetItem = {
+    Item: {
         amount: number;
         drs_tx_hash: string;
         metadata: string | null;

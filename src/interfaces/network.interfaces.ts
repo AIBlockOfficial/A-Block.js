@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 
 import {
-    IAssetReceipt,
+    IAssetItem,
     IAssetToken,
     ICreateTransaction,
     ICreateTransactionEncrypted,
@@ -48,7 +48,7 @@ export type IApiContentType = {
     fetchUtxoAddressesResponse?: IFetchUtxoAddressesResponse;
     fetchBalanceResponse?: IFetchBalanceResponse;
     fetchPendingDDEResponse?: IFetchPendingDDEResponse;
-    createReceiptResponse?: ICreateReceiptResponse;
+    createItemResponse?: ICreateItemResponse;
     fetchPendingIbResponse?: IResponseIntercom<IPendingIbTxDetails>;
     debugDataResponse?: IDebugDataResponse;
     fetchTransactionsResponse?: IFetchTransactionsResponse;
@@ -66,7 +66,7 @@ export enum IAPIRoute {
     CheckUpdate = '/check_update',
     AddressConstruction = '/address_construction' /* NOTE: No implementation */,
     GetUtxoAddressList = '/utxo_addresses',
-    CreateReceiptAsset = '/create_receipt_asset',
+    CreateItemAsset = '/create_item_asset',
     FetchPending = '/fetch_pending' /* NOTE: Currently not available */,
     /* --------------------------- Storage Network Routes --------------------------- */
     BlockchainEntry = '/blockchain_entry',
@@ -98,14 +98,14 @@ export type INetworkResponse = {
 export type IApiCreateTxResponse = IGenericKeyPair<[string, IApiAsset]>; // Transaction hash - (public key address, asset paid);
 
 export type IApiAsset = {
-    asset: IAssetToken | IAssetReceipt;
+    asset: IAssetToken | IAssetItem;
     metadata: number[] | null;
 };
 
 export type IMakePaymentResponse = {
     transactionHash: string;
     paymentAddress: string;
-    asset: IAssetToken | IAssetReceipt;
+    asset: IAssetToken | IAssetItem;
     metadata: number[] | null;
     usedAddresses: string[];
 };
@@ -147,16 +147,16 @@ export type IFetchBalanceResponse = {
         tokens: number;
         items: IGenericKeyPair<number>;
     };
-    address_list: IGenericKeyPair<{ out_point: IOutPoint; value: IAssetReceipt | IAssetToken }[]>;
+    address_list: IGenericKeyPair<{ out_point: IOutPoint; value: IAssetItem | IAssetToken }[]>;
 };
 
 // `/utxo_addresses` endpoint response
 export type IFetchUtxoAddressesResponse = string[];
 
-// `/create_receipt_asset` endpoint response
-export type ICreateReceiptResponse = {
+// `/create_item_asset` endpoint response
+export type ICreateItemResponse = {
     asset: {
-        asset: IAssetReceipt;
+        asset: IAssetItem;
         metadata: number[] | null;
     };
     to_address: string;
@@ -175,9 +175,9 @@ export enum IDrsTxHashSpecification {
     Default = 'Default',
 }
 
-// `/create_receipt_asset` payload structure
-export type IReceiptCreationAPIPayload = {
-    receipt_amount: number;
+// `/create_item_asset` payload structure
+export type IItemCreationAPIPayload = {
+    item_amount: number;
     script_public_key: string;
     public_key: string;
     signature: string;
@@ -238,7 +238,7 @@ export type IPendingIbTxDetails = {
 /* -------------------------------------------------------------------------- */
 /*                     ABlockWallet Response Interfaces                    */
 /* -------------------------------------------------------------------------- */
-// Make receipt-based payment response
+// Make item-based payment response
 export type IMakeIbPaymentResponse = {
     druid: string;
     encryptedTx: ICreateTransactionEncrypted;

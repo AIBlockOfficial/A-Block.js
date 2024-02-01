@@ -8,9 +8,9 @@ import {
     generateDRUID,
     getInputsForTx,
 } from '../../mgmt';
-import * as receiptMgmt from '../../mgmt/receipt.mgmt';
+import * as itemMgmt from '../../mgmt/item.mgmt';
 import { ADDRESS_LIST_TEST, FETCH_BALANCE_RESPONSE_TEST } from '../constants';
-import { initIAssetReceipt, initIAssetToken, initIDruidExpectation } from '../../utils';
+import { initIAssetItem, initIAssetToken, initIDruidExpectation } from '../../utils';
 
 test('creates a valid payload to create items', () => {
     const keypair = {
@@ -26,13 +26,13 @@ test('creates a valid payload to create items', () => {
         ]),
     };
 
-    const payload = receiptMgmt.createReceiptPayload(
+    const payload = itemMgmt.createItemPayload(
         keypair.secretKey,
         keypair.publicKey,
         ADDRESS_VERSION,
     );
 
-    const metadataPayload = receiptMgmt.createReceiptPayload(
+    const metadataPayload = itemMgmt.createItemPayload(
         keypair.secretKey,
         keypair.publicKey,
         ADDRESS_VERSION,
@@ -43,34 +43,34 @@ test('creates a valid payload to create items', () => {
 
     if (payload.isOk()) {
         expect(payload.value).toEqual({
-            receipt_amount: 1000,
+            item_amount: 1000,
             public_key: '69fee81c9045b35eaf04b74bfa7983618a08acb719ef8d3749a4f004a293cadf',
             script_public_key: 'a0b08e623c6800bb27dddb5d6f6956939be674cfc63399dcc7b9f2e6733c02e5',
             signature:
                 '08e2251bb12d8b4acf168404a11166868bc9222364ee66d545ab4c9e317d85ca420686b637319869ecba7bbf3aa268577ab434990847a3b32537e84ac5b1bd03',
             version: null,
             drs_tx_hash_spec:
-                IDrsTxHashSpecification.Default /* Create generic Receipt assets instead of a tracked Receipt assets */,
+                IDrsTxHashSpecification.Default /* Create generic Item assets instead of a tracked Item assets */,
             metadata: null,
         });
     }
 
     if (metadataPayload.isOk()) {
         expect(metadataPayload.value).toEqual({
-            receipt_amount: 1000,
+            item_amount: 1000,
             public_key: '69fee81c9045b35eaf04b74bfa7983618a08acb719ef8d3749a4f004a293cadf',
             script_public_key: 'a0b08e623c6800bb27dddb5d6f6956939be674cfc63399dcc7b9f2e6733c02e5',
             signature:
                 '08e2251bb12d8b4acf168404a11166868bc9222364ee66d545ab4c9e317d85ca420686b637319869ecba7bbf3aa268577ab434990847a3b32537e84ac5b1bd03',
             version: null,
             drs_tx_hash_spec:
-                IDrsTxHashSpecification.Default /* Create generic Receipt assets instead of a tracked Receipt assets */,
+                IDrsTxHashSpecification.Default /* Create generic Item assets instead of a tracked Item assets */,
             metadata: "{'test': 'test'}",
         });
     }
 });
 
-test('create transaction for the SEND portion of a receipt-based payment', () => {
+test('create transaction for the SEND portion of a item-based payment', () => {
     const keyPairMap = new Map<string, IKeypair>();
     for (const addr of Object.keys(ADDRESS_LIST_TEST)) {
         keyPairMap.set(addr, {
@@ -81,12 +81,12 @@ test('create transaction for the SEND portion of a receipt-based payment', () =>
         });
     }
 
-    const createTransaction = receiptMgmt.createIbTxHalf(
+    const createTransaction = itemMgmt.createIbTxHalf(
         FETCH_BALANCE_RESPONSE_TEST,
         'full_druid',
         initIDruidExpectation({
             asset: {
-                Receipt: {
+                Item: {
                     amount: 1,
                     drs_tx_hash: DEFAULT_DRS_TX_HASH,
                     metadata: "{'test': 'test'}",
@@ -207,7 +207,7 @@ test('create transaction for the SEND portion of a receipt-based payment', () =>
                     expectations: [
                         {
                             asset: {
-                                Receipt: {
+                                Item: {
                                     amount: 1,
                                     drs_tx_hash: DEFAULT_DRS_TX_HASH,
                                     metadata: "{'test': 'test'}",
@@ -224,7 +224,7 @@ test('create transaction for the SEND portion of a receipt-based payment', () =>
     }
 });
 
-test('create transaction for the RECEIVE portion of a receipt-based payment', () => {
+test('create transaction for the RECEIVE portion of a item-based payment', () => {
     const keyPairMap = new Map<string, IKeypair>();
     for (const addr of Object.keys(ADDRESS_LIST_TEST)) {
         keyPairMap.set(addr, {
@@ -235,7 +235,7 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
         });
     }
 
-    const createTransaction = receiptMgmt.createIbTxHalf(
+    const createTransaction = itemMgmt.createIbTxHalf(
         FETCH_BALANCE_RESPONSE_TEST,
         'full_druid',
         initIDruidExpectation({
@@ -247,7 +247,7 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
         }),
         initIDruidExpectation({
             asset: {
-                Receipt: {
+                Item: {
                     amount: 1,
                     drs_tx_hash: DEFAULT_DRS_TX_HASH,
                     metadata: "{'test': 'test'}",
@@ -279,7 +279,7 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
             expect(txOuts).toStrictEqual([
                 {
                     value: {
-                        Receipt: {
+                        Item: {
                             amount: 1,
                             drs_tx_hash: DEFAULT_DRS_TX_HASH,
                             metadata: "{'test': 'test'}",
@@ -291,7 +291,7 @@ test('create transaction for the RECEIVE portion of a receipt-based payment', ()
                 },
                 {
                     value: {
-                        Receipt: {
+                        Item: {
                             amount: 2,
                             drs_tx_hash: DEFAULT_DRS_TX_HASH,
                             metadata: "{'test': 'test'}",
@@ -384,8 +384,8 @@ test('creates a valid signable asset hash value', () => {
     const signableTxInAssetHashes: string[] = [
         constructTxInSignableAssetHash(initIAssetToken({ Token: 1 })),
         constructTxInSignableAssetHash(
-            initIAssetReceipt({
-                Receipt: {
+            initIAssetItem({
+                Item: {
                     amount: 1,
                     drs_tx_hash:
                         DEFAULT_DRS_TX_HASH /* Value is currently not used to generate signable hash */,
