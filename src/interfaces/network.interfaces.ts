@@ -153,7 +153,11 @@ export type IFetchBalanceResponse = {
 // `/utxo_addresses` endpoint response
 export type IFetchUtxoAddressesResponse = string[];
 
+<<<<<<< HEAD
 // `/create_item_asset` endpoint response
+=======
+// `/create__asset` endpoint response
+>>>>>>> c5e7beb (Renaming for new item structure)
 export type ICreateItemResponse = {
     asset: {
         asset: IAssetItem;
@@ -175,7 +179,11 @@ export enum IDrsTxHashSpecification {
     Default = 'Default',
 }
 
+<<<<<<< HEAD
 // `/create_item_asset` payload structure
+=======
+// `/create__asset` payload structure
+>>>>>>> c5e7beb (Renaming for new item structure)
 export type IItemCreationAPIPayload = {
     item_amount: number;
     script_public_key: string;
