@@ -468,15 +468,17 @@ export class ABlockWallet {
                 ),
             );
             // Generate needed headers
-            const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.mempoolRoutesPoW,
-                IAPIRoute.CreateItemAsset,
-            );
+            // const headers = this.getRequestIdAndNonceHeadersForRoute(
+            //     this.mempoolRoutesPoW,
+            //     IAPIRoute.CreateItemAsset,
+            // );
+            console.log('createItemBody', createItemBody);
             return await axios
                 .post<INetworkResponse>(
                     `${this.mempoolHost}${IAPIRoute.CreateItemAsset}`,
                     createItemBody,
-                    { ...headers, validateStatus: () => true },
+                    // { ...headers, validateStatus: () => true },
+                    {}
                 )
                 .then((response) => {
                     return {
