@@ -53,8 +53,6 @@ export function createItemPayload(
     };
     const signableAssetHash = constructTxInSignableAssetHash(asset);
     const signature = createSignature(secretKey, getStringBytes(signableAssetHash));
-    console.log('sig: ', signature)
-    console.log('HERE: ', Buffer.from(pubKey).toString('hex'), Buffer.from(signature).toString('hex'))
     return ok({
         item_amount: amount,
         script_public_key: address.value,
