@@ -1450,7 +1450,7 @@ export class ABlockWallet {
      * @param {string} route
      * @return {*}  {{
      *         headers: {
-     *             'x-request-id': string;
+     *             'x-cache-id': string;
      *             'x-nonce': number;
      *         };
      *     }}
@@ -1461,7 +1461,7 @@ export class ABlockWallet {
         route: string,
     ): {
         headers: {
-            'x-request-id': string;
+            'x-cache-id': string;
             'x-nonce': number;
         };
     } {

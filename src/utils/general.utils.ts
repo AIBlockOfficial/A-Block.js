@@ -113,7 +113,7 @@ export function truncateByBytesUTF8(chars: string, n: number): string {
         try {
             return fromBytesUTF8(bytes);
             // eslint-disable-next-line no-empty
-        } catch (e) {}
+        } catch (e) { }
         bytes = bytes.substring(0, bytes.length - 1);
     }
 }
@@ -214,17 +214,17 @@ export function calculateNonceForId(target: number, id: string): number {
  * @export
  * @param {number} [difficulty]
  * @return {*}  {{
- *     headers: { 'x-request-id': string; 'x-nonce': number };
+ *     headers: { 'x-cache-id': string; 'x-nonce': number };
  * }}
  */
 export function createIdAndNonceHeaders(difficulty?: number): {
-    headers: { 'x-request-id': string; 'x-nonce': number };
+    headers: { 'x-cache-id': string; 'x-nonce': number };
 } {
     const id = getUniqueID();
     const nonce = difficulty ? calculateNonceForId(difficulty, id) : 0;
     return {
         headers: {
-            'x-request-id': id,
+            'x-cache-id': id,
             'x-nonce': nonce,
         },
     };
