@@ -319,6 +319,7 @@ export class ABlockWallet {
                 this.mempoolRoutesPoW,
                 IAPIRoute.FetchBalance,
             );
+
             return await axios
                 .post<INetworkResponse>(
                     `${this.mempoolHost}${IAPIRoute.FetchBalance}`,
@@ -1237,6 +1238,9 @@ export class ABlockWallet {
                     keyPairMap,
                 ),
             );
+
+            console.log('paymentBody', paymentBody.createTx);
+            console.log(JSON.stringify(paymentBody.createTx));
 
             const { usedAddresses } = paymentBody;
 
