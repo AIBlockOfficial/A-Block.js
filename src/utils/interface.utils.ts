@@ -1,9 +1,9 @@
 import { err, ok } from 'neverthrow';
 import {
     IAssetToken,
-    IAssetReceipt,
+    IAssetItem,
     IDruidExpectation,
-    IPendingRbTxDetails,
+    IPendingIbTxDetails,
     IResult,
     IErrorInternal,
     IApiCreateTxResponse,
@@ -35,15 +35,15 @@ export function initIAssetToken(options?: Partial<IAssetToken>): IAssetToken {
 }
 
 /**
- * Initialize an empty structure of type `IAssetReceipt`, providing optional additional values
+ * Initialize an empty structure of type `IAssetItem`, providing optional additional values
  *
  * @export
- * @param {Partial<IAssetReceipt>} [options] - Optional additional values to initialize the structure with
- * @return {*}  {IAssetReceipt}
+ * @param {Partial<IAssetItem>} [options] - Optional additional values to initialize the structure with
+ * @return {*}  {IAssetItem}
  */
-export function initIAssetReceipt(options?: Partial<IAssetReceipt>): IAssetReceipt {
-    const defaults: IAssetReceipt = {
-        Receipt: {
+export function initIAssetItem(options?: Partial<IAssetItem>): IAssetItem {
+    const defaults: IAssetItem = {
+        Item: {
             amount: 0,
             drs_tx_hash: DEFAULT_DRS_TX_HASH,
             metadata: null,
@@ -77,16 +77,16 @@ export function initIDruidExpectation(options?: Partial<IDruidExpectation>): IDr
 }
 
 /**
- * Initialize an empty structure of type `IPendingRbTxDetails`, providing optional additional values
+ * Initialize an empty structure of type `IPendingIbTxDetails`, providing optional additional values
  *
  * @export
- * @param {Partial<IPendingRbTxDetails>} [options] - Optional additional values to initialize the structure with
- * @return {*}  {IPendingRbTxDetails}
+ * @param {Partial<IPendingIbTxDetails>} [options] - Optional additional values to initialize the structure with
+ * @return {*}  {IPendingIbTxDetails}
  */
-export function initIPendingRbTxDetails(
-    options?: Partial<IPendingRbTxDetails>,
-): IPendingRbTxDetails {
-    const defaults: IPendingRbTxDetails = {
+export function initIPendingIbTxDetails(
+    options?: Partial<IPendingIbTxDetails>,
+): IPendingIbTxDetails {
+    const defaults: IPendingIbTxDetails = {
         druid: '',
         senderExpectation: initIDruidExpectation(),
         receiverExpectation: initIDruidExpectation(),
@@ -103,29 +103,29 @@ export function initIPendingRbTxDetails(
 /**
  * Add left-hand-side asset to right-hand-side asset
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
- * @return {*}  {(IResult<IAssetToken | IAssetReceipt>)}
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
+ * @return {*}  {(IResult<IAssetToken | IAssetItem>)}
  */
 export const addLhsAssetToRhsAsset = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
-): IResult<IAssetToken | IAssetReceipt> => {
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
+): IResult<IAssetToken | IAssetItem> => {
     if (isOfTypeIAssetToken(lhs) && isOfTypeIAssetToken(rhs)) {
         const returnValue: IAssetToken = {
             Token: lhs.Token + rhs.Token,
         };
         return ok(returnValue);
     } else if (
-        isOfTypeIAssetReceipt(lhs) &&
-        isOfTypeIAssetReceipt(rhs) &&
-        lhs.Receipt.drs_tx_hash === rhs.Receipt.drs_tx_hash
+        isOfTypeIAssetItem(lhs) &&
+        isOfTypeIAssetItem(rhs) &&
+        lhs.Item.drs_tx_hash === rhs.Item.drs_tx_hash
     ) {
-        const returnValue: IAssetReceipt = {
-            Receipt: {
-                amount: lhs.Receipt.amount + rhs.Receipt.amount,
-                drs_tx_hash: lhs.Receipt.drs_tx_hash,
-                metadata: lhs.Receipt.metadata,
+        const returnValue: IAssetItem = {
+            Item: {
+                amount: lhs.Item.amount + rhs.Item.amount,
+                drs_tx_hash: lhs.Item.drs_tx_hash,
+                metadata: lhs.Item.metadata,
             },
         };
         return ok(returnValue);
@@ -137,14 +137,14 @@ export const addLhsAssetToRhsAsset = (
 /**
  * Subtract the right-hand-side asset from the left-hand-side asset
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
- * @return {*}  {(IResult<IAssetToken | IAssetReceipt>)}
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
+ * @return {*}  {(IResult<IAssetToken | IAssetItem>)}
  */
 export const subRhsAssetFromLhsAsset = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
-): IResult<IAssetToken | IAssetReceipt> => {
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
+): IResult<IAssetToken | IAssetItem> => {
     const lhsAssetGreaterOrEq = lhsAssetIsEqOrGreaterThanRhsAsset(lhs, rhs);
     // Assets are incompatible due to different asset types or to lhs < rhs (we cannot have a negative asset amount)
     if (lhsAssetGreaterOrEq.isErr()) return err(IErrorInternal.AssetsIncompatible);
@@ -156,16 +156,16 @@ export const subRhsAssetFromLhsAsset = (
         };
         return ok(returnValue);
     } else if (
-        isOfTypeIAssetReceipt(lhs) &&
-        isOfTypeIAssetReceipt(rhs) &&
-        lhs.Receipt.drs_tx_hash === rhs.Receipt.drs_tx_hash &&
+        isOfTypeIAssetItem(lhs) &&
+        isOfTypeIAssetItem(rhs) &&
+        lhs.Item.drs_tx_hash === rhs.Item.drs_tx_hash &&
         lhsAssetGreaterOrEq.value
     ) {
-        const returnValue: IAssetReceipt = {
-            Receipt: {
-                amount: lhs.Receipt.amount - rhs.Receipt.amount,
-                drs_tx_hash: lhs.Receipt.drs_tx_hash,
-                metadata: lhs.Receipt.metadata,
+        const returnValue: IAssetItem = {
+            Item: {
+                amount: lhs.Item.amount - rhs.Item.amount,
+                drs_tx_hash: lhs.Item.drs_tx_hash,
+                metadata: null,
             },
         };
         return ok(returnValue);
@@ -175,63 +175,63 @@ export const subRhsAssetFromLhsAsset = (
 /**
  * Determine whether the left-hand-side asset is equal to, or greater than the right-hand-side asset
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
  * @return {*}  {IResult<boolean>}
  */
 export const lhsAssetIsEqOrGreaterThanRhsAsset = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
 ): IResult<boolean> => {
     if (isOfTypeIAssetToken(lhs) && isOfTypeIAssetToken(rhs)) return ok(lhs.Token >= rhs.Token);
     else if (
-        isOfTypeIAssetReceipt(lhs) &&
-        isOfTypeIAssetReceipt(rhs) &&
-        lhs.Receipt.drs_tx_hash === rhs.Receipt.drs_tx_hash
+        isOfTypeIAssetItem(lhs) &&
+        isOfTypeIAssetItem(rhs) &&
+        lhs.Item.drs_tx_hash === rhs.Item.drs_tx_hash
     )
-        return ok(lhs.Receipt.amount >= rhs.Receipt.amount);
+        return ok(lhs.Item.amount >= rhs.Item.amount);
     else return err(IErrorInternal.AssetsIncompatible);
 };
 
 /**
  * Determine whether the left-hand-side asset is greater than the right-hand-side asset
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
  * @return {*}  {IResult<boolean>}
  */
 export const lhsAssetIsGreaterThanRhsAsset = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
 ): IResult<boolean> => {
     if (isOfTypeIAssetToken(lhs) && isOfTypeIAssetToken(rhs)) return ok(lhs.Token > rhs.Token);
     else if (
-        isOfTypeIAssetReceipt(lhs) &&
-        isOfTypeIAssetReceipt(rhs) &&
-        lhs.Receipt.drs_tx_hash === rhs.Receipt.drs_tx_hash
+        isOfTypeIAssetItem(lhs) &&
+        isOfTypeIAssetItem(rhs) &&
+        lhs.Item.drs_tx_hash === rhs.Item.drs_tx_hash
     )
-        return ok(lhs.Receipt.amount > rhs.Receipt.amount);
+        return ok(lhs.Item.amount > rhs.Item.amount);
     else return err(IErrorInternal.AssetsIncompatible);
 };
 
 /**
  * Determine whether the left-hand-side asset is less than the right-hand-side asset
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
  * @return {*}  {IResult<boolean>}
  */
 export const lhsAssetIsLessThanRhsAsset = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
 ): IResult<boolean> => {
     if (isOfTypeIAssetToken(lhs) && isOfTypeIAssetToken(rhs)) return ok(lhs.Token < rhs.Token);
     else if (
-        isOfTypeIAssetReceipt(lhs) &&
-        isOfTypeIAssetReceipt(rhs) &&
-        lhs.Receipt.drs_tx_hash === rhs.Receipt.drs_tx_hash
+        isOfTypeIAssetItem(lhs) &&
+        isOfTypeIAssetItem(rhs) &&
+        lhs.Item.drs_tx_hash === rhs.Item.drs_tx_hash
     )
-        return ok(lhs.Receipt.amount < rhs.Receipt.amount);
+        return ok(lhs.Item.amount < rhs.Item.amount);
     else return err(IErrorInternal.AssetsIncompatible);
 };
 
@@ -245,22 +245,22 @@ export const isOfTypeIAssetToken = (value: any): value is IAssetToken =>
     isOfType<IAssetToken>(value, initIAssetToken());
 
 /**
- *  Determine whether an asset is of type `IAssetReceipt`
+ *  Determine whether an asset is of type `IAssetItem`
  *
  * @param {*} value
- * @return {*}  {value is IAssetReceipt}
+ * @return {*}  {value is IAssetItem}
  */
-export const isOfTypeIAssetReceipt = (value: any): value is IAssetReceipt =>
-    isOfType<IAssetReceipt>(value, initIAssetReceipt());
+export const isOfTypeIAssetItem = (value: any): value is IAssetItem =>
+    isOfType<IAssetItem>(value, initIAssetItem());
 
 /**
- *   Determine whether the provided value is of type `IPendingRbTxDetails`
+ *   Determine whether the provided value is of type `IPendingIbTxDetails`
  *
  * @param {*} value
- * @return {*}  {value is IPendingRbTxDetails}
+ * @return {*}  {value is IPendingIbTxDetails}
  */
-export const isOfTypeIPendingRbTxDetails = (value: any): value is IPendingRbTxDetails =>
-    isOfType<IPendingRbTxDetails>(value, initIPendingRbTxDetails());
+export const isOfTypeIPendingIbTxDetails = (value: any): value is IPendingIbTxDetails =>
+    isOfType<IPendingIbTxDetails>(value, initIPendingIbTxDetails());
 
 /**
  *
@@ -278,33 +278,33 @@ export const isOfType = <T>(arg: any, testAgainst: any): arg is T =>
 /**
  * Determine whether two assets are of type `IAssetToken`
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
  * @return {*}  {IResult<[IAssetToken, IAssetToken]>}
  */
 export const assetsAreBothTokens = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
 ): IResult<[IAssetToken, IAssetToken]> => {
     if (isOfTypeIAssetToken(lhs) && isOfTypeIAssetToken(rhs)) return ok([lhs, rhs]);
     else return err(IErrorInternal.AssetsIncompatible);
 };
 
 /**
- * Determine wheter two assets are `IAssetReceipt` assets which are compatible based on their DRS transaction hash
+ * Determine wheter two assets are `IAssetItem` assets which are compatible based on their DRS transaction hash
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
- * @return {*}  {IResult<[IAssetReceipt, IAssetReceipt]>}
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
+ * @return {*}  {IResult<[IAssetItem, IAssetItem]>}
  */
-export const assetsAreBothCompatibleReceipts = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
-): IResult<[IAssetReceipt, IAssetReceipt]> => {
+export const assetsAreBothCompatibleItems = (
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
+): IResult<[IAssetItem, IAssetItem]> => {
     if (
-        isOfTypeIAssetReceipt(lhs) &&
-        isOfTypeIAssetReceipt(rhs) &&
-        lhs.Receipt.drs_tx_hash === rhs.Receipt.drs_tx_hash
+        isOfTypeIAssetItem(lhs) &&
+        isOfTypeIAssetItem(rhs) &&
+        lhs.Item.drs_tx_hash === rhs.Item.drs_tx_hash
     )
         return ok([lhs, rhs]);
     else return err(IErrorInternal.AssetsIncompatible);
@@ -313,15 +313,15 @@ export const assetsAreBothCompatibleReceipts = (
 /**
  * Determine whether or not two assets are compatible
  *
- * @param {(IAssetToken | IAssetReceipt)} lhs
- * @param {(IAssetToken | IAssetReceipt)} rhs
+ * @param {(IAssetToken | IAssetItem)} lhs
+ * @param {(IAssetToken | IAssetItem)} rhs
  * @return {*}  {boolean}
  */
 export const assetsAreCompatible = (
-    lhs: IAssetToken | IAssetReceipt,
-    rhs: IAssetToken | IAssetReceipt,
+    lhs: IAssetToken | IAssetItem,
+    rhs: IAssetToken | IAssetItem,
 ): boolean => {
-    return assetsAreBothTokens(lhs, rhs).isOk() || assetsAreBothCompatibleReceipts(lhs, rhs).isOk();
+    return assetsAreBothTokens(lhs, rhs).isOk() || assetsAreBothCompatibleItems(lhs, rhs).isOk();
 };
 
 /**

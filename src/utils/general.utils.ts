@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { BAL_LIMIT } from '../mgmt/constants';
 
-import { IClientResponse, ICustomKeyPair, IErrorInternal, IResult } from '../interfaces';
+import { IClientResponse, ICustomKeyPair, IErrorInternal, IPendingIbTxDetails, IResult } from '../interfaces';
 
 /**
  * Cast `status` received from ABlock network to lowercase string variant
@@ -113,7 +113,7 @@ export function truncateByBytesUTF8(chars: string, n: number): string {
         try {
             return fromBytesUTF8(bytes);
             // eslint-disable-next-line no-empty
-        } catch (e) {}
+        } catch (e) { }
         bytes = bytes.substring(0, bytes.length - 1);
     }
 }
@@ -214,17 +214,17 @@ export function calculateNonceForId(target: number, id: string): number {
  * @export
  * @param {number} [difficulty]
  * @return {*}  {{
- *     headers: { 'x-request-id': string; 'x-nonce': number };
+ *     headers: { 'x-cache-id': string; 'x-nonce': number };
  * }}
  */
 export function createIdAndNonceHeaders(difficulty?: number): {
-    headers: { 'x-request-id': string; 'x-nonce': number };
+    headers: { 'x-cache-id': string; 'x-nonce': number };
 } {
     const id = getUniqueID();
     const nonce = difficulty ? calculateNonceForId(difficulty, id) : 0;
     return {
         headers: {
-            'x-request-id': id,
+            'x-cache-id': id,
             'x-nonce': nonce,
         },
     };
@@ -266,3 +266,36 @@ export const formatSingleCustomKeyValuePair = <K extends string | number | symbo
     };
     return ok(returnValue);
 };
+
+/**
+ * Adds sensible defaults to asset structures for receiving and sending in 2 way transactions. Ensures
+ * error handling for missing fields.
+ *
+ * @param {IPendingIbTxDetails} txStructure
+ * @return {*}  {IResult<IPendingIbTxDetails>}
+ */
+export const formatAssetStructures = (txStructure: IPendingIbTxDetails): IResult<IPendingIbTxDetails> => {
+    const defaults = {
+        amount: 0,
+        drs_tx_hash: null,
+        metadata: null
+    };
+
+    if ('Item' in txStructure.senderExpectation.asset) {
+        let senderExpectation = txStructure.senderExpectation.asset.Item;
+        Object.assign(senderExpectation, ...Object.entries(defaults).filter(([key]) => !(key in senderExpectation)).map(([key, value]) => ({ [key]: value })));
+
+        senderExpectation.metadata = null;
+        txStructure.senderExpectation.asset.Item = senderExpectation;
+    }
+    
+    if ('Item' in txStructure.receiverExpectation.asset) {
+        let receiverExpectation = txStructure.receiverExpectation.asset.Item;
+        Object.assign(receiverExpectation, ...Object.entries(defaults).filter(([key]) => !(key in receiverExpectation)).map(([key, value]) => ({ [key]: value })));
+
+        receiverExpectation.metadata = null;
+        txStructure.receiverExpectation.asset.Item = receiverExpectation;
+    }
+
+    return ok(txStructure);
+}

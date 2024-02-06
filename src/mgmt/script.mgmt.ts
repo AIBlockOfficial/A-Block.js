@@ -4,7 +4,7 @@ import nacl from 'tweetnacl';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
-    IAssetReceipt,
+    IAssetItem,
     IAssetToken,
     ICreateTxIn,
     IErrorInternal,
@@ -118,10 +118,11 @@ export function constructTxInsAddress(txIns: ICreateTxIn[]): IResult<string> {
                     script_sig.Pay2PkH.address_version,
                 );
                 if (script.isErr()) return err(script.error);
+                
                 return previousOutPoint !== null
                     ? `${getFormattedOutPointString(previousOutPoint)}-${getFormattedScriptString(
-                          script.value,
-                      )}`
+                        script.value,
+                    )}`
                     : `null-${getFormattedScriptString(script.value)}`;
             } else {
                 return err(IErrorInternal.UnableToConstructTxIns);
@@ -135,13 +136,13 @@ export function constructTxInsAddress(txIns: ICreateTxIn[]): IResult<string> {
 
 //TODO: Add data asset type
 //TODO: Use DRS transaction hash as part of the signable data?
-export function constructTxInSignableAssetHash(asset: IAssetToken | IAssetReceipt): string {
+export function constructTxInSignableAssetHash(asset: IAssetToken | IAssetItem): string {
     if (isOfType<IAssetToken>(asset, initIAssetToken())) {
         return sha3_256(
             getStringBytes(`Token:${asset.Token}`),
         ); /* Actual token amount, not formatted for display */
     } else {
-        return sha3_256(getStringBytes(`Receipt:${asset.Receipt.amount}`));
+        return sha3_256(getStringBytes(`Item:${asset.Item.amount}`));
     }
 }
 
@@ -174,7 +175,7 @@ export function p2pkh(
     );
     const addr = constructAddress(getHexStringBytes(publicKeyData), addressVersion);
     if (addr.isErr()) return err(addr.error);
-    stackEntries.push(new StackEntry('PubKeyHash', addr.value));
+    stackEntries.push(new StackEntry('Bytes', addr.value));
     stackEntries.push(new StackEntry('Op', 'OP_EQUALVERIFY'));
     stackEntries.push(new StackEntry('Op', 'OP_CHECKSIG'));
     return ok({

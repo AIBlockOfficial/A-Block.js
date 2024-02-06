@@ -8,9 +8,9 @@ import {
     generateIntercomGetBody,
     generateIntercomSetBody,
     getUniqueID,
-    initIAssetReceipt,
+    initIAssetItem,
     initIAssetToken,
-    isOfTypeIAssetReceipt,
+    isOfTypeIAssetItem,
     isOfTypeIAssetToken,
     lhsAssetIsLessThanRhsAsset,
     subRhsAssetFromLhsAsset,
@@ -21,7 +21,7 @@ import {
     formatSingleCustomKeyValuePair,
 } from '../../utils';
 import { sha3_256 } from 'js-sha3';
-import { IKeypair, IResponseIntercom, IPendingRbTxDetails } from '../../interfaces';
+import { IKeypair, IResponseIntercom, IPendingIbTxDetails } from '../../interfaces';
 import { DEFAULT_DRS_TX_HASH } from '../../mgmt';
 import { initIDruidExpectation } from '../../utils';
 
@@ -46,34 +46,34 @@ test('create valid proof-of-work', () => {
 test('validate asset type guards', () => {
     const assetToken_1 = initIAssetToken({ Token: 1 });
     const assetToken_2 = initIAssetToken({ Token: 2 });
-    const assetReceipt_1 = initIAssetReceipt();
-    const assetReceipt_2 = initIAssetReceipt({
-        Receipt: { amount: 1, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
+    const assetItem_1 = initIAssetItem();
+    const assetItem_2 = initIAssetItem({
+        Item: { amount: 1, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
     });
-    const assetReceipt_3 = initIAssetReceipt({
-        Receipt: { amount: 2, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
+    const assetItem_3 = initIAssetItem({
+        Item: { amount: 2, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
     });
-    const assetReceipt_4 = initIAssetReceipt({
-        Receipt: { amount: 3, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
+    const assetItem_4 = initIAssetItem({
+        Item: { amount: 3, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
     });
 
     /* ------------------------- Individual type guards ------------------------- */
     expect(isOfTypeIAssetToken(assetToken_1)).toBe(true);
     expect(isOfTypeIAssetToken(assetToken_2)).toBe(true);
-    expect(isOfTypeIAssetToken(assetReceipt_1)).toBe(false);
-    expect(isOfTypeIAssetToken(assetReceipt_2)).toBe(false);
-    expect(isOfTypeIAssetToken(assetReceipt_3)).toBe(false);
-    expect(isOfTypeIAssetToken(assetReceipt_4)).toBe(false);
-    expect(isOfTypeIAssetReceipt(assetToken_1)).toBe(false);
-    expect(isOfTypeIAssetReceipt(assetToken_2)).toBe(false);
-    expect(isOfTypeIAssetReceipt(assetReceipt_1)).toBe(true);
-    expect(isOfTypeIAssetReceipt(assetReceipt_2)).toBe(true);
-    expect(isOfTypeIAssetReceipt(assetReceipt_3)).toBe(true);
-    expect(isOfTypeIAssetReceipt(assetReceipt_4)).toBe(true);
+    expect(isOfTypeIAssetToken(assetItem_1)).toBe(false);
+    expect(isOfTypeIAssetToken(assetItem_2)).toBe(false);
+    expect(isOfTypeIAssetToken(assetItem_3)).toBe(false);
+    expect(isOfTypeIAssetToken(assetItem_4)).toBe(false);
+    expect(isOfTypeIAssetItem(assetToken_1)).toBe(false);
+    expect(isOfTypeIAssetItem(assetToken_2)).toBe(false);
+    expect(isOfTypeIAssetItem(assetItem_1)).toBe(true);
+    expect(isOfTypeIAssetItem(assetItem_2)).toBe(true);
+    expect(isOfTypeIAssetItem(assetItem_3)).toBe(true);
+    expect(isOfTypeIAssetItem(assetItem_4)).toBe(true);
 
     /* -------------------------- Combined type guards -------------------------- */
     // Note: Infers correct operability of `assetsAreBothTokens`
-    // and `assetsAreBothCompatibleReceipts` utility functions
+    // and `assetsAreBothCompatibleItems` utility functions
 
     // All assets of type `Token` are compatible with each other
     expect(assetsAreCompatible(assetToken_1, assetToken_2)).toBe(true);
@@ -81,25 +81,25 @@ test('validate asset type guards', () => {
     expect(assetsAreCompatible(assetToken_2, assetToken_1)).toBe(true);
     expect(assetsAreCompatible(assetToken_2, assetToken_1)).toBe(true);
 
-    // `Receipt` assets are only compatible if they exhibit the same `drs_tx_hash`
-    expect(assetsAreCompatible(assetReceipt_1, assetReceipt_2)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_1, assetReceipt_3)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_1, assetReceipt_4)).toBe(true);
-    expect(assetsAreCompatible(assetReceipt_2, assetReceipt_1)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_2, assetReceipt_3)).toBe(true);
-    expect(assetsAreCompatible(assetReceipt_2, assetReceipt_4)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_3, assetReceipt_1)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_3, assetReceipt_2)).toBe(true);
-    expect(assetsAreCompatible(assetReceipt_3, assetReceipt_4)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_4, assetReceipt_1)).toBe(true);
-    expect(assetsAreCompatible(assetReceipt_4, assetReceipt_2)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_4, assetReceipt_3)).toBe(false);
+    // `Item` assets are only compatible if they exhibit the same `drs_tx_hash`
+    expect(assetsAreCompatible(assetItem_1, assetItem_2)).toBe(false);
+    expect(assetsAreCompatible(assetItem_1, assetItem_3)).toBe(false);
+    expect(assetsAreCompatible(assetItem_1, assetItem_4)).toBe(true);
+    expect(assetsAreCompatible(assetItem_2, assetItem_1)).toBe(false);
+    expect(assetsAreCompatible(assetItem_2, assetItem_3)).toBe(true);
+    expect(assetsAreCompatible(assetItem_2, assetItem_4)).toBe(false);
+    expect(assetsAreCompatible(assetItem_3, assetItem_1)).toBe(false);
+    expect(assetsAreCompatible(assetItem_3, assetItem_2)).toBe(true);
+    expect(assetsAreCompatible(assetItem_3, assetItem_4)).toBe(false);
+    expect(assetsAreCompatible(assetItem_4, assetItem_1)).toBe(true);
+    expect(assetsAreCompatible(assetItem_4, assetItem_2)).toBe(false);
+    expect(assetsAreCompatible(assetItem_4, assetItem_3)).toBe(false);
 
-    // Assets of type `Token` and `Receipt` are never compatible
-    expect(assetsAreCompatible(assetReceipt_1, assetToken_1)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_2, assetToken_2)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_3, assetToken_1)).toBe(false);
-    expect(assetsAreCompatible(assetReceipt_4, assetToken_2)).toBe(false);
+    // Assets of type `Token` and `Item` are never compatible
+    expect(assetsAreCompatible(assetItem_1, assetToken_1)).toBe(false);
+    expect(assetsAreCompatible(assetItem_2, assetToken_2)).toBe(false);
+    expect(assetsAreCompatible(assetItem_3, assetToken_1)).toBe(false);
+    expect(assetsAreCompatible(assetItem_4, assetToken_2)).toBe(false);
 });
 
 test('validate correct value amount and mathematical operation between assets', () => {
@@ -136,81 +136,81 @@ test('validate correct value amount and mathematical operation between assets', 
     // Test assetToken_2 < assetToken_1
     expect(throwIfErr(lhsAssetIsGreaterThanRhsAsset(assetToken_1, assetToken_2))).toBe(false);
 
-    /* ----------------------- `Receipt` asset operations ----------------------- */
-    const assetReceipt_1 = initIAssetReceipt({
-        Receipt: { amount: 1, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
+    /* ----------------------- `Item` asset operations ----------------------- */
+    const assetItem_1 = initIAssetItem({
+        Item: { amount: 1, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
     });
-    const assetReceipt_2 = initIAssetReceipt({
-        Receipt: { amount: 10, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
+    const assetItem_2 = initIAssetItem({
+        Item: { amount: 10, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
     });
-    const assetReceipt_3 = initIAssetReceipt({
-        Receipt: { amount: 10, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
+    const assetItem_3 = initIAssetItem({
+        Item: { amount: 10, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
     });
-    const assetReceipt_4 = initIAssetReceipt({
-        Receipt: { amount: 1, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
+    const assetItem_4 = initIAssetItem({
+        Item: { amount: 1, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
     });
-    const assetReceipt_5 = initIAssetReceipt({
-        Receipt: { amount: 10, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
+    const assetItem_5 = initIAssetItem({
+        Item: { amount: 10, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
     });
-    const assetReceipt_6 = initIAssetReceipt({
-        Receipt: { amount: 10, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
+    const assetItem_6 = initIAssetItem({
+        Item: { amount: 10, drs_tx_hash: 'unique_drs_tx_hash', metadata: "{'test': 'test'}" },
     });
 
     /*
      * Success tests
      */
-    // Subtract assetReceipt_1 from assetReceipt_2
-    expect(throwIfErr(subRhsAssetFromLhsAsset(assetReceipt_2, assetReceipt_1))).toStrictEqual({
-        Receipt: { amount: 9, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
+    // Subtract assetItem_1 from assetItem_2
+    expect(throwIfErr(subRhsAssetFromLhsAsset(assetItem_2, assetItem_1))).toStrictEqual({
+        Item: { amount: 9, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: null },
     });
-    // Add assetReceipt_1 to assetReceipt_2
-    expect(throwIfErr(addLhsAssetToRhsAsset(assetReceipt_2, assetReceipt_1))).toStrictEqual({
-        Receipt: { amount: 11, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
+    // Add assetItem_1 to assetItem_2
+    expect(throwIfErr(addLhsAssetToRhsAsset(assetItem_2, assetItem_1))).toStrictEqual({
+        Item: { amount: 11, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
     });
-    // Test assetReceipt_1 < assetReceipt_2
-    expect(throwIfErr(lhsAssetIsLessThanRhsAsset(assetReceipt_1, assetReceipt_2))).toBe(true);
-    // Test assetReceipt_2 > assetReceipt_1
-    expect(throwIfErr(lhsAssetIsGreaterThanRhsAsset(assetReceipt_2, assetReceipt_1))).toBe(true);
-    // Test assetReceipt_2 >= assetReceipt_3
-    expect(throwIfErr(lhsAssetIsEqOrGreaterThanRhsAsset(assetReceipt_2, assetReceipt_3))).toBe(
+    // Test assetItem_1 < assetItem_2
+    expect(throwIfErr(lhsAssetIsLessThanRhsAsset(assetItem_1, assetItem_2))).toBe(true);
+    // Test assetItem_2 > assetItem_1
+    expect(throwIfErr(lhsAssetIsGreaterThanRhsAsset(assetItem_2, assetItem_1))).toBe(true);
+    // Test assetItem_2 >= assetItem_3
+    expect(throwIfErr(lhsAssetIsEqOrGreaterThanRhsAsset(assetItem_2, assetItem_3))).toBe(
         true,
     );
 
     /*
      * Failure tests
      */
-    // Subtract assetReceipt_3 from assetReceipt_1
-    expect(subRhsAssetFromLhsAsset(assetReceipt_1, assetReceipt_3).isOk()).toBe(false); // Cannot have negative amount
-    // Test assetReceipt_1 > assetReceipt_2
-    expect(throwIfErr(lhsAssetIsLessThanRhsAsset(assetReceipt_2, assetReceipt_1))).toBe(false);
-    // Test assetReceipt_2 < assetReceipt_1
-    expect(throwIfErr(lhsAssetIsGreaterThanRhsAsset(assetReceipt_1, assetReceipt_2))).toBe(false);
-    // Add assetReceipt_4 to assetReceipt_1
-    expect(addLhsAssetToRhsAsset(assetReceipt_1, assetReceipt_4).isOk()).toBe(false); // Incompatibe `Receipt` types
-    // Test assetReceipt_4 < assetReceipt_1
-    expect(lhsAssetIsLessThanRhsAsset(assetReceipt_4, assetReceipt_1).isOk()).toBe(false); // Incompatibe `Receipt` types
-    // Test assetReceipt_5 > assetReceipt_1
-    expect(lhsAssetIsGreaterThanRhsAsset(assetReceipt_5, assetReceipt_2).isOk()).toBe(false); // Incompatibe `Receipt` types
-    // Test assetReceipt_6 >= assetReceipt_1
-    expect(lhsAssetIsEqOrGreaterThanRhsAsset(assetReceipt_6, assetReceipt_3).isOk()).toBe(false); // Incompatibe `Receipt` types
+    // Subtract assetItem_3 from assetItem_1
+    expect(subRhsAssetFromLhsAsset(assetItem_1, assetItem_3).isOk()).toBe(false); // Cannot have negative amount
+    // Test assetItem_1 > assetItem_2
+    expect(throwIfErr(lhsAssetIsLessThanRhsAsset(assetItem_2, assetItem_1))).toBe(false);
+    // Test assetItem_2 < assetItem_1
+    expect(throwIfErr(lhsAssetIsGreaterThanRhsAsset(assetItem_1, assetItem_2))).toBe(false);
+    // Add assetItem_4 to assetItem_1
+    expect(addLhsAssetToRhsAsset(assetItem_1, assetItem_4).isOk()).toBe(false); // Incompatibe `Item` types
+    // Test assetItem_4 < assetItem_1
+    expect(lhsAssetIsLessThanRhsAsset(assetItem_4, assetItem_1).isOk()).toBe(false); // Incompatibe `Item` types
+    // Test assetItem_5 > assetItem_1
+    expect(lhsAssetIsGreaterThanRhsAsset(assetItem_5, assetItem_2).isOk()).toBe(false); // Incompatibe `Item` types
+    // Test assetItem_6 >= assetItem_1
+    expect(lhsAssetIsEqOrGreaterThanRhsAsset(assetItem_6, assetItem_3).isOk()).toBe(false); // Incompatibe `Item` types
 
     /* ------------------------ Combined Asset Operations ----------------------- */
-    // Note: ALl tests should fail here because `Token` and `Receipt` assets
+    // Note: ALl tests should fail here because `Token` and `Item` assets
     // are incompatible for mathematical operations and evaluations.
 
     /*
      * Failure tests
      */
-    // Subtract assetReceipt_3 from assetToken_1
-    expect(subRhsAssetFromLhsAsset(assetToken_1, assetReceipt_3).isOk()).toBe(false);
-    // Add assetReceipt_2 to assetToken_1
-    expect(addLhsAssetToRhsAsset(assetToken_1, assetReceipt_2).isOk()).toBe(false);
-    // Test assetReceipt_1 > assetToken_2
-    expect(lhsAssetIsLessThanRhsAsset(assetToken_2, assetReceipt_1).isOk()).toBe(false);
-    // Test assetReceipt_2 < assetToken_1
-    expect(lhsAssetIsGreaterThanRhsAsset(assetToken_2, assetReceipt_2).isOk()).toBe(false);
-    // Test assetReceipt_3 >= assetToken_3
-    expect(lhsAssetIsEqOrGreaterThanRhsAsset(assetToken_2, assetReceipt_3).isOk()).toBe(false);
+    // Subtract assetItem_3 from assetToken_1
+    expect(subRhsAssetFromLhsAsset(assetToken_1, assetItem_3).isOk()).toBe(false);
+    // Add assetItem_2 to assetToken_1
+    expect(addLhsAssetToRhsAsset(assetToken_1, assetItem_2).isOk()).toBe(false);
+    // Test assetItem_1 > assetToken_2
+    expect(lhsAssetIsLessThanRhsAsset(assetToken_2, assetItem_1).isOk()).toBe(false);
+    // Test assetItem_2 < assetToken_1
+    expect(lhsAssetIsGreaterThanRhsAsset(assetToken_2, assetItem_2).isOk()).toBe(false);
+    // Test assetItem_3 >= assetToken_3
+    expect(lhsAssetIsEqOrGreaterThanRhsAsset(assetToken_2, assetItem_3).isOk()).toBe(false);
 });
 
 /* -------------------------------------------------------------------------- */
@@ -313,7 +313,7 @@ test('generate intercom delete body', () => {
 
 test('filter intercom data for predicate', () => {
     // Data received from intercom server
-    const intercomData: IResponseIntercom<IPendingRbTxDetails> = {
+    const intercomData: IResponseIntercom<IPendingIbTxDetails> = {
         sender_address_1: {
             timestamp: 0,
             value: {

@@ -369,7 +369,7 @@ Da eine Seed-Phrase verwendet werden kann, um verlorene/fehlende Schlüsselpaare
     {
         "total": {
             "tokens": 0,
-            "receipts": {
+            "items": {
                 "default_drs_tx_hash": 1000,
                 "g7d07...6704b": 1000
             }
@@ -382,7 +382,7 @@ Da eine Seed-Phrase verwendet werden kann, um verlorene/fehlende Schlüsselpaare
                         "n": 0
                     },
                     "value": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1000,
                             "drs_tx_hash": "default_drs_tx_hash"
                         }
@@ -394,7 +394,7 @@ Da eine Seed-Phrase verwendet werden kann, um verlorene/fehlende Schlüsselpaare
                         "n": 0
                     },
                     "value": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1000,
                             "drs_tx_hash": "g7d07...6704b"
                         }
@@ -423,7 +423,7 @@ Da eine Seed-Phrase verwendet werden kann, um verlorene/fehlende Schlüsselpaare
 
 Empfangsassets sind die NFTs der ABlock-Blockchain, erfordern jedoch im Gegensatz zu NFTs keine Smart Contracts oder komplexe Logik zum Erstellen.
 
--   `createReceipts`
+-   `createItems`
 
 | **Argument**     | **Typ**             | **Standardwert** | **Erforderlich** | **Beschreibung**                                                                                                                                                                                                                                       |
 | ---------------- | ------------------- | ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -441,30 +441,30 @@ const client = new ABlockWallet();
 // Initialisieren Sie den Client korrekt
 ...
 
-// Adresse / Schlüsselpaar, um die `Receipt`-Vermögenswerte zuzuweisen
+// Adresse / Schlüsselpaar, um die `Item`-Vermögenswerte zuzuweisen
 const keyPair = getAllKeypairs()[0];
 
-// Erstellen Sie `Receipt`-Vermögenswerte mit dem Standard-DRS-Identifier
-const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
+// Erstellen Sie `Item`-Vermögenswerte mit dem Standard-DRS-Identifier
+const createItemResponse = await client.createItems(keyPair).content.createItemResponse;
 
 <!-- --------------------------------- ODER ---------------------------------- -->
 
-// Erstellen Sie `Receipt`-Vermögenswerte mit einem eindeutigen DRS-Identifier
-const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+// Erstellen Sie `Item`-Vermögenswerte mit einem eindeutigen DRS-Identifier
+const createItemResponse = await client.createItems(keyPair, false).content.createItemResponse;
 
 <!-- --------------------------------- VERSION MIT ALLEN ARGUMENTEN ---------------------------------- -->
 
-const createReceiptResponse = await client.createReceipts(
+const createItemResponse = await client.createItems(
   keyPair,
   false,
   10000,
   "{ 'imageURL': '...', 'description': '...' }"
 ).content
-.createReceiptResponse;
+.createItemResponse;
 
 ```
 
-`Receipt`-Vermögenswerte können entweder dem Standard-Digital Rights Signature (DRS) oder einem eindeutigen DRS zugeordnet werden. Wenn Vermögenswerte unterschiedliche DRS-Identifier haben, sind sie **nicht** gegenseitig austauschbar.
+`Item`-Vermögenswerte können entweder dem Standard-Digital Rights Signature (DRS) oder einem eindeutigen DRS zugeordnet werden. Wenn Vermögenswerte unterschiedliche DRS-Identifier haben, sind sie **nicht** gegenseitig austauschbar.
 
   <details>
   <summary>Inhalt der Antwort</summary>
@@ -474,7 +474,7 @@ const createReceiptResponse = await client.createReceipts(
 {
     "asset": {
         "asset": {
-            "Receipt": {
+            "Item": {
                 "amount": 1000,
                 "drs_tx_hash": "g7d07...6704b"
             }
@@ -486,7 +486,7 @@ const createReceiptResponse = await client.createReceipts(
 }
 ```
 
--   `drs_tx_hash`: Der DRS-Identifier, der den erstellten `Receipt`-Vermögenswerten zugeordnet ist.
+-   `drs_tx_hash`: Der DRS-Identifier, der den erstellten `Item`-Vermögenswerten zugeordnet ist.
 
 </details>
 
@@ -528,7 +528,7 @@ await makeTokenPayment(
 
 ### Ausgeben von Quittungen
 
--   `makeReceiptPayment`
+-   `makeItemPayment`
 
 | **Argument**   | **Typ**                | **Standard** | **Erforderlich** | **Beschreibung**                                                                                                                                   |
 | -------------- | ---------------------- | ------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -555,7 +555,7 @@ const changeKeyPair = keyPairs[0];
 // DRS-Identifier (der Standard-DRS-Identifier oder ein eindeutiger DRS-Identifier)
 const drsTxHash = "default_drs_tx_hash";
 
-await makeReceiptPayment(
+await makeItemPayment(
         "d0e72...85b46", // Zahlungsadresse
         10,              // Zahlungsbetrag
         drsTxHash,       // DRS-Identifier
@@ -565,17 +565,17 @@ await makeReceiptPayment(
 
 ```
 
-**_NB_**: _Die Methode `makeReceiptPayment` ist in vielerlei Hinsicht ähnlich der Methode `makeTokenPayment`, unter anderem darin, dass diese Methode `Receipt`-Vermögenswerte in unidirektionaler Weise an eine Zahlungsadresse sendet und keine Vermögenswerte als Gegenleistung erwartet. Sie sollte nicht mit **quittungsbasierten** Zahlungen verwechselt werden!_
+**_NB_**: _Die Methode `makeItemPayment` ist in vielerlei Hinsicht ähnlich der Methode `makeTokenPayment`, unter anderem darin, dass diese Methode `Item`-Vermögenswerte in unidirektionaler Weise an eine Zahlungsadresse sendet und keine Vermögenswerte als Gegenleistung erwartet. Sie sollte nicht mit **quittungsbasierten** Zahlungen verwechselt werden!_
 
 ### Quittungsbasierte Zahlungen durchführen
 
--   `makeRbPayment`
+-   `make2WayPayment`
 
 | **Argument**   | **Typ**                        | **Standard** | **Erforderlich** | **Beschreibung**                                                         |
 | -------------- | ------------------------------ | ------------ | ---------------- | ------------------------------------------------------------------------ |
 | paymentAddress | `string`                       |              | ja               | Adresse, an die die Token-Zahlung erfolgen soll                          |
-| sendingAsset   | `IAssetReceipt \| IAssetToken` |              | ja               | Das zu zahlende Vermögen                                                 |
-| receivingAsset | `IAssetReceipt \| IAssetToken` |              | ja               | Das zu empfangende Vermögen                                              |
+| sendingAsset   | `IAssetItem \| IAssetToken` |              | ja               | Das zu zahlende Vermögen                                                 |
+| receivingAsset | `IAssetItem \| IAssetToken` |              | ja               | Das zu empfangende Vermögen                                              |
 | allKeypairs    | `IKeypairEncrypted[]`          |              | ja               | Eine Liste aller vorhandenen Schlüsselpaare (verschlüsselt)              |
 | receiveAddress | `IKeypairEncrypted`            |              | ja               | Ein Schlüsselpaar, dem das "empfangende" Vermögen zugewiesen werden soll |
 
@@ -597,13 +597,13 @@ const empfangsadresse = alleSchlüsselpaare[0];
 const sendendesAsset = initIAssetToken({"Token": 10});
 
 // Das Asset, das wir empfangen möchten
-const empfangenesAsset = initIAssetReceipt({
-  "Receipt": {
+const empfangenesAsset = initIAssetItem({
+  "Item": {
       "amount": 10,
       "drs_tx_hash": "default_drs_tx_hash"
   }});
 
-const zahlungsergebnis = await makeRbPayment(
+const zahlungsergebnis = await make2WayPayment(
       "18f70...caeda",  // Zahlungsadresse
       sendendesAsset,     // Zahlungsasset
       empfangenesAsset,   // Empfangsasset
@@ -611,7 +611,7 @@ const zahlungsergebnis = await makeRbPayment(
       empfangsadresse, // Empfangsadresse
   );
 
-  const { druid, encryptedTx } = zahlungsergebnis.content.makeRbPaymentResponse;
+  const { druid, encryptedTx } = zahlungsergebnis.content.make2WayPaymentResponse;
 
   // Speichern der verschlüsselten Transaktion zusammen
   // mit dem entsprechenden DRUID-Wert
@@ -623,7 +623,7 @@ const zahlungsergebnis = await makeRbPayment(
 
 ### Abrufen ausstehender Zahlungen basierend auf Quittungen
 
--   `fetchPendingRbTransactions`
+-   `fetchPending2WayPayments`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -640,12 +640,12 @@ const zahlungsergebnis = await makeRbPayment(
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // FAusstehende Zahlungen basierend auf Quittungen abrufen
-    const pendingRbTransactionsResult = await client.fetchPendingRbTransactions(
+    const pendingIbTransactionsResult = await client.fetchPending2WayPayments(
           allKeypairs,
           allEncryptedTxs:,
       )
 
-    const pendingRbTransactions: IResponseIntercom<IPendingRbTxDetails> = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IResponseIntercom<IPendingIbTxDetails> = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     ```
 
@@ -663,7 +663,7 @@ const zahlungsergebnis = await makeRbPayment(
                     "from": "",
                     "to": "2a646...f8b98",
                     "asset": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1,
                             "drs_tx_hash": "default_drs_tx_hash"
                         }
@@ -685,12 +685,12 @@ const zahlungsergebnis = await makeRbPayment(
 
     Aus dieser Datenstruktur können wir spezifische Details über die Zahlung auf Basis des Belegs erhalten, wie beispielsweise die eindeutige Kennung `DRUID0xd0f407436f7f1fc494d7aee22939090e`, den Status der Transaktion `status`, den Zeitstempel der Transaktion `timestamp` sowie die Adresse, die den Zahlungsanforderung auf Basis des Belegs gestellt hat - `2a646...f8b98`.
 
-    Wir können auch sehen, dass in dieser spezifischen Anfrage der Absender 1 `Receipt`-Asset im Austausch gegen 25200 `Token`-Assets erwartet.
+    Wir können auch sehen, dass in dieser spezifischen Anfrage der Absender 1 `Item`-Asset im Austausch gegen 25200 `Token`-Assets erwartet.
     </details>
 
 ### Reaktion auf ausstehende Zahlungen auf Basis des Belegs
 
--   `acceptRbTx` und `rejectRbTx`
+-   `accept2WayPayment` und `reject2WayPayment`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -702,19 +702,19 @@ const zahlungsergebnis = await makeRbPayment(
 
     // Hole die ausstehenden Zahlungen basierend auf Belegen vom Netzwerk ab
     ...
-    const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IFetchPendingIbResponse = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     // Hole alle vorhandenen Schlüsselpaare
     ...
     const allKeypairs = getAllKeypairs();
 
     // Akzeptiere eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung
-    await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.accept2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Lehne eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung ab
-    await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.reject2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
     ```
 
     Belegbasierte Transaktionen werden akzeptiert **oder** abgelehnt, indem ihre eindeutige DRUID-Kennung als Argument an die entsprechenden Methoden übergeben wird.

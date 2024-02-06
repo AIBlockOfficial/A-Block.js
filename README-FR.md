@@ -369,7 +369,7 @@ La méthode `generateSeedPhrase` est fournie par le module pour générer dynami
     {
         "total": {
             "tokens": 0,
-            "receipts": {
+            "items": {
                 "default_drs_tx_hash": 1000,
                 "g7d07...6704b": 1000
             }
@@ -382,7 +382,7 @@ La méthode `generateSeedPhrase` est fournie par le module pour générer dynami
                         "n": 0
                     },
                     "value": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1000,
                             "drs_tx_hash": "default_drs_tx_hash"
                         }
@@ -394,7 +394,7 @@ La méthode `generateSeedPhrase` est fournie par le module pour générer dynami
                         "n": 0
                     },
                     "value": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1000,
                             "drs_tx_hash": "g7d07...6704b"
                         }
@@ -423,7 +423,7 @@ La méthode `generateSeedPhrase` est fournie par le module pour générer dynami
 
 Les reçus sont les NFT (jetons non fongibles) de la blockchain ABlock, mais contrairement aux NFT, ils ne nécessitent pas l'écriture de contrats Intelligents ou de logique complexe pour être créés.
 
--   `createReceipts`
+-   `createItems`
 
 | **Argument**     | **Type**            | **Default** | **Requis** | **Description**                                                                                                                                                                                                                          |
 | ---------------- | ------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -441,30 +441,30 @@ const client = new ABlockWallet();
 // Initialiser correctement le client
 ...
 
-// Adresse / paire de clés pour attribuer les actifs `Receipt`
+// Adresse / paire de clés pour attribuer les actifs `Item`
 const keyPair = getAllKeypairs()[0];
 
-// Créer des actifs `Receipt` avec l'identifiant DRS par défaut
-const createReceiptResponse = await client.createReceipts(keyPair).content.createReceiptResponse;
+// Créer des actifs `Item` avec l'identifiant DRS par défaut
+const createItemResponse = await client.createItems(keyPair).content.createItemResponse;
 
 <!-- --------------------------------- OU ---------------------------------- -->
 
-// Créer des actifs `Receipt` avec un identifiant DRS unique
-const createReceiptResponse = await client.createReceipts(keyPair, false).content.createReceiptResponse;
+// Créer des actifs `Item` avec un identifiant DRS unique
+const createItemResponse = await client.createItems(keyPair, false).content.createItemResponse;
 
 <!-- --------------------------------- VERSION AVEC TOUS LES ARGUMENTS ---------------------------------- -->
 
-const createReceiptResponse = await client.createReceipts(
+const createItemResponse = await client.createItems(
   keyPair,
   false,
   10000,
   "{ 'imageURL': '...', 'description': '...' }"
 ).content
-.createReceiptResponse;
+.createItemResponse;
 
 ```
 
-Les actifs `Receipt` peuvent être attribués soit à la signature numérique des droits (DRS) par défaut, soit à un DRS unique. Lorsque les actifs ont des identifiants DRS différents, ils ne sont **pas** interchangeables entre eux.
+Les actifs `Item` peuvent être attribués soit à la signature numérique des droits (DRS) par défaut, soit à un DRS unique. Lorsque les actifs ont des identifiants DRS différents, ils ne sont **pas** interchangeables entre eux.
 
   <details>
   <summary>Contenu de la réponse</summary>
@@ -474,7 +474,7 @@ Les actifs `Receipt` peuvent être attribués soit à la signature numérique de
 {
     "asset": {
         "asset": {
-            "Receipt": {
+            "Item": {
                 "amount": 1000,
                 "drs_tx_hash": "g7d07...6704b"
             }
@@ -486,7 +486,7 @@ Les actifs `Receipt` peuvent être attribués soit à la signature numérique de
 }
 ```
 
--   `drs_tx_hash`: L'identifiant DRS associé aux actifs `Receipt` créés.
+-   `drs_tx_hash`: L'identifiant DRS associé aux actifs `Item` créés.
 
 </details>
 
@@ -528,13 +528,13 @@ await makeTokenPayment(
 
 ### Dépense de reçus
 
--   `makeReceiptPayment`
+-   `makeItemPayment`
 
 | **Argument**   | **Type**               | **Default** | **Requis** | **Description**                                                                                                                                       |
 | -------------- | ---------------------- | ----------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | paymentAddress | `string`               |             | oui        | Adresse à laquelle effectuer le paiement en jetons                                                                                                    |
 | paymentAmount  | `number`               |             | oui        | Montant de jetons à payer                                                                                                                             |
-| drsTxHash      | `string`               |             | oui        | Le hachage de transaction génésis de l'actif Receipt à dépenser. Il s'agit de l'identifiant unique de l'actif Receipt                                 |
+| drsTxHash      | `string`               |             | oui        | Le hachage de transaction génésis de l'actif Item à dépenser. Il s'agit de l'identifiant unique de l'actif Item                                 |
 | allKeypairs    | `IKeypairEncrypted []` |             | oui        | Paires de clés à utiliser pour effectuer le paiement. Ces paires de clés doivent avoir un solde de jetons associé pour pouvoir traiter la transaction |
 | excessKeypair  | `IKeypairEncrypted`    |             | oui        | Paire de clés excédentaire pour envoyer tout solde restant                                                                                            |
 
@@ -555,7 +555,7 @@ const changeKeyPair = keyPairs[0];
 // Identifiant DRS (l'identifiant DRS par défaut ou un identifiant DRS unique)
 const drsTxHash = "default_drs_tx_hash";
 
-await makeReceiptPayment(
+await makeItemPayment(
         "d0e72...85b46", // Adresse de paiement
         10,              // Montant du paiement
         drsTxHash,       // Identifiant DRS
@@ -565,17 +565,17 @@ await makeReceiptPayment(
 
 ```
 
-**_NB_**: _La méthode `makeReceiptPayment` est similaire à la méthode `makeTokenPayment` à bien des égards, dont le fait que cette méthode enverra des actifs `Receipt` à une adresse de paiement de manière unidirectionnelle et n'attend aucun actif en retour. Il ne faut pas la confondre avec les paiements basés sur les reçus !_
+**_NB_**: _La méthode `makeItemPayment` est similaire à la méthode `makeTokenPayment` à bien des égards, dont le fait que cette méthode enverra des actifs `Item` à une adresse de paiement de manière unidirectionnelle et n'attend aucun actif en retour. Il ne faut pas la confondre avec les paiements basés sur les reçus !_
 
 ### Réalisation de paiements basés sur les reçus
 
--   `makeRbPayment`
+-   `make2WayPayment`
 
 | **Argument**   | **Type**                       | **Default** | **Required** | **Description**                                               |
 | -------------- | ------------------------------ | ----------- | ------------ | ------------------------------------------------------------- |
 | paymentAddress | `string`                       |             | oui          | Adresse pour effectuer le paiement du jeton                   |
-| sendingAsset   | `IAssetReceipt \| IAssetToken` |             | oui          | L'actif à payer                                               |
-| receivingAsset | `IAssetReceipt \| IAssetToken` |             | oui          | L'actif à recevoir                                            |
+| sendingAsset   | `IAssetItem \| IAssetToken` |             | oui          | L'actif à payer                                               |
+| receivingAsset | `IAssetItem \| IAssetToken` |             | oui          | L'actif à recevoir                                            |
 | allKeypairs    | `IKeypairEncrypted[]`          |             | oui          | Une liste de toutes les paires de clés existantes (chiffrées) |
 | receiveAddress | `IKeypairEncrypted`            |             | oui          | Une paire de clés pour attribuer l'actif "reçu"               |
 
@@ -597,13 +597,13 @@ const adresseReception = toutesLesPaires[0];
 const actifEnvoi = initIAssetToken({"Token": 10});
 
 // L'actif que nous voulons recevoir
-const actifReception = initIAssetReceipt({
-  "Receipt":{
+const actifReception = initIAssetItem({
+  "Item":{
       "montant": 10,
       "drs_tx_hash": "default_drs_tx_hash"
   }});
 
-const resultatPaiement = await makeRbPayment(
+const resultatPaiement = await make2WayPayment(
       "18f70...caeda",  // Adresse de paiement
       actifEnvoi,     // Actif de paiement
       actifReception,   // Actif de réception
@@ -611,7 +611,7 @@ const resultatPaiement = await makeRbPayment(
       adresseReception, // Adresse de réception
   );
 
-const { druid, encryptedTx } = paymentResult.content.makeRbPaymentResponse;
+const { druid, encryptedTx } = paymentResult.content.make2WayPaymentResponse;
 
 // Enregistrer la transaction chiffrée avec sa valeur DRUID correspondante
 saveEncryptedTx(druid, encryptedTx);
@@ -622,7 +622,7 @@ saveEncryptedTx(druid, encryptedTx);
 
 ### Récupération des paiements en attente basés sur les reçus
 
--   `fetchPendingRbTransactions`
+-   `fetchPending2WayPayments`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -639,12 +639,12 @@ saveEncryptedTx(druid, encryptedTx);
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // Récupérer les paiements en attente basés sur les reçus
-    const pendingRbTransactionsResult = await client.fetchPendingRbTransactions(
+    const pendingIbTransactionsResult = await client.fetchPending2WayPayments(
           allKeypairs,
           allEncryptedTxs:,
       )
 
-    const pendingRbTransactions: IResponseIntercom<IPendingRbTxDetails> = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IResponseIntercom<IPendingIbTxDetails> = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     ```
 
@@ -662,7 +662,7 @@ saveEncryptedTx(druid, encryptedTx);
                     "from": "",
                     "to": "2a646...f8b98",
                     "asset": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1,
                             "drs_tx_hash": "default_drs_tx_hash"
                         }
@@ -684,12 +684,12 @@ saveEncryptedTx(druid, encryptedTx);
 
     À partir de cette structure de données, nous sommes en mesure d'obtenir des détails spécifiques sur le paiement basé sur le reçu, tels que l'identifiant unique `DRUID0xd0f407436f7f1fc494d7aee22939090e`, le statut de la transaction `status`, l'horodatage de la transaction `timestamp`, ainsi que l'adresse qui a effectué la demande de paiement basée sur le reçu - `2a646...f8b98`.
 
-    Nous pouvons également voir que dans cette demande spécifique, l'expéditeur s'attend à recevoir 1 actif `Receipt` en échange de 25200 actifs `Token`.
+    Nous pouvons également voir que dans cette demande spécifique, l'expéditeur s'attend à recevoir 1 actif `Item` en échange de 25200 actifs `Token`.
     </details>
 
 ### Répondre aux paiements basés sur le reçu en attente
 
--   `acceptRbTx` et `rejectRbTx`
+-   `accept2WayPayment` et `reject2WayPayment`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -701,19 +701,19 @@ saveEncryptedTx(druid, encryptedTx);
 
     // Récupérer les paiements en attente basés sur les reçus depuis le réseau
     ...
-    const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pendingIbTransactions: IFetchPendingIbResponse = pendingIbTransactionsResult.content.fetchPendingIbResponse;
 
     // Récupérer toutes les paires de clés existantes
     ...
     const allKeypairs = getAllKeypairs();
 
     // Accepter un paiement basé sur un reçu en utilisant son identifiant unique `DRUID`
-    await client.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.accept2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Rejeter un paiement basé sur un reçu en utilisant son identifiant unique `DRUID`
-    await client.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await client.reject2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
     ```
 
     Les transactions basées sur les reçus sont acceptées **ou** rejetées en passant leur identifiant DRUID unique en tant qu'argument aux méthodes correspondantes.

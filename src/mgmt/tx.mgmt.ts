@@ -5,7 +5,7 @@
 import { err, Ok, ok } from 'neverthrow';
 
 import {
-    IAssetReceipt,
+    IAssetItem,
     IAssetToken,
     ICreateTransaction,
     ICreateTxIn,
@@ -21,7 +21,7 @@ import {
     addLhsAssetToRhsAsset,
     assetsAreCompatible,
     getStringBytes,
-    initIAssetReceipt,
+    initIAssetItem,
     initIAssetToken,
     isOfType,
     lhsAssetIsGreaterThanRhsAsset,
@@ -38,7 +38,7 @@ import { constructSignature, constructTxInSignableData } from './script.mgmt';
 
 export type IGetInputsResult = {
     inputs: ICreateTxIn[];
-    totalAmountGathered: IAssetToken | IAssetReceipt;
+    totalAmountGathered: IAssetToken | IAssetItem;
     usedAddresses: string[];
     depletedAddresses: string[];
 };
@@ -47,13 +47,13 @@ export type IGetInputsResult = {
  * Gather `TxIn` (input) values for a transaction
  *
  * @export
- * @param {(IAssetToken | IAssetReceipt)} paymentAsset - Required payment asset to gather inputs for
+ * @param {(IAssetToken | IAssetItem)} paymentAsset - Required payment asset to gather inputs for
  * @param {IFetchBalanceResponse} fetchBalanceResponse - Balance as received from the network
  * @param {Map<string, IKeypair>} allKeypairs - A map of all existing key-pairs owned by the sender
- * @return {*}  {(IResult<[string[], IAssetToken | IAssetReceipt, ICreateTxIn[]]>)}
+ * @return {*}  {(IResult<[string[], IAssetToken | IAssetItem, ICreateTxIn[]]>)}
  */
 export function getInputsForTx(
-    paymentAsset: IAssetToken | IAssetReceipt,
+    paymentAsset: IAssetToken | IAssetItem,
     fetchBalanceResponse: IFetchBalanceResponse,
     allKeypairs: Map<string, IKeypair>,
 ): IResult<IGetInputsResult> {
@@ -61,20 +61,21 @@ export function getInputsForTx(
     const isOfTypeAssetToken = isOfType<IAssetToken>(paymentAsset, initIAssetToken());
     const enoughRunningTotal = isOfTypeAssetToken
         ? paymentAsset.Token <= fetchBalanceResponse.total.tokens
-        : paymentAsset.Receipt.amount <=
-          fetchBalanceResponse.total.receipts[paymentAsset.Receipt.drs_tx_hash];
+        : paymentAsset.Item.amount <=
+        fetchBalanceResponse.total.items[paymentAsset.Item.drs_tx_hash];
 
     if (enoughRunningTotal) {
         // Initialize the total amount gathered; apply DRS transaction hash where required
-        let totalAmountGathered: IAssetToken | IAssetReceipt = isOfTypeAssetToken
+        let totalAmountGathered: IAssetToken | IAssetItem = isOfTypeAssetToken
             ? initIAssetToken()
-            : initIAssetReceipt({
-                  Receipt: {
-                      amount: 0,
-                      drs_tx_hash: paymentAsset.Receipt.drs_tx_hash,
-                      metadata: paymentAsset.Receipt.metadata,
-                  },
-              });
+            : initIAssetItem({
+                Item: {
+                    amount: 0,
+                    drs_tx_hash: paymentAsset.Item.drs_tx_hash || '',
+                    metadata: paymentAsset.Item.metadata || null,
+                },
+            });
+        
         // A list of all addresses used to gather inputs
         const usedAddresses: string[] = [];
         // A list of all addresses which no longer contain usable assets after this transaction is created
@@ -176,15 +177,15 @@ export function getInputsForTx(
  *
  * @export
  * @param {string} paymentAddress - Address to make the payment to
- * @param {(IAssetToken | IAssetReceipt)} paymentAsset - The asset to send
+ * @param {(IAssetToken | IAssetItem)} paymentAsset - The asset to send
  * @param {string} excessAddress - The address to send excess funds/assets to
  * @param {(IDdeValues | null)} druidInfo - DRUID information associated with this transaction
- * @param {([string[], IAssetToken | IAssetReceipt, ICreateTxIn[]])} txIns - `TxIn` values used in this transaction
+ * @param {([string[], IAssetToken | IAssetItem, ICreateTxIn[]])} txIns - `TxIn` values used in this transaction
  * @return {*}  {IResult<ICreateTxPayload>}
  */
 export function createTx(
     paymentAddress: string,
-    paymentAsset: IAssetToken | IAssetReceipt,
+    paymentAsset: IAssetToken | IAssetItem,
     excessAddress: string,
     druidInfo: IDdeValues | null,
     txIns: IGetInputsResult,
@@ -246,7 +247,7 @@ export function createTx(
  *
  * @export
  * @param {string} paymentAddress - Address to make the payment to
- * @param {(IAssetToken | IAssetReceipt)} paymentAsset - The asset(s) to pay
+ * @param {(IAssetToken | IAssetItem)} paymentAsset - The asset(s) to pay
  * @param {string} excessAddress - Address to assign excess asset(s) to
  * @param {IFetchBalanceResponse} fetchBalanceResponse - Balance as fetched from the network
  * @param {Map<string, IKeypair>} allKeypairs - A list of all existing key-pairs (encrypted)
@@ -254,7 +255,7 @@ export function createTx(
  */
 export function createPaymentTx(
     paymentAddress: string,
-    paymentAsset: IAssetToken | IAssetReceipt,
+    paymentAsset: IAssetToken | IAssetItem,
     excessAddress: string,
     fetchBalanceResponse: IFetchBalanceResponse,
     allKeypairs: Map<string, IKeypair>,
