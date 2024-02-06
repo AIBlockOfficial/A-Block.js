@@ -71,10 +71,11 @@ export function getInputsForTx(
             : initIAssetItem({
                 Item: {
                     amount: 0,
-                    drs_tx_hash: paymentAsset.Item.drs_tx_hash,
-                    metadata: paymentAsset.Item.metadata,
+                    drs_tx_hash: paymentAsset.Item.drs_tx_hash || '',
+                    metadata: paymentAsset.Item.metadata || null,
                 },
             });
+        
         // A list of all addresses used to gather inputs
         const usedAddresses: string[] = [];
         // A list of all addresses which no longer contain usable assets after this transaction is created

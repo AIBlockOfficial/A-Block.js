@@ -118,6 +118,7 @@ export function constructTxInsAddress(txIns: ICreateTxIn[]): IResult<string> {
                     script_sig.Pay2PkH.address_version,
                 );
                 if (script.isErr()) return err(script.error);
+                
                 return previousOutPoint !== null
                     ? `${getFormattedOutPointString(previousOutPoint)}-${getFormattedScriptString(
                         script.value,
@@ -174,7 +175,7 @@ export function p2pkh(
     );
     const addr = constructAddress(getHexStringBytes(publicKeyData), addressVersion);
     if (addr.isErr()) return err(addr.error);
-    stackEntries.push(new StackEntry('PubKeyHash', addr.value));
+    stackEntries.push(new StackEntry('Bytes', addr.value));
     stackEntries.push(new StackEntry('Op', 'OP_EQUALVERIFY'));
     stackEntries.push(new StackEntry('Op', 'OP_CHECKSIG'));
     return ok({
