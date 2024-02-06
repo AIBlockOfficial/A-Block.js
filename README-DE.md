@@ -569,7 +569,7 @@ await makeItemPayment(
 
 ### Quittungsbasierte Zahlungen durchführen
 
--   `makeIbPayment`
+-   `make2WayPayment`
 
 | **Argument**   | **Typ**                        | **Standard** | **Erforderlich** | **Beschreibung**                                                         |
 | -------------- | ------------------------------ | ------------ | ---------------- | ------------------------------------------------------------------------ |
@@ -603,7 +603,7 @@ const empfangenesAsset = initIAssetItem({
       "drs_tx_hash": "default_drs_tx_hash"
   }});
 
-const zahlungsergebnis = await makeIbPayment(
+const zahlungsergebnis = await make2WayPayment(
       "18f70...caeda",  // Zahlungsadresse
       sendendesAsset,     // Zahlungsasset
       empfangenesAsset,   // Empfangsasset
@@ -611,7 +611,7 @@ const zahlungsergebnis = await makeIbPayment(
       empfangsadresse, // Empfangsadresse
   );
 
-  const { druid, encryptedTx } = zahlungsergebnis.content.makeIbPaymentResponse;
+  const { druid, encryptedTx } = zahlungsergebnis.content.make2WayPaymentResponse;
 
   // Speichern der verschlüsselten Transaktion zusammen
   // mit dem entsprechenden DRUID-Wert
@@ -623,7 +623,7 @@ const zahlungsergebnis = await makeIbPayment(
 
 ### Abrufen ausstehender Zahlungen basierend auf Quittungen
 
--   `fetchPendingIbTransactions`
+-   `fetchPending2WayPayments`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -640,7 +640,7 @@ const zahlungsergebnis = await makeIbPayment(
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // FAusstehende Zahlungen basierend auf Quittungen abrufen
-    const pendingIbTransactionsResult = await client.fetchPendingIbTransactions(
+    const pendingIbTransactionsResult = await client.fetchPending2WayPayments(
           allKeypairs,
           allEncryptedTxs:,
       )
@@ -690,7 +690,7 @@ const zahlungsergebnis = await makeIbPayment(
 
 ### Reaktion auf ausstehende Zahlungen auf Basis des Belegs
 
--   `acceptIbTx` und `rejectIbTx`
+-   `accept2WayPayment` und `reject2WayPayment`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -709,12 +709,12 @@ const zahlungsergebnis = await makeIbPayment(
     const allKeypairs = getAllKeypairs();
 
     // Akzeptiere eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung
-    await client.acceptIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
+    await client.accept2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Lehne eine belegbasierte Zahlung anhand ihrer eindeutigen `DRUID`-Kennung ab
-    await client.rejectIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
+    await client.reject2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
     ```
 
     Belegbasierte Transaktionen werden akzeptiert **oder** abgelehnt, indem ihre eindeutige DRUID-Kennung als Argument an die entsprechenden Methoden übergeben wird.

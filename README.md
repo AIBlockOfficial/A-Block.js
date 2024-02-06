@@ -47,11 +47,11 @@
         <li><a href="#generating-and-testing-seed-phrases">Generating and Testing Seed Phrases</a></li>
         <li><a href="#generating-key-pairs">Generating Key-pairs</a></li>
         <li><a href="#updating-the-balance">Updating the Balance</a></li>
-        <li><a href="#creating-receipt-assets">Creating Receipt Assets</a></li>
+        <li><a href="#creating-receipt-assets">Creating Item Assets</a></li>
         <li><a href="#spending-tokens">Spending Tokens</a></li>
-        <li><a href="#spending-receipts">Spending Receipts</a></li>
-        <li><a href="#fetching-pending-receipt-based-payments">Fetching Pending Receipt-based Payments</a></li>
-        <li><a href="#responding-to-pending-receipt-based-payments">Responding to Pending Receipt-based Payments</a></li>
+        <li><a href="#spending-receipts">Spending Items</a></li>
+        <li><a href="#fetching-pending-receipt-based-payments">Fetching Pending 2-Way Payments</a></li>
+        <li><a href="#responding-to-pending-receipt-based-payments">Responding to Pending 2-Way Payments</a></li>
       </ul>
     </li>
     <li>
@@ -351,7 +351,7 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
                         "n": 0
                     },
                     "value": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1000,
                             "drs_tx_hash": "default_drs_tx_hash"
                         }
@@ -363,7 +363,7 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
                         "n": 0
                     },
                     "value": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1000,
                             "drs_tx_hash": "g7d07...6704b"
                         }
@@ -388,18 +388,18 @@ Since a seed phrase can be used to reconstruct lost/missing key-pairs, it is cus
 
     </details>
 
-### Creating Receipt Assets
+### Creating Item Assets
 
-Receipts are the NFTs of the ABlock blockchain, but unlike NFTs don't require you to write any Smart Contracts
+Items are the NFTs of the ABlock blockchain, but unlike NFTs don't require you to write any Smart Contracts
 or complex logic to create.
 
--   `createReceipts`
+-   `createItems`
 
 | **Argument**     | **Type**            | **Default** | **Required** | **Description**                                                                                                                                                                            |
 | ---------------- | ------------------- | ----------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| address          | `IKeypairEncrypted` |             | yes          | The keypair to generate the address that the Receipt assets will be sent to once generated                                                                                                 |
-| defaultDrsTxHash | `boolean`           | true        | no           | Setting this to `true` will create generic Receipts, while setting it to `false` will generate a genesis transaction hash unique to these Receipts. Use `false` if you want to create NFTs |
-| amount           | `number`            | 1000        | no           | The number of Receipt assets to mint                                                                                                                                                       |
+| address          | `IKeypairEncrypted` |             | yes          | The keypair to generate the address that the Item assets will be sent to once generated                                                                                                 |
+| defaultDrsTxHash | `boolean`           | true        | no           | Setting this to `true` will create generic Items, while setting it to `false` will generate a genesis transaction hash unique to these Items. Use `false` if you want to create NFTs |
+| amount           | `number`            | 1000        | no           | The number of Item assets to mint                                                                                                                                                       |
 | metadata         | `string`            | null        | no           | Optional metadata that you can attach to the asset                                                                                                                                         |
 
 ```typescript
@@ -410,30 +410,30 @@ const wallet = new ABlockWallet();
 // Initialize the wallet correctly
 ...
 
-// Address / key-pair to assign the `Receipt` assets to
+// Address / key-pair to assign the `Item` assets to
 const keyPair = getKeypairs()[0];
 
-// Create `Receipt` assets that have the default DRS identifier
-const createReceiptResponse = await wallet.createReceipts(keyPair).content.createReceiptResponse;
+// Create `Item` assets that have the default DRS identifier
+const createItemResponse = await wallet.createItems(keyPair).content.createItemResponse;
 
 <!-- --------------------------------- OR ---------------------------------- -->
 
-// Create `Receipt` assets that have a unique DRS identifier
-const createReceiptResponse = await wallet.createReceipts(keyPair, false).content.createReceiptResponse;
+// Create `Item` assets that have a unique DRS identifier
+const createItemResponse = await wallet.createItems(keyPair, false).content.createItemResponse;
 
 <!-- --------------------------------- ALL ARGUMENTS VERSION ---------------------------------- -->
 
-const createReceiptResponse = await wallet.createReceipts(
+const createItemResponse = await wallet.createItems(
   keyPair,
   false,
   10000,
   "{ 'imageURL': '...', 'description': '...' }"
 ).content
-.createReceiptResponse;
+.createItemResponse;
 
 ```
 
-`Receipt` assets can either be assigned to the default digital rights signature (DRS) or a unique DRS. When assets have different DRS identifiers they are **not** mutually interchangeable with each other.
+`Item` assets can either be assigned to the default digital rights signature (DRS) or a unique DRS. When assets have different DRS identifiers they are **not** mutually interchangeable with each other.
 
   <details>
   <summary>Response Content</summary>
@@ -443,7 +443,7 @@ const createReceiptResponse = await wallet.createReceipts(
 {
     "asset": {
         "asset": {
-            "Receipt": {
+            "Item": {
                 "amount": 1000,
                 "drs_tx_hash": "g7d07...6704b"
             }
@@ -455,7 +455,7 @@ const createReceiptResponse = await wallet.createReceipts(
 }
 ```
 
--   `drs_tx_hash`: The DRS identifier associated with the created `Receipt` assets.
+-   `drs_tx_hash`: The DRS identifier associated with the created `Item` assets.
 
 </details>
 
@@ -495,15 +495,15 @@ await makeTokenPayment(
 
 **_NB_**: _The `makeTokenPayment` method will not check validity of the payment address. It is therefore crucial to ensure a valid payment address is used before the payment gets made._
 
-### Spending Receipts
+### Spending Items
 
--   `makeReceiptPayment`
+-   `makeItemPayment`
 
 | **Argument**   | **Type**               | **Default** | **Required** | **Description**                                                                                                                 |
 | -------------- | ---------------------- | ----------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | paymentAddress | `string`               |             | yes          | Address to make the token payment to                                                                                            |
 | paymentAmount  | `number`               |             | yes          | Amount of tokens to pay                                                                                                         |
-| drsTxHash      | `string`               |             | yes          | The genesis transaction hash of the Receipt asset to spend. This is the unique identifier of the Receipt asset                  |
+| drsTxHash      | `string`               |             | yes          | The genesis transaction hash of the Item asset to spend. This is the unique identifier of the Item asset                  |
 | allKeypairs    | `IKeypairEncrypted []` |             | yes          | Keypairs to use to make the payment. Must have token balance associated with these keypairs in order to process the transaction |
 | excessKeypair  | `IKeypairEncrypted`    |             | yes          | Excess keypair to send any remaining balance to                                                                                 |
 
@@ -524,7 +524,7 @@ const changeKeyPair = keyPairs[0];
 // DRS identifier (the default DRS identifier or a unique DRS identifier)
 const drsTxHash = "default_drs_tx_hash";
 
-await makeReceiptPayment(
+await makeItemPayment(
         "d0e72...85b46", // Payment address
         10,              // Payment amount
         drsTxHash,       // DRS identifier
@@ -534,17 +534,17 @@ await makeReceiptPayment(
 
 ```
 
-**_NB_**: _The `makeReceiptPayment` method is similar to the `makeTokenPayment` in many regards, one of which being the fact that this method will send `Receipt` assets to a payment address in a unidirectional fashion and does not expect any assets in return. It should not be confused with **receipt-based** payments!_
+**_NB_**: _The `makeItemPayment` method is similar to the `makeTokenPayment` in many regards, one of which being the fact that this method will send `Item` assets to a payment address in a unidirectional fashion and does not expect any assets in return. It should not be confused with **receipt-based** payments!_
 
-### Making Receipt-based Payments
+### Making 2-Way Payments
 
--   `makeRbPayment`
+-   `make2WayPayment`
 
 | **Argument**   | **Type**                       | **Default** | **Required** | **Description**                              |
 | -------------- | ------------------------------ | ----------- | ------------ | -------------------------------------------- |
 | paymentAddress | `string`                       |             | yes          | Address to make the token payment to         |
-| sendingAsset   | `IAssetReceipt \| IAssetToken` |             | yes          | The asset to pay                             |
-| receivingAsset | `IAssetReceipt \| IAssetToken` |             | yes          | The asset to receive                         |
+| sendingAsset   | `IAssetItem \| IAssetToken` |             | yes          | The asset to pay                             |
+| receivingAsset | `IAssetItem \| IAssetToken` |             | yes          | The asset to receive                         |
 | allKeypairs    | `IKeypairEncrypted[]`          |             | yes          | A list of all existing key-pairs (encrypted) |
 | receiveAddress | `IKeypairEncrypted`            |             | yes          | A keypair to assign the "receiving" asset to |
 
@@ -566,13 +566,13 @@ const receivingAddress = allKeypairs[0];
 const sendingAsset = initIAssetToken({"Token": 10});
 
 // The asset we want to receive
-const receivingAsset = initIAssetReceipt({
-  "Receipt": {
+const receivingAsset = initIAssetItem({
+  "Item": {
       "amount": 10,
       "drs_tx_hash": "default_drs_tx_hash"
   }});
 
-const paymentResult = await makeRbPayment(
+const paymentResult = await make2WayPayment(
       "18f70...caeda",  // Payment address
       sendingAsset,     // Payment asset
       receivingAsset,   // Receiving asset
@@ -580,7 +580,7 @@ const paymentResult = await makeRbPayment(
       receivingAddress, // Receive address
   );
 
-  const { druid, encryptedTx } = paymentResult.content.makeRbPaymentResponse;
+  const { druid, encryptedTx } = paymentResult.content.make2WayPaymentResponse;
 
   // Save the encrypted transaction along
   // with it's corresponding DRUID value
@@ -590,9 +590,9 @@ const paymentResult = await makeRbPayment(
 
 **_NB_**: _This type of transaction is a Dual-Double-Entry (DDE) transaction, and requires all parties to reach common consent before their respective transactions are sent to the compute node for processing._
 
-### Fetching Pending Receipt-based Payments
+### Fetching Pending 2-Way Payments
 
--   `fetchPendingRbTransactions`
+-   `fetchPending2WayPayments`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -609,12 +609,12 @@ const paymentResult = await makeRbPayment(
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // Fetch pending receipt-based payments
-    const pendingRbTransactionsResult = await wallet.fetchPendingRbTransactions(
+    const pending2WayPaymentsResult = await wallet.fetchPending2WayPayments(
           allKeypairs,
           allEncryptedTxs:,
       )
 
-    const pendingRbTransactions: IResponseIntercom<IPendingRbTxDetails> = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pending2WayPayments: IResponseIntercom<IPendingIbTxDetails> = pending2WayPaymentsResult.content.fetchPendingRbResponse;
 
     ```
 
@@ -632,7 +632,7 @@ const paymentResult = await makeRbPayment(
                     "from": "",
                     "to": "2a646...f8b98",
                     "asset": {
-                        "Receipt": {
+                        "Item": {
                             "amount": 1,
                             "drs_tx_hash": "default_drs_tx_hash"
                         }
@@ -654,12 +654,12 @@ const paymentResult = await makeRbPayment(
 
     From this data structure we're able to obtain specific details about the receipt-based payment, such as the unique identifier `DRUID0xd0f407436f7f1fc494d7aee22939090e`, the status of the transaction `status`, the timestamp of the transaction `timestamp`, as well as the address that made the receipt-based payment request- `2a646...f8b98`.
 
-    We are also able to see that in this specific request, the sender expects 1 `Receipt` asset in exchange for 25200 `Token` assets.
+    We are also able to see that in this specific request, the sender expects 1 `Item` asset in exchange for 25200 `Token` assets.
     </details>
 
-### Responding to Pending Receipt-based Payments
+### Responding to Pending 2-Way Payments
 
--   `acceptRbTx` and `rejectRbTx`
+-   `accept2WayPayment` and `reject2WayPayment`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -671,22 +671,22 @@ const paymentResult = await makeRbPayment(
 
     // Fetch the pending receipt-based payments from the network
     ...
-    const pendingRbTransactions: IFetchPendingRbResponse = pendingRbTransactionsResult.content.fetchPendingRbResponse;
+    const pending2WayPayments: IFetchPendingRbResponse = pending2WayPaymentsResult.content.fetchPendingRbResponse;
 
     // Fetch all existing key-pairs
     ...
     const allKeypairs = getKeyPairs();
 
     // Accept a receipt-based payment using its unique `DRUID` identifier
-    await wallet.acceptRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await wallet.accept2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pending2WayPayments, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Reject a receipt-based payment using its unique `DRUID` identifier
-    await wallet.rejectRbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingRbTransactions, allKeypairs);
+    await wallet.reject2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pending2WayPayments, allKeypairs);
     ```
 
-    Receipt-based transactions are accepted **or** rejected by passing their unique DRUID identifier as an argument to the corresponding methods.
+    2-Way transactions are accepted **or** rejected by passing their unique DRUID identifier as an argument to the corresponding methods.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 

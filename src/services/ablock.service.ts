@@ -696,7 +696,7 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    public async makeIbPayment(
+    public async make2WayPayment(
         paymentAddress: string,
         sendingAsset: IAssetItem | IAssetToken,
         receivingAsset: IAssetItem | IAssetToken,
@@ -783,7 +783,7 @@ export class ABlockWallet {
                         status: 'success',
                         reason: ISuccessInternal.IbPaymentProcessing,
                         content: {
-                            makeIbPaymentResponse: {
+                            make2WayPaymentResponse: {
                                 druid,
                                 encryptedTx: encryptedTx,
                             },
@@ -806,12 +806,12 @@ export class ABlockWallet {
      * Accept a item-based payment
      *
      * @param {string} druid - Unique DRUID value associated with a item-based payment
-     * @param {IResponseIntercom<IPendingIbTxDetails>} pendingResponse - Item-based transaction(s) information as received from the intercom server
+     * @param {IResponseIntercom<IPendingIbTxDetails>} pendingResponse - 2-Way transaction(s) information as received from the intercom server
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    public async acceptIbTx(
+    public async accept2WayPayment(
         druid: string,
         pendingResponse: IResponseIntercom<IPendingIbTxDetails>,
         allKeypairs: IKeypairEncrypted[],
@@ -823,13 +823,13 @@ export class ABlockWallet {
      * Reject a item-based payment
      *
      * @param {string} druid - Unique DRUID value associated with a item-based payment
-     * @param {IResponseIntercom<IPendingIbTxDetails>} pendingResponse - Item-based transaction(s) information as received from the intercom server
+     * @param {IResponseIntercom<IPendingIbTxDetails>} pendingResponse - 2-Way transaction(s) information as received from the intercom server
      * @param {IKeypairEncrypted[]} allKeypairs - A list of all existing key-pairs (encrypted)
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
 
-    public async rejectIbTx(
+    public async reject2WayPayment(
         druid: string,
         pendingResponse: IResponseIntercom<IPendingIbTxDetails>,
         allKeypairs: IKeypairEncrypted[],
@@ -845,7 +845,7 @@ export class ABlockWallet {
      * @return {*}  {Promise<IClientResponse>}
      * @memberof ABlockWallet
      */
-    public async fetchPendingIbTransactions(
+    public async fetchPending2WayPayments(
         allKeypairs: IKeypairEncrypted[],
         allEncryptedTxs: ICreateTransactionEncrypted[],
     ): Promise<IClientResponse> {
@@ -1340,7 +1340,7 @@ export class ABlockWallet {
             if (status === 'accepted') {
                 const sendIbTxHalf = throwIfErr(
                     // Sender expectation and receiver expectation context is switched
-                    // in comparison to `makeIbPayment` since we are the receiving party
+                    // in comparison to `make2WayPayment` since we are the receiving party
                     createIbTxHalf(
                         balance.content.fetchBalanceResponse,
                         druid,

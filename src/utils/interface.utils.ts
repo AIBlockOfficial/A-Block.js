@@ -165,7 +165,7 @@ export const subRhsAssetFromLhsAsset = (
             Item: {
                 amount: lhs.Item.amount - rhs.Item.amount,
                 drs_tx_hash: lhs.Item.drs_tx_hash,
-                metadata: lhs.Item.metadata,
+                metadata: null,
             },
         };
         return ok(returnValue);
