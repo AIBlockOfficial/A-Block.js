@@ -42,7 +42,6 @@ export function createItemPayload(
     metadata: string | null = null,
 ): IResult<IItemCreationAPIPayload> {
     const address = constructAddress(pubKey, version);
-    console.log('add: ', address)
     if (address.isErr()) return err(address.error);
     const asset: IAssetItem = {
         Item: {

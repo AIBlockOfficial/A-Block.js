@@ -161,7 +161,7 @@ test('validate correct value amount and mathematical operation between assets', 
      */
     // Subtract assetItem_1 from assetItem_2
     expect(throwIfErr(subRhsAssetFromLhsAsset(assetItem_2, assetItem_1))).toStrictEqual({
-        Item: { amount: 9, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: "{'test': 'test'}" },
+        Item: { amount: 9, drs_tx_hash: DEFAULT_DRS_TX_HASH, metadata: null },
     });
     // Add assetItem_1 to assetItem_2
     expect(throwIfErr(addLhsAssetToRhsAsset(assetItem_2, assetItem_1))).toStrictEqual({
