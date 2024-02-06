@@ -41,6 +41,7 @@ import {
     initIAssetItem,
     initIAssetToken,
     throwIfErr,
+    formatAssetStructures,
     transformCreateTxResponseFromNetwork,
 } from '../utils';
 import { mgmtClient } from './mgmt.service';
@@ -1323,7 +1324,8 @@ export class ABlockWallet {
             );
 
             // We assume that the filtered data should contain a single key-value pair since DRUID values are unique
-            const txInfo = throwIfErr(formatSingleCustomKeyValuePair(rbDataForDruid)).value.value;
+            const rawTxInfo = throwIfErr(formatSingleCustomKeyValuePair(rbDataForDruid)).value.value;
+            const txInfo = throwIfErr(formatAssetStructures(rawTxInfo));
 
             // Get the key-pair assigned to this receiver address
             const receiverKeypair = keyPairMap.get(txInfo.receiverExpectation.to);
@@ -1331,6 +1333,8 @@ export class ABlockWallet {
 
             // Set the status of the pending request
             txInfo.status = status;
+
+            console.log('receiverExpectation', txInfo);
 
             // Handle case for 'accepted'; create and send transaction to mempool node
             if (status === 'accepted') {
