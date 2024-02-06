@@ -469,18 +469,18 @@ export class ABlockWallet {
                     metadata,
                 ),
             );
+
             // Generate needed headers
-            // const headers = this.getRequestIdAndNonceHeadersForRoute(
-            //     this.mempoolRoutesPoW,
-            //     IAPIRoute.CreateItemAsset,
-            // );
-            console.log('createItemBody', createItemBody);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.mempoolRoutesPoW,
+                IAPIRoute.CreateItemAsset,
+            );
+
             return await axios
                 .post<INetworkResponse>(
                     `${this.mempoolHost}${IAPIRoute.CreateItemAsset}`,
                     createItemBody,
-                    // { ...headers, validateStatus: () => true },
-                    {}
+                    { ...headers, validateStatus: () => true },
                 )
                 .then((response) => {
                     return {
@@ -1240,9 +1240,6 @@ export class ABlockWallet {
                 ),
             );
 
-            console.log('paymentBody', paymentBody.createTx);
-            console.log(JSON.stringify(paymentBody.createTx));
-
             const { usedAddresses } = paymentBody;
 
             // Generate the needed headers
@@ -1333,8 +1330,6 @@ export class ABlockWallet {
 
             // Set the status of the pending request
             txInfo.status = status;
-
-            console.log('receiverExpectation', txInfo);
 
             // Handle case for 'accepted'; create and send transaction to mempool node
             if (status === 'accepted') {
