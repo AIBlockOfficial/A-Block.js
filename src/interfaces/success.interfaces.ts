@@ -32,7 +32,7 @@ export enum ISuccessInternal {
     ClientInitialized = 'Client initialized',
     MessageSigned = 'Successfully signed message',
     MessageVirified = 'Successfully verified message',
-    IbPaymentProcessing = 'Item-based payment processing',
+    IbPaymentProcessing = '2-Way payment processing',
     PendingIbPaymentsFetched = 'Succesfully fetched pending item-based transactions',
     AddressesReconstructed = 'Addresses have successfully been reconstructed',
     NewAddressGenerated = 'Successfully generated new address',

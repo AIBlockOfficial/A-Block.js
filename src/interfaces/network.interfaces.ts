@@ -31,7 +31,7 @@ export type IContentType = {
     newDRUIDResponse?: string;
     newSeedPhraseResponse?: string;
     getSeedPhraseResponse?: string;
-    makeIbPaymentResponse?: IMakeIbPaymentResponse;
+    make2WayPaymentResponse?: IMakeIbPaymentResponse;
     newKeypairResponse?: IKeypairEncrypted;
     getMasterKeyResponse?: IMasterKeyEncrypted;
     initNewResponse?: INewWalletResponse;

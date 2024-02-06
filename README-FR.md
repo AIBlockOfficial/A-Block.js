@@ -569,7 +569,7 @@ await makeItemPayment(
 
 ### Réalisation de paiements basés sur les reçus
 
--   `makeIbPayment`
+-   `make2WayPayment`
 
 | **Argument**   | **Type**                       | **Default** | **Required** | **Description**                                               |
 | -------------- | ------------------------------ | ----------- | ------------ | ------------------------------------------------------------- |
@@ -603,7 +603,7 @@ const actifReception = initIAssetItem({
       "drs_tx_hash": "default_drs_tx_hash"
   }});
 
-const resultatPaiement = await makeIbPayment(
+const resultatPaiement = await make2WayPayment(
       "18f70...caeda",  // Adresse de paiement
       actifEnvoi,     // Actif de paiement
       actifReception,   // Actif de réception
@@ -611,7 +611,7 @@ const resultatPaiement = await makeIbPayment(
       adresseReception, // Adresse de réception
   );
 
-const { druid, encryptedTx } = paymentResult.content.makeIbPaymentResponse;
+const { druid, encryptedTx } = paymentResult.content.make2WayPaymentResponse;
 
 // Enregistrer la transaction chiffrée avec sa valeur DRUID correspondante
 saveEncryptedTx(druid, encryptedTx);
@@ -622,7 +622,7 @@ saveEncryptedTx(druid, encryptedTx);
 
 ### Récupération des paiements en attente basés sur les reçus
 
--   `fetchPendingIbTransactions`
+-   `fetchPending2WayPayments`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -639,7 +639,7 @@ saveEncryptedTx(druid, encryptedTx);
     const allEncryptedTxs = getAllEncryptedTxs();
 
     // Récupérer les paiements en attente basés sur les reçus
-    const pendingIbTransactionsResult = await client.fetchPendingIbTransactions(
+    const pendingIbTransactionsResult = await client.fetchPending2WayPayments(
           allKeypairs,
           allEncryptedTxs:,
       )
@@ -689,7 +689,7 @@ saveEncryptedTx(druid, encryptedTx);
 
 ### Répondre aux paiements basés sur le reçu en attente
 
--   `acceptIbTx` et `rejectIbTx`
+-   `accept2WayPayment` et `reject2WayPayment`
 
     ```typescript
     import { ABlockWallet } from '@a-block/a-blockjs';
@@ -708,12 +708,12 @@ saveEncryptedTx(druid, encryptedTx);
     const allKeypairs = getAllKeypairs();
 
     // Accepter un paiement basé sur un reçu en utilisant son identifiant unique `DRUID`
-    await client.acceptIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
+    await client.accept2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
 
     <!-- --------------------------------- OR ---------------------------------- -->
 
     // Rejeter un paiement basé sur un reçu en utilisant son identifiant unique `DRUID`
-    await client.rejectIbTx('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
+    await client.reject2WayPayment('DRUID0xd0f407436f7f1fc494d7aee22939090e', pendingIbTransactions, allKeypairs);
     ```
 
     Les transactions basées sur les reçus sont acceptées **ou** rejetées en passant leur identifiant DRUID unique en tant qu'argument aux méthodes correspondantes.
