@@ -93,4 +93,4 @@ export const FETCH_BALANCE_RESPONSE_TEST: IFetchBalanceResponse = {
     },
 };
 
-test.skip('test constants', () => { });
+test.skip('test constants', () => {});

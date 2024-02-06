@@ -4,7 +4,13 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { BAL_LIMIT } from '../mgmt/constants';
 
-import { IClientResponse, ICustomKeyPair, IErrorInternal, IPendingIbTxDetails, IResult } from '../interfaces';
+import {
+    IClientResponse,
+    ICustomKeyPair,
+    IErrorInternal,
+    IPendingIbTxDetails,
+    IResult,
+} from '../interfaces';
 
 /**
  * Cast `status` received from ABlock network to lowercase string variant
@@ -113,7 +119,7 @@ export function truncateByBytesUTF8(chars: string, n: number): string {
         try {
             return fromBytesUTF8(bytes);
             // eslint-disable-next-line no-empty
-        } catch (e) { }
+        } catch (e) {}
         bytes = bytes.substring(0, bytes.length - 1);
     }
 }
@@ -274,28 +280,40 @@ export const formatSingleCustomKeyValuePair = <K extends string | number | symbo
  * @param {IPendingIbTxDetails} txStructure
  * @return {*}  {IResult<IPendingIbTxDetails>}
  */
-export const formatAssetStructures = (txStructure: IPendingIbTxDetails): IResult<IPendingIbTxDetails> => {
+export const formatAssetStructures = (
+    txStructure: IPendingIbTxDetails,
+): IResult<IPendingIbTxDetails> => {
     const defaults = {
         amount: 0,
         drs_tx_hash: null,
-        metadata: null
+        metadata: null,
     };
 
     if ('Item' in txStructure.senderExpectation.asset) {
-        let senderExpectation = txStructure.senderExpectation.asset.Item;
-        Object.assign(senderExpectation, ...Object.entries(defaults).filter(([key]) => !(key in senderExpectation)).map(([key, value]) => ({ [key]: value })));
+        const senderExpectation = txStructure.senderExpectation.asset.Item;
+        Object.assign(
+            senderExpectation,
+            ...Object.entries(defaults)
+                .filter(([key]) => !(key in senderExpectation))
+                .map(([key, value]) => ({ [key]: value })),
+        );
 
         senderExpectation.metadata = null;
         txStructure.senderExpectation.asset.Item = senderExpectation;
     }
-    
+
     if ('Item' in txStructure.receiverExpectation.asset) {
-        let receiverExpectation = txStructure.receiverExpectation.asset.Item;
-        Object.assign(receiverExpectation, ...Object.entries(defaults).filter(([key]) => !(key in receiverExpectation)).map(([key, value]) => ({ [key]: value })));
+        const receiverExpectation = txStructure.receiverExpectation.asset.Item;
+        Object.assign(
+            receiverExpectation,
+            ...Object.entries(defaults)
+                .filter(([key]) => !(key in receiverExpectation))
+                .map(([key, value]) => ({ [key]: value })),
+        );
 
         receiverExpectation.metadata = null;
         txStructure.receiverExpectation.asset.Item = receiverExpectation;
     }
 
     return ok(txStructure);
-}
+};

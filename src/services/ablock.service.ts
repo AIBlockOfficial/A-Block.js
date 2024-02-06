@@ -1321,7 +1321,8 @@ export class ABlockWallet {
             );
 
             // We assume that the filtered data should contain a single key-value pair since DRUID values are unique
-            const rawTxInfo = throwIfErr(formatSingleCustomKeyValuePair(rbDataForDruid)).value.value;
+            const rawTxInfo = throwIfErr(formatSingleCustomKeyValuePair(rbDataForDruid)).value
+                .value;
             const txInfo = throwIfErr(formatAssetStructures(rawTxInfo));
 
             // Get the key-pair assigned to this receiver address

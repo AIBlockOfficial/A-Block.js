@@ -210,7 +210,7 @@ test('create transaction for the SEND portion of a item-based payment', () => {
                                 Item: {
                                     amount: 1,
                                     drs_tx_hash: DEFAULT_DRS_TX_HASH,
-                                    metadata: "{'test': 'test'}"
+                                    metadata: "{'test': 'test'}",
                                 },
                             },
                             from: 'their_from_value',

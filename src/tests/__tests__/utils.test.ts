@@ -172,9 +172,7 @@ test('validate correct value amount and mathematical operation between assets', 
     // Test assetItem_2 > assetItem_1
     expect(throwIfErr(lhsAssetIsGreaterThanRhsAsset(assetItem_2, assetItem_1))).toBe(true);
     // Test assetItem_2 >= assetItem_3
-    expect(throwIfErr(lhsAssetIsEqOrGreaterThanRhsAsset(assetItem_2, assetItem_3))).toBe(
-        true,
-    );
+    expect(throwIfErr(lhsAssetIsEqOrGreaterThanRhsAsset(assetItem_2, assetItem_3))).toBe(true);
 
     /*
      * Failure tests

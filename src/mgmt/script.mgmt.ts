@@ -118,11 +118,11 @@ export function constructTxInsAddress(txIns: ICreateTxIn[]): IResult<string> {
                     script_sig.Pay2PkH.address_version,
                 );
                 if (script.isErr()) return err(script.error);
-                
+
                 return previousOutPoint !== null
                     ? `${getFormattedOutPointString(previousOutPoint)}-${getFormattedScriptString(
-                        script.value,
-                    )}`
+                          script.value,
+                      )}`
                     : `null-${getFormattedScriptString(script.value)}`;
             } else {
                 return err(IErrorInternal.UnableToConstructTxIns);
