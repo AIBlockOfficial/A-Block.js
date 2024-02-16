@@ -72,6 +72,9 @@ Specific areas of focus include:
 -   Encryption and decryption of key-pairs during operations safely.
 -   Transactions and other complex network interactions simplified.
 
+  ### Polyfill node core modules in webpack 5
+  Webpack < 5 used to include polyfills for node.js core modules by default. This is no longer the case. This affect CRA, Angular, Vue.js and Gatsby ([see fix](https://web3auth.io/docs/troubleshooting/webpack-issues#react-create-react-app)). We recommend using next.js as it [supports modern browsers with no configuration](https://nextjs.org/docs/architecture/supported-browsers#polyfills).  
+
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
