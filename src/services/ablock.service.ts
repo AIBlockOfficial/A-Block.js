@@ -313,18 +313,14 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const fetchBalanceBody = {
-                address_list: addressList,
-            };
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 this.mempoolRoutesPoW,
                 IAPIRoute.FetchBalance,
             );
-
             return await axios
                 .post<INetworkResponse>(
                     `${this.mempoolHost}${IAPIRoute.FetchBalance}`,
-                    fetchBalanceBody,
+                    addressList,
                     { ...headers, validateStatus: () => true },
                 )
                 .then((response) => {
