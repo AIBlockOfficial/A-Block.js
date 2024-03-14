@@ -70,7 +70,6 @@ export enum IAPIRoute {
     FetchPending = '/fetch_pending' /* NOTE: Currently not available */,
     /* --------------------------- Storage Network Routes --------------------------- */
     BlockchainEntry = '/blockchain_entry',
-    Transactions = '/transactions_by_key',
     /* ----------------------------- Intercom Routes ---------------------------- */
     IntercomSet = '/set_data',
     IntercomGet = '/get_data',
