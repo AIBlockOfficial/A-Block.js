@@ -261,48 +261,6 @@ export class ABlockWallet {
     }
 
     /**
-     * @deprecated due to instability.
-     *
-     * Get all the addresses present on the ABlock network UTXO set
-     *
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ABlockWallet
-     */
-    public async getUtxoAddressList(): Promise<IClientResponse> {
-        try {
-            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.mempoolRoutesPoW,
-                IAPIRoute.GetUtxoAddressList,
-            );
-            return await axios
-                .get<INetworkResponse>(`${this.mempoolHost}${IAPIRoute.GetUtxoAddressList}`, {
-                    ...headers,
-                    validateStatus: () => true,
-                })
-                .then((response) => {
-                    return {
-                        status: castAPIStatus(response.data.status),
-                        reason: response.data.reason,
-                        content: {
-                            fetchUtxoAddressesResponse: response.data.content,
-                        },
-                    } as IClientResponse;
-                })
-                .catch(async (error) => {
-                    if (error instanceof Error) throw new Error(error.message);
-                    else throw new Error(`${error}`);
-                });
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            } as IClientResponse;
-        }
-    }
-
-    /**
      * Fetch balance for an address list from the UTXO set
      *
      * @param {string[]} addressList - A list of public addresses
@@ -313,18 +271,14 @@ export class ABlockWallet {
         try {
             if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
                 throw new Error(IErrorInternal.ClientNotInitialized);
-            const fetchBalanceBody = {
-                address_list: addressList,
-            };
             const headers = this.getRequestIdAndNonceHeadersForRoute(
                 this.mempoolRoutesPoW,
                 IAPIRoute.FetchBalance,
             );
-
             return await axios
                 .post<INetworkResponse>(
                     `${this.mempoolHost}${IAPIRoute.FetchBalance}`,
-                    fetchBalanceBody,
+                    addressList,
                     { ...headers, validateStatus: () => true },
                 )
                 .then((response) => {
@@ -367,7 +321,7 @@ export class ABlockWallet {
             );
             return await axios
                 .post<INetworkResponse>(
-                    `${this.storageHost}${IAPIRoute.Transactions}`,
+                    `${this.storageHost}${IAPIRoute.BlockchainEntry}`,
                     transactionHashes,
                     { ...headers, validateStatus: () => true },
                 )
@@ -377,53 +331,6 @@ export class ABlockWallet {
                         reason: response.data.reason,
                         content: {
                             fetchTransactionsResponse: response.data.content,
-                        },
-                    } as IClientResponse;
-                })
-                .catch(async (error) => {
-                    if (error instanceof Error) throw new Error(error.message);
-                    else throw new Error(`${error}`);
-                });
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            } as IClientResponse;
-        }
-    }
-
-    /**
-     * Fetch pending DDE transaction from the mempool node
-     *
-     * @deprecated due to security concerns.
-     *
-     * @param {string[]} druids - A list of DRUID values
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ABlockWallet
-     */
-    public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
-        try {
-            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
-                throw new Error(IErrorInternal.ClientNotInitialized);
-            const fetchPendingBody = {
-                druid_list: druids,
-            };
-            const headers = this.getRequestIdAndNonceHeadersForRoute(
-                this.mempoolRoutesPoW,
-                IAPIRoute.FetchPending,
-            );
-            return await axios
-                .post<INetworkResponse>(
-                    `${this.mempoolHost}${IAPIRoute.FetchPending}`,
-                    fetchPendingBody,
-                    { ...headers, validateStatus: () => true },
-                )
-                .then((response) => {
-                    return {
-                        status: castAPIStatus(response.data.status),
-                        reason: response.data.reason,
-                        content: {
-                            fetchPendingDDEResponse: response.data.content,
                         },
                     } as IClientResponse;
                 })
@@ -489,94 +396,6 @@ export class ABlockWallet {
                         content: {
                             createItemResponse: response.data.content,
                         },
-                    } as IClientResponse;
-                })
-                .catch(async (error) => {
-                    if (error instanceof Error) throw new Error(error.message);
-                    else throw new Error(`${error}`);
-                });
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            } as IClientResponse;
-        }
-    }
-
-    /**
-     * Get the notary service's burn address
-     *
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ABlockWallet
-     */
-    async getNotaryBurnAddress(): Promise<IClientResponse> {
-        try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.notaryHost) throw new Error(IErrorInternal.NotaryNotInitialized);
-            const headers = this.getRequestIdAndNonceHeadersForRoute(
-                new Map(),
-                IAPIRoute.GetNotaryBurnAddress,
-            );
-            return await axios
-                .get<INetworkResponse>(`${this.notaryHost}${IAPIRoute.GetNotaryBurnAddress}`, {
-                    ...headers,
-                    validateStatus: () => true,
-                })
-                .then((response) => {
-                    return {
-                        status: castAPIStatus(response.data.status),
-                        reason: response.data.reason,
-                        content: response.data.content,
-                    } as IClientResponse;
-                })
-                .catch(async (error) => {
-                    if (error instanceof Error) throw new Error(error.message);
-                    else throw new Error(`${error}`);
-                });
-        } catch (error) {
-            return {
-                status: 'error',
-                reason: `${error}`,
-            } as IClientResponse;
-        }
-    }
-
-    /**
-     * Get the required signature from the notary to mint new Erc20 tokens
-     *
-     * @param {string} ethAddress - Ethereum address to mint tokens to
-     * @param {string} txHash - Transaction hash of the "burn" transaction
-     * @param {IGenericKeyPair<string>} signatures
-     * @return {*}  {Promise<IClientResponse>}
-     * @memberof ABlockWallet
-     */
-    async getNotarySignature(
-        ethAddress: string,
-        txHash: string,
-        signatures: IGenericKeyPair<string>,
-    ): Promise<IClientResponse> {
-        try {
-            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
-            if (!this.notaryHost) throw new Error(IErrorInternal.NotaryNotInitialized);
-            const headers = this.getRequestIdAndNonceHeadersForRoute(
-                new Map(),
-                IAPIRoute.GetNotarySignature,
-            );
-            const body = {
-                ethAddress,
-                txHash,
-                signatures,
-            };
-            return await axios
-                .post<INetworkResponse>(`${this.notaryHost}${IAPIRoute.GetNotarySignature}`, body, {
-                    ...headers,
-                    validateStatus: () => true,
-                })
-                .then((response) => {
-                    return {
-                        status: castAPIStatus(response.data.status),
-                        reason: response.data.reason,
-                        content: response.data.content,
                     } as IClientResponse;
                 })
                 .catch(async (error) => {
@@ -1194,7 +1013,6 @@ export class ABlockWallet {
 
     /* -------------------------------------------------------------------------- */
     /*                                    Utils                                   */
-
     /* -------------------------------------------------------------------------- */
 
     /**
@@ -1478,5 +1296,190 @@ export class ABlockWallet {
                 ...createIdAndNonceHeaders(routeDifficulty).headers,
             },
         };
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /*                                    Deprecated                              */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+      * Fetch pending DDE transaction from the mempool node
+      *
+      * @deprecated
+      *
+      * @param {string[]} druids - A list of DRUID values
+      * @return {*}  {Promise<IClientResponse>}
+      * @memberof ABlockWallet
+      */
+    public async fetchPendingDDETransactions(druids: string[]): Promise<IClientResponse> {
+        try {
+            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const fetchPendingBody = {
+                druid_list: druids,
+            };
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.mempoolRoutesPoW,
+                IAPIRoute.FetchPending,
+            );
+            return await axios
+                .post<INetworkResponse>(
+                    `${this.mempoolHost}${IAPIRoute.FetchPending}`,
+                    fetchPendingBody,
+                    { ...headers, validateStatus: () => true },
+                )
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: {
+                            fetchPendingDDEResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+    * Get all the addresses present on the ABlock network UTXO set
+    * 
+    * @deprecated
+    *    
+    * @return {*}  {Promise<IClientResponse>}
+    * @memberof ABlockWallet
+    */
+    public async getUtxoAddressList(): Promise<IClientResponse> {
+        try {
+            if (!this.mempoolHost || !this.keyMgmt || !this.mempoolRoutesPoW)
+                throw new Error(IErrorInternal.ClientNotInitialized);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                this.mempoolRoutesPoW,
+                IAPIRoute.GetUtxoAddressList,
+            );
+            return await axios
+                .get<INetworkResponse>(`${this.mempoolHost}${IAPIRoute.GetUtxoAddressList}`, {
+                    ...headers,
+                    validateStatus: () => true,
+                })
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: {
+                            fetchUtxoAddressesResponse: response.data.content,
+                        },
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+    * Get the notary service's burn address
+    *
+    * @deprecated
+    * 
+    * @return {*}  {Promise<IClientResponse>}
+    * @memberof ABlockWallet
+    */
+    async getNotaryBurnAddress(): Promise<IClientResponse> {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.notaryHost) throw new Error(IErrorInternal.NotaryNotInitialized);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                new Map(),
+                IAPIRoute.GetNotaryBurnAddress,
+            );
+            return await axios
+                .get<INetworkResponse>(`${this.notaryHost}${IAPIRoute.GetNotaryBurnAddress}`, {
+                    ...headers,
+                    validateStatus: () => true,
+                })
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: response.data.content,
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
+    }
+
+    /**
+     * Get the required signature from the notary to mint new Erc20 tokens
+     *
+     * @deprecated
+     * 
+     * @param {string} ethAddress - Ethereum address to mint tokens to
+     * @param {string} txHash - Transaction hash of the "burn" transaction
+     * @param {IGenericKeyPair<string>} signatures
+     * @return {*}  {Promise<IClientResponse>}
+     * @memberof ABlockWallet
+     */
+    async getNotarySignature(
+        ethAddress: string,
+        txHash: string,
+        signatures: IGenericKeyPair<string>,
+    ): Promise<IClientResponse> {
+        try {
+            if (!this.keyMgmt) throw new Error(IErrorInternal.ClientNotInitialized);
+            if (!this.notaryHost) throw new Error(IErrorInternal.NotaryNotInitialized);
+            const headers = this.getRequestIdAndNonceHeadersForRoute(
+                new Map(),
+                IAPIRoute.GetNotarySignature,
+            );
+            const body = {
+                ethAddress,
+                txHash,
+                signatures,
+            };
+            return await axios
+                .post<INetworkResponse>(`${this.notaryHost}${IAPIRoute.GetNotarySignature}`, body, {
+                    ...headers,
+                    validateStatus: () => true,
+                })
+                .then((response) => {
+                    return {
+                        status: castAPIStatus(response.data.status),
+                        reason: response.data.reason,
+                        content: response.data.content,
+                    } as IClientResponse;
+                })
+                .catch(async (error) => {
+                    if (error instanceof Error) throw new Error(error.message);
+                    else throw new Error(`${error}`);
+                });
+        } catch (error) {
+            return {
+                status: 'error',
+                reason: `${error}`,
+            } as IClientResponse;
+        }
     }
 }

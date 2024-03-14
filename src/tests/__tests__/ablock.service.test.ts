@@ -119,3 +119,42 @@ test('sign message with given keypairs', async () => {
     const result1 = ablockInstance.verifyMessage(MSG, signatures!, keypairs1);
     expect(result1.status).toBe('error');
 });
+
+test('fetch balance', async () => {
+    const config = {
+        mempoolHost: 'http://37.27.23.104:3003',
+        storageHost: 'http://37.27.23.104:3001',
+        passphrase: '',
+    };
+
+    await ablockInstance.initNew(config).then((res) => {
+        expect(res.status).toBe('success');
+    });
+
+    const kp = ablockInstance.getNewKeypair([]).content?.newKeypairResponse;
+    const kpAddr = kp?.address;
+
+    expect(kp).toBeDefined();
+    expect(kpAddr).toBeDefined();
+
+    await ablockInstance.fetchBalance([kpAddr!]).then((res) => {
+        expect(res.status).toBe('success');
+    })
+
+});
+
+test('fetch transaction', async () => {
+    const config = {
+        mempoolHost: 'http://37.27.23.104:3003',
+        storageHost: 'http://37.27.23.104:3001',
+        passphrase: '',
+    };
+
+    await ablockInstance.initNew(config).then((res) => {
+        expect(res.status).toBe('success');
+    });
+
+    await ablockInstance.fetchTransactions(['000000']).then((res) => {
+        expect(res.status).toBe('success');
+    })
+});
